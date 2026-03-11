@@ -8,8 +8,6 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/stock", label: "Stock", icon: Package },
   { href: "/dashboard/add-product", label: "Add Product", icon: PlusCircle },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart2 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
