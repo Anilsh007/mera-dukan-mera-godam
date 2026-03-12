@@ -1,10 +1,10 @@
-/** @type {import('next').NextConfig} */
-const isProd = process.env.NODE_ENV === 'production';
+const isGithub = process.env.GITHUB_ACTIONS === 'true';
 
 const nextConfig = {
-  output: 'export',
-  // Only use the basePath in production (GitHub Pages)
-  basePath: isProd ? '/Mera-Dukan-Mera-Godam' : '',
+  ...(isGithub && {
+    output: "export",
+    basePath: "/Mera-Dukan-Mera-Godam",
+  }),
   images: {
     unoptimized: true,
   },
