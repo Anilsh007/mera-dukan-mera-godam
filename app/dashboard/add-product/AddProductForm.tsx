@@ -28,7 +28,7 @@ const productInputs = [
     { name: "name", placeholder: "Product Name", type: "text", col: "md:col-span-3" },
     { name: "category", placeholder: "Category", type: "text", col: "md:col-span-2" },
     { name: "price", placeholder: "Price per item", type: "number", col: "md:col-span-2" },
-    { name: "quantity", placeholder: "Qty", type: "number", col: "md:col-span-1" }
+    { name: "quantity", placeholder: "Qty", type: "number", col: "md:col-span-2" }
 ]
 
 export default function AddProductForm() {
@@ -79,17 +79,17 @@ export default function AddProductForm() {
     )
 
     return (
-        <form onSubmit={handleSubmit} className="pt-5 pb-5 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-3xl shadow-2xl overflow-hidden" >
+        <form onSubmit={handleSubmit} className="p-5 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-3xl shadow-2xl overflow-hidden" >
 
             {/* Table Body */}
             <div className=" overflow-y-auto custom-scrollbar">
 
                 {rows.map((row, index) => (
 
-                    <div key={row.id} className="group grid grid-cols-1 md:grid-cols-12 gap-4 pt-5 rounded-2xl border border-transparent">
+                    <div key={row.id} className="group grid grid-cols-1 md:grid-cols-12 gap-4 pt-5">
 
                         {/* Row Number */}
-                        <div className="hidden md:flex md:col-span-1 justify-center">
+                        <div className=" md:flex md:col-span-1 justify-center">
                             <span className="w-8 h-8 rounded-full border text-slate-500 flex items-center justify-center text-xs font-bold">{index + 1}</span>
                         </div>
 
@@ -111,7 +111,7 @@ export default function AddProductForm() {
                         ))}
 
                         {/* Row Result & Action */}
-                        <div className="md:col-span-3 flex items-center justify-end gap-4">
+                        <div className="md:col-span-2 flex items-center justify-end gap-4">
                             <div className="text-right">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Subtotal</p>
 
@@ -131,27 +131,19 @@ export default function AddProductForm() {
                     <Button type="button" title="Add Another Product" onClick={addRow} variant="dotBorder" icon={<MdAdd />} />
                 </div>
 
-            </div>
+            </div>  
+            
+            <div className="mt-5 border-t border-[var(--border-card)]">
 
-            {/* Footer */}
-            <div className="p-4 border border-[var(--border-card)]">
+                <p className="flex item-center gap-1 text-sm text-rose-400 pb-2"><CiWarning size={20} />Review your items before adding them to the inventory. Once added, stock will be updated instantly.</p>
 
-                <p className="flex item-center gap-1 text-sm text-rose-400 pb-2">
-                    <CiWarning size={20} />
-                    Review your items before adding them to the inventory. Once added, stock will be updated instantly.
-                </p>
+                <div className="flex flex-col flex-row items-center justify-between gap-6">
 
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-
-                    {/* Mobile Grand Total */}
-                    <div className="md:hidden text-center">
+                    <div className="">
                         <p className="text-xs font-bold text-slate-400 uppercase">Grand Total</p>
 
-                        <p className="text-3xl font-black text-blue-600">₹{grandTotal.toLocaleString('en-IN')}</p>
+                        <p className="text-2xl font-black">₹{grandTotal.toLocaleString('en-IN')}</p>
                     </div>
-
-                    {/* Desktop Grand Total */}
-                    <p className="text-2xl font-black text-blue-600">₹{grandTotal.toLocaleString('en-IN')}</p>
 
                     <Button type="submit" title={loading ? "Saving Inventory..." : `Complete Entry (${rows.length} Items)`} variant="primary" disabled={loading || !isFormValid} icon={<MdOutlineAddchart />} />
 
