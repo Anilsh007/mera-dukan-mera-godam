@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Input from "@/app/components/utility/CommonInput"
+import Button from "@/app/components/utility/Button"
 
 type Filters = {
   name: string
@@ -84,19 +85,8 @@ export default function StockFilter({
       )}
 
       <div className="flex gap-3 mt-4">
-        <button
-          onClick={handleApply}
-          className="px-4 py-2 rounded-xl bg-emerald-500 text-white"
-        >
-          Apply Filter
-        </button>
-
-        <button
-          onClick={handleReset}
-          className="px-4 py-2 rounded-xl border"
-        >
-          Reset
-        </button>
+        <Button onClick={handleApply} variant="primary" title="Apply Filter"/>
+        <Button onClick={handleReset} variant="black" title="Reset"/>
       </div>
     </div>
   )
