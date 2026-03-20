@@ -5,6 +5,7 @@ import { addProduct } from "@/app/dashboard/add-product/product.service"
 import { auth } from "@/app/components/client/useClient"
 import { autoSyncToDrive } from "@/app/lib/autoSync.service"
 import { toast } from "sonner"
+import { scheduleSync } from "@/app/lib/syncManager"
 
 export default function useAddProduct() {
   const [loading, setLoading] = useState(false)
@@ -46,7 +47,8 @@ export default function useAddProduct() {
       toast.success("Product saved ✅")
 
       // ✅ AUTO SYNC (non-blocking)
-      autoSyncToDrive()
+      //autoSyncToDrive()
+      scheduleSync();
 
     } catch (err) {
       toast.error(`Error: ${err instanceof Error ? err.message : String(err)}`)

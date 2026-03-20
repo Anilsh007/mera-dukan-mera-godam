@@ -18,8 +18,7 @@ export async function syncToDrive(accessToken: string) {
       `name='${FILE_NAME}' and trashed=false`
     );
 
-    const searchResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`,
+    const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -38,8 +37,7 @@ export async function syncToDrive(accessToken: string) {
     if (files?.length > 0) {
       const fileId = files[0].id;
 
-      const updateResponse = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+      const updateResponse = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
         {
           method: "PATCH",
           headers: {
@@ -77,8 +75,7 @@ export async function syncToDrive(accessToken: string) {
         new Blob([fileContent], { type: "application/json" })
       );
 
-      const createResponse = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      const createResponse = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
         {
           method: "POST",
           headers: {

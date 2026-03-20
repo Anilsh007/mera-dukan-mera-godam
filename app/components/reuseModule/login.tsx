@@ -9,6 +9,7 @@ import { FcGoogle } from "react-icons/fc";
 import { useRef } from "react";
 import logo from "../../../assets/logo.svg";
 import { syncToDrive } from "@/app/lib/drive.service";
+import Button from "../utility/Button";
 
 const AnimatedBackground = () => {
     const meshRef = useRef<any>(null);
@@ -79,13 +80,7 @@ export default function Login() {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleLogin}
-                    className="flex items-center gap-3 border border-white/60 px-6 py-3 rounded-lg text-white hover:bg-white/10 transition"
-                >
-                    <FcGoogle size={22} />
-                    Continue with Google
-                </button>
+                <Button onClick={handleLogin} variant="login" icon={<FcGoogle/>} title="Continue with Google" />
 
                 <p className="text-white/40 text-[10px] uppercase tracking-widest">
                     Powered by Firebase

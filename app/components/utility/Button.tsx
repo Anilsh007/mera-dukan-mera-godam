@@ -6,7 +6,7 @@ interface ButtonProps {
     icon?: React.ReactNode;
     className?: string;
     type?: "submit" | "reset" | "button";
-    variant?: "primary" | "secondary" | "danger" | "ghost" | "warning" | "menu" | "dotBorder" | "delete" | "black";
+    variant?: "primary" | "secondary" | "danger" | "ghost" | "warning" | "menu" | "dotBorder" | "delete" | "black" | "login";
     loading?: boolean;
     disabled?: boolean;
 }
@@ -22,7 +22,8 @@ export default function Button({ onClick, title, icon, className = "", type = "b
         black: "bg-black-100 text-gray-600 border-black-200 hover:bg-black hover:text-white hover:border-black",
         dotBorder: "border-2 border-dashed border-slate-200 text-slate-400 hover:text-blue-500 hover:border-blue-300 hover:bg-blue-50 transition-all font-semibold",
         delete: "p-0 border-none text-rose-200 hover:text-red-500 hover:bg-red-00 rounded-xl transition-all",
-        menu: "lg:hidden"
+        menu: "lg:hidden",
+        login: "flex items-center gap-3 border border-white/60 px-6 py-3 rounded-lg text-white hover:bg-white/10 transition"
     };
 
     const isDisabled = loading || disabled;

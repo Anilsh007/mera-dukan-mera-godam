@@ -1,5 +1,6 @@
 import { db } from "@/app/components/client/useClient"
 import { Product } from "@/app/lib/db"
+import { scheduleSync } from "@/app/lib/syncManager"
 
 export async function addProduct(data: {
   name: string
@@ -17,14 +18,12 @@ export async function addProduct(data: {
     ...data,
     createdAt: new Date().toISOString()
   })
-
+  scheduleSync();
 }
 
 export async function getProducts(userId: string): Promise<Product[]> {
-
   return await db.products
     .where("userId")
     .equals(userId)
     .toArray()
-
 }
