@@ -9,17 +9,39 @@ export default function SettingsPage() {
     const [isConnected, setIsConnected] = useState(false)
 
     useEffect(() => {
-        const status = localStorage.getItem("drive_connected") === "true"
-        setIsConnected(status)
+        async function checkConnection() {
+            try {
+                const token = await getGoogleDriveAccessToken()
+
+                if (token) {
+                    setIsConnected(true)
+                    localStorage.setItem("drive_connected", "true")
+                } else {
+                    throw new Error("No token")
+                }
+            } catch {
+                setIsConnected(false)
+                localStorage.setItem("drive_connected", "false")
+            }
+        }
+
+        checkConnection()
     }, [])
 
     async function connectDrive() {
         try {
-            await getGoogleDriveAccessToken()
+            const token = await getGoogleDriveAccessToken()
+
+            if (!token) throw new Error()
+
             localStorage.setItem("drive_connected", "true")
             setIsConnected(true)
+
             toast.success("Drive connected ✅")
         } catch {
+            localStorage.setItem("drive_connected", "false")
+            setIsConnected(false)
+
             toast.error("Connection failed ❌")
         }
     }

@@ -15,7 +15,7 @@ const columns = ["name", "category", "supplier", "expiry", "price", "quantity", 
 export default function TableComponent({ data }: { data: TableItem[] }) {
 
     return (
-        <div className="rounded-xl border bg-[var(--bg-card)] border-[var(--border-card)] shadow-[var(--shadow-card)]">
+        <div className="w-[96.5vw] md:w-auto rounded-xl border bg-[var(--bg-card)] border-[var(--border-card)] shadow-[var(--shadow-card)]">
 
             <div className="relative overflow-x-auto">
                 <table className="w-full text-left border-collapse  table-auto">
@@ -23,7 +23,7 @@ export default function TableComponent({ data }: { data: TableItem[] }) {
                     <thead className="bg-black-90/90 dark:bg-white/5">
                         <tr className="border-b border-[var(--border-card)]">
                             {columns.map((col) => (
-                                <th key={col} className="px-6 py-4 text-sm font-semibold capitalize">
+                                <th key={col} className="px-6 py-4 text-sm font-semibold capitalize whitespace-nowrap">
                                     {col === "price" ? "Price / Item" : col === "total" ? "Total" : col}
                                 </th>
                             ))}
@@ -37,7 +37,7 @@ export default function TableComponent({ data }: { data: TableItem[] }) {
                                     if (col === "total") {
                                         const total = (item.price ?? 0) * (item.quantity ?? 0)
                                         return (
-                                            <td key={col} className="px-6 py-4 font-semibold text-emerald-600" >
+                                            <td key={col} className="px-6 py-4 font-semibold text-emerald-600 whitespace-nowrap" >
                                                 ₹{total.toLocaleString("en-IN")}
                                             </td>
                                         )
@@ -46,14 +46,14 @@ export default function TableComponent({ data }: { data: TableItem[] }) {
                                     if (col === "price")
 
                                         return (
-                                            <td key={col} className="px-6 py-4 font-mono">
+                                            <td key={col} className="px-6 py-4 font-mono whitespace-nowrap">
                                                 ₹{Number(item.price ?? 0).toLocaleString("en-IN")}
                                             </td>
                                         )
 
                                     if (col === "quantity")
                                         return (
-                                            <td key={col} className="px-6 py-4">
+                                            <td key={col} className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`h-2 w-2 rounded-full ${(item.quantity ?? 0) > 5
                                                         ? "bg-emerald-500"
@@ -67,28 +67,28 @@ export default function TableComponent({ data }: { data: TableItem[] }) {
 
                                     if (col === "category")
                                         return (
-                                            <td key={col} className="px-6 py-4">
+                                            <td key={col} className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex rounded-md px-2 py-1 text-xs uppercase">{item.category || "General"}</span>
                                             </td>
                                         )
 
                                     if (col === "supplier")
                                         return (
-                                            <td key={col} className="px-6 py-4">
+                                            <td key={col} className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex rounded-md px-2 py-1 text-xs uppercase">{item.supplier || "General"}</span>
                                             </td>
                                         )
 
                                     if (col === "expiry")
                                         return (
-                                            <td key={col} className="px-6 py-4">
+                                            <td key={col} className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex rounded-md px-2 py-1 text-xs uppercase">{item.expiry || "General"}</span>
                                             </td>
                                         )
 
                                     if (col === "createdAt")
                                         return (
-                                            <td key={col} className="px-6 py-4 text-gray-700 dark:text-gray-400">
+                                            <td key={col} className="px-6 py-4 text-gray-700 dark:text-gray-400 whitespace-nowrap">
                                                 {item.createdAt ? (
                                                     <>
                                                         {new Date(String(item.createdAt))
@@ -108,14 +108,14 @@ export default function TableComponent({ data }: { data: TableItem[] }) {
 
                                     if (col === "note")
                                         return (
-                                            <td key={col} className="px-6 py-4">
+                                            <td key={col} className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex rounded-md px-2 py-1 text-xs uppercase">{item.note || "General"}</span>
                                             </td>
                                         )
 
 
                                     return (
-                                        <td key={col} className="px-6 py-4 font-medium" >
+                                        <td key={col} className="px-6 py-4 font-medium whitespace-nowrap" >
                                             {(item as any)[col] || "N/A"}
                                         </td>
                                     )
