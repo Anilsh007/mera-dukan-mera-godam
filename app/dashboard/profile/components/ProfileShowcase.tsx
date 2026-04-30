@@ -58,7 +58,7 @@ export default function ProfileShowcase({ data, onEdit }: Props) {
         Last synced: {data.updatedAt ? new Date(data.updatedAt).toLocaleString('en-IN') : 'Never'}
       </div>
 
-      <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl text-center w-fit mx-auto">
+      <div className="p-4 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl text-center w-fit mx-auto">
         <QRCodeSVG value={`upi://pay?pa=${data.business.upiId}&pn=${data.business.shopName}`} size={128} />
       </div>
     </div>

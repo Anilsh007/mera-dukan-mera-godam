@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
-/* ============================================
-   LIGHT THEME
-   ============================================= */
 html {
   --bg-primary: #f1f5f9;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
+  --bg-card-strong: rgba(255, 255, 255, 0.92);
+  --bg-elevated: #f8fafc;
   --bg-input: #ffffff;
   --bg-sidebar: #ffffff;
   --bg-header: #ffffff;
+  --bg-soft: #f8fafc;
+  --surface-card: rgba(255, 255, 255, 0.86);
+  --surface-primary: #f8fafc;
+  --surface-secondary: #eef2ff;
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -18,12 +21,17 @@ html {
   --border-color: #e2e8f0;
   --border-input: #abb4bf;
   --border-card: #e2e8f0;
+  --border-primary: rgba(16, 185, 129, 0.35);
 
   --shadow-card: 0 0px 10px rgba(166, 166, 166, 0.3);
   --shadow-header: 0 1px 2px rgba(0, 0, 0, 0.06);
 
   --sidebar-active: #22c55e;
   --sidebar-hover: #22c55e99;
+  --btn-primary: #10b981;
+  --accent: #10b981;
+  --accent-soft: rgba(16, 185, 129, 0.14);
+  --toggle-bg: #e2e8f0;
 
   /* Stock Status Colors - Light */
   --all-stock: rgba(34, 197, 94, 0.18);
@@ -43,6 +51,10 @@ html {
   --critical-stock-text: #c2410c;
   --out-stock-text: #b91c1c;
   --expire-date-text: #854d0e;
+  --expired: rgba(239, 68, 68, 0.18);
+  --expired-text: #b91c1c;
+  --low-expiry: rgba(245, 158, 11, 0.2);
+  --low-expiry-text: #92400e;
 
   /* selected row*/
   --selected-row: #cad5e2;
@@ -55,9 +67,15 @@ html[data-theme="dark"] {
   --bg-primary: #0b1120;
   --bg-secondary: #111827;
   --bg-card: #1f2937;
+  --bg-card-strong: rgba(17, 24, 39, 0.95);
+  --bg-elevated: #162033;
   --bg-input: #111827;
   --bg-sidebar: #020617;
   --bg-header: #111827;
+  --bg-soft: rgba(255, 255, 255, 0.05);
+  --surface-card: rgba(17, 24, 39, 0.88);
+  --surface-primary: #162033;
+  --surface-secondary: #0f172a;
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -66,12 +84,17 @@ html[data-theme="dark"] {
   --border-color: #1e293b;
   --border-input: #3b435d;
   --border-card: #1e293b;
+  --border-primary: rgba(52, 211, 153, 0.35);
 
   --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.5);
   --shadow-header: 0 1px 3px rgba(0, 0, 0, 0.4);
 
   --sidebar-active: #3b82f633;
   --sidebar-hover: #ffffff0d;
+  --btn-primary: #34d399;
+  --accent: #34d399;
+  --accent-soft: rgba(52, 211, 153, 0.14);
+  --toggle-bg: #334155;
 
   /* Stock Status Colors - Dark */
   --all-stock: rgba(34, 197, 94, 0.22);
@@ -92,17 +115,13 @@ html[data-theme="dark"] {
   --critical-stock-text: #fdba74;
   --out-stock-text: #fca5a5;
   --expire-date-text: #fde047;
+  --expired: rgba(248, 113, 113, 0.18);
+  --expired-text: #fca5a5;
+  --low-expiry: rgba(251, 191, 36, 0.18);
+  --low-expiry-text: #fcd34d;
 
   /* selected row*/
   --selected-row: #020618;
-}
-
-/* ============================================
-   BASE
-   ============================================ */
-body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
 }
 
 html {
@@ -113,31 +132,52 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 24%),
+    linear-gradient(180deg, var(--bg-primary) 0%, color-mix(in srgb, var(--bg-primary) 92%, #ffffff 8%) 100%);
+  color: var(--text-primary);
+  text-rendering: optimizeLegibility;
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 20%),
+    linear-gradient(180deg, #07111f 0%, #091424 100%);
+}
+
+* {
+  border-color: var(--border-color);
+  box-sizing: border-box;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 :focus-visible {
-  outline: 2px solid var(--sidebar-active);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* ============================================
-   SCROLLBAR
-   ============================================ */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+  background: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  border-radius: 999px;
 }
 
-/* ============================================
-   SIDEBAR TRANSITIONS
-   ============================================ */
 .activeSidebar {
   left: 0;
   transition: left 0.3s ease;
@@ -158,11 +198,7 @@ html[data-theme="dark"] {
   transition: left 0.3s ease;
 }
 
-/* ============================================
-   SKELETON PULSE
-   ============================================ */
 @keyframes skeleton-pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -175,6 +211,40 @@ html[data-theme="dark"] {
 
 .skeleton {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
-  background: var(--border-card);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  border-radius: 10px;
+}
+
+img {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 30%),
+      radial-gradient(circle at top right, rgba(20, 184, 166, 0.08), transparent 28%),
+      linear-gradient(180deg, var(--bg-primary) 0%, color-mix(in srgb, var(--bg-primary) 95%, #ffffff 5%) 100%);
+  }
+}
+
+
+
+
+/* gst */
+/* src/app/globals.css */
+@layer components {
+  /* कार्ड‑बेस – हर कॉम्पोनेन्ट में बार‑बार लिखी गई क्लासें */
+  .cardBase {
+    @apply rounded-xl border border-slate-200 p-4 bg-[var(--bg-card-strong)] backdrop-blur-xl;
+  }
+  .sectionHeader {
+    @apply text-[10px] font-bold mb-4 text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2;
+  }
+  .labelSmall {
+    @apply text-[9px] text-slate-600 uppercase font-extrabold mb-1 tracking-tighter;
+  }
+  .valueMedium {
+    @apply text-sm text-slate-100 font-semibold;
+  }
 }

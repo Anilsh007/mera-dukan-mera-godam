@@ -1,39 +1,37 @@
-"use client";
+"use client"
 
-import { useEffect, useRef } from "react";
-import { autoSyncToSupabase } from "./autoSupabaseSync.service";
-import { syncSupabaseToDexie } from "./supabaseDownload.service";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
-import { syncDexieToSupabase } from "./supabaseSync.service";
+import { useEffect } from "react"
+import { onAuthStateChanged } from "firebase/auth"
+import { autoSyncToSupabase } from "./autoSupabaseSync.service"
+import { syncSupabaseToDexie } from "./supabaseDownload.service"
+import { auth } from "./firebase"
+import { syncDexieToSupabase } from "./supabaseSync.service"
+import { migrateLocalUserData } from "./userDataMigration"
 
 export default function SupabaseSyncManager() {
-    const initialSyncDone = useRef(false);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return
 
-    // App open → cloud → local
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (!user) return; // 🔥 wait until login
+      try {
+        await migrateLocalUserData(user)
+        await syncSupabaseToDexie()
+        await syncDexieToSupabase()
+      } catch (err) {
+        console.error("Initial Supabase sync failed:", err)
+      }
+    })
 
-            try {
-                await syncSupabaseToDexie();
-                await syncDexieToSupabase();
+    return () => unsubscribe()
+  }, [])
 
-            } catch (err) {
-                console.error("❌ Initial Supabase sync failed:", err);
-            }
-        });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      autoSyncToSupabase()
+    }, 5 * 60 * 1000)
 
-        return () => unsubscribe();
-    }, []);
-    // background sync
-    useEffect(() => {
-        const interval = setInterval(() => {
-            autoSyncToSupabase();
-        }, 5 * 60 * 1000);
+    return () => clearInterval(interval)
+  }, [])
 
-        return () => clearInterval(interval);
-    }, []);
-
-    return null;
+  return null
 }

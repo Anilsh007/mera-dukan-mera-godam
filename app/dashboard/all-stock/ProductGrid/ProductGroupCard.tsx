@@ -56,7 +56,7 @@ export default function ProductGroupCard({
     const previewProducts = visibleProducts.slice(0, 2)
 
     return (
-        <div className="group/card w-full h-full rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer">
+        <div className="group/card h-full w-full cursor-pointer rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]">
 
             {/* Clickable Area */}
             <div onClick={onSelect} className="p-3" role="button" tabIndex={0}
@@ -81,7 +81,7 @@ export default function ProductGroupCard({
                 </div>
 
                 {/* Stats */}
-                <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3">
                     <div className="rounded-xl sm:rounded-2xl bg-[var(--surface-primary)] p-2.5 sm:p-3 text-center">
                         <div className="mb-1 flex items-center justify-center gap-1 text-sky-500">
                             <Package2 className="h-3.5 w-3.5" />

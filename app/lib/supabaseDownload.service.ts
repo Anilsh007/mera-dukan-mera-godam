@@ -1,76 +1,92 @@
-import { supabase } from "./supabase";
-import { db } from "./db";
-import { auth } from "./firebase";
+"use client"
+
+import { db } from "./db"
+import { auth } from "./firebase"
 
 export async function syncSupabaseToDexie() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("User not logged in");
+  const user = auth.currentUser
+  if (!user) throw new Error("User not logged in")
 
-  // 1. Supabase se data lao
-  const { data: products, error: pError } = await supabase
-    .from("products")
-    .select("*")
-    .eq("user_id", user.uid);
+  const token = await user.getIdToken()
+  const userId = normalizeUserIdentity(user.email)
+  if (!userId) throw new Error("Authenticated user is missing an email address")
 
-  if (pError) {
-    console.error("❌ Fetch products error:", pError);
-    throw pError;
+  const response = await fetch("/api/products/sync", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const error = await readApiError(response)
+    console.error("Fetch products error:", error)
+    throw error
   }
 
-  const { data: logs, error: lError } = await supabase
-    .from("product_logs").select("*")
-    .select("*");
-
-  if (lError) {
-    console.error("❌ Fetch logs error:", lError);
-    throw lError;
+  const { products, logs } = (await response.json()) as {
+    products: any[]
+    logs: any[]
   }
 
-  // 2. Empty check
-  if (!products?.length && !logs?.length) {
-    console.log("⚠️ No cloud data found");
-    return;
-  }
+  const existingProductIds = await db.products.where("userId").equals(userId).primaryKeys()
 
-  // 3. Dexie restore (atomic)
   await db.transaction("rw", db.products, db.productLogs, async () => {
-    await db.products.clear();
-    await db.productLogs.clear();
+    const normalizedExistingProductIds = existingProductIds.map(String)
 
-    if (products?.length) {
+    if (normalizedExistingProductIds.length) {
+      await db.productLogs.where("productId").anyOf(normalizedExistingProductIds).delete()
+      await db.products.bulkDelete(normalizedExistingProductIds)
+    }
+
+    if (products.length) {
       await db.products.bulkPut(
-        products.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          quantity: Number(p.quantity),
-          category: p.category,
-          supplier: p.supplier,
-          note: p.note,
-          expiry: p.expiry,
-          sku: p.sku,
-          userId: p.user_id,
-          createdAt: p.created_at,
+        products.map((product) => ({
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          quantity: Number(product.quantity),
+          category: product.category,
+          supplier: product.supplier,
+          note: product.note,
+          expiry: product.expiry,
+          sku: product.sku,
+          userId: String(product.user_id),
+          createdAt: product.created_at,
         }))
-      );
+      )
     }
 
-    if (logs?.length) {
+    if (logs.length) {
       await db.productLogs.bulkPut(
-        logs.map((l: any) => ({
-          id: l.id,
-          productId: l.product_id,
-          quantityAdded: Number(l.quantity_added),
-          type: l.type,
-          reason: l.reason,
-          price: Number(l.price),
-          expiry: l.expiry,
-          date: l.date,
-          note: l.note,
+        logs.map((log) => ({
+          id: log.id,
+          productId: log.product_id,
+          quantityAdded: Number(log.quantity_added),
+          type: log.type,
+          reason: log.reason,
+          price: Number(log.price),
+          expiry: log.expiry,
+          date: log.date,
+          note: log.note,
         }))
-      );
+      )
     }
-  });
+  })
 
-  console.log(`✅ Supabase → Dexie sync complete`);
+  console.log("Supabase to Dexie sync complete")
+}
+
+function normalizeUserIdentity(email: string | null | undefined) {
+  return email?.trim().toLowerCase() || null
+}
+
+async function readApiError(response: Response) {
+  try {
+    return await response.json()
+  } catch {
+    return {
+      message: `Products fetch request failed with status ${response.status}`,
+    }
+  }
 }

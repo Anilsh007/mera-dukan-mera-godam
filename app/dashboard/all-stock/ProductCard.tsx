@@ -30,7 +30,7 @@ export default function ProductCard({ product, onClick }: { product: Product; on
 
   return (
     <>
-      <div onClick={onClick} className="group relative p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] shadow-[var(--shadow-card)] cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col gap-4">
+      <div onClick={onClick} className="group relative p-5 rounded-2xl bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] shadow-[var(--shadow-card)] cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col gap-4">
         {/* Top row */}
         <div className="flex justify-between items-start gap-2">
           <div className="min-w-0">
@@ -93,7 +93,7 @@ export default function ProductCard({ product, onClick }: { product: Product; on
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={handleModalClose} >
-          <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-card)] p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()} >
+          <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl rounded-2xl border border-[var(--border-card)] p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()} >
             {modal === "in"
               ? <StockInModal product={product} onClose={handleModalClose} />
               : <StockOutModal product={product} onClose={handleModalClose} />

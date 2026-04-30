@@ -13,7 +13,7 @@ interface Props {
 
 export default function ProfileHeader({ data, onEdit, onDownloadCard }: Props) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-4">
         {data.personal.photoURL ? (
           <img src={data.personal.photoURL} alt="Profile" className="w-20 h-20 rounded-full border-4 border-emerald-100 dark:border-emerald-900 object-cover" />

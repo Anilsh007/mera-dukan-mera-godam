@@ -9,12 +9,12 @@ import BusinessInfo from "./sections/BusinessInfo"
 import AddressInfo from "./sections/AddressInfo"
 import BankingInfo from "./sections/BankingInfo"
 import TermsSection from "./sections/TermsSection"
-import { ProfileState } from "./useProfile"
+import { ProfileSaveResult, ProfileState } from "./useProfile"
 
 
 interface ProfileFormProps {
   initialData: ProfileState
-  onSave: (data: ProfileState) => Promise<void>
+  onSave: (data: ProfileState) => Promise<ProfileSaveResult>
   onCancel: () => void
 }
 
@@ -81,7 +81,7 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
 
       <TermsSection value={profile.settings.termsAndConditions} onChange={(val) => handleChange("settings", "termsAndConditions", val)} />
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 bg-[var(--bg-card)] border border-[var(--border-card)] shadow-lg rounded-full px-6 py-3 z-50">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] shadow-lg rounded-full px-6 py-3 z-50">
         <Button variant="outline" icon={<MdClose />} title="Cancel" onClick={onCancel} />
         <Button onClick={handleSave} variant="primary" icon={<MdSave />} title={saving ? "Saving..." : "Save Changes"} loading={saving} disabled={saving} />
       </div>

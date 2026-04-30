@@ -13,7 +13,7 @@ export default function OverviewTab({ data, onViewBusiness }: Props) {
   return (
     <div className="space-y-6">
       {/* Personal Info */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
         <div className="flex items-center gap-2 mb-4 text-[var(--text-primary)]">
           <MdPerson className="text-emerald-500" size={20} />
           <h3 className="font-bold text-lg">Personal Information</h3>

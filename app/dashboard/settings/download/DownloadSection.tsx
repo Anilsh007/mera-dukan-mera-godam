@@ -23,23 +23,46 @@ export default function DownloadSection({
   onDownloadRange,
 }: DownloadSectionProps) {
   return (
-
-    <div className="p-4 sm:p-6 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl shadow-[var(--shadow-card)]">
-      <div className="flex justify-between gap-2">
-        <h2 className="text-xl font-semibold">Download Data</h2>
-        <Button onClick={onDownloadAll} disabled={downloading} title={`${downloading ? "Downloading..." : "Download All"}`} />
+    <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold sm:text-xl">Download Data</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Saara data ya selected date range ka export yahin se nikalo.
+          </p>
+        </div>
+        <Button onClick={onDownloadAll} disabled={downloading} title={`${downloading ? "Downloading..." : "Download All"}`} className="w-full sm:w-auto" />
       </div>
 
-      <p className="mt-1 text-sm">Download between date range</p>
+      <div className="mt-5 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
+        <div className="mb-4">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Download between date range</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">From aur To date select karke filtered logs download karo.</p>
+        </div>
 
-
-      <div className="mt-5 flex justify-between">
-        <Input type="date" value={fromDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFromDate(e.target.value)} />
-        <Input type="date" value={toDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToDate(e.target.value)} />
-        <Button onClick={onDownloadRange} disabled={downloading} title={`${downloading ? "Downloading..." : "Download Range"}`} />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <Input
+            type="date"
+            label="From date"
+            value={fromDate}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFromDate(e.target.value)}
+          />
+          <Input
+            type="date"
+            label="To date"
+            value={toDate}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToDate(e.target.value)}
+          />
+          <div className="flex items-end">
+            <Button
+              onClick={onDownloadRange}
+              disabled={downloading}
+              title={`${downloading ? "Downloading..." : "Download Range"}`}
+              className="w-full md:w-auto"
+            />
+          </div>
+        </div>
       </div>
-
     </div>
-
   )
 }

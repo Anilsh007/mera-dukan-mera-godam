@@ -89,7 +89,7 @@ export default function ProductGrid({
         return (
             <div className="space-y-4 rounded-3xl border border-[var(--border-card)] bg-[var(--surface-card)] p-8 text-center shadow-[var(--shadow-card)]">
                 <p className="text-lg font-semibold">
-                    There's no product to display
+                    There&apos;s no product to display
                 </p>
                 <p className="text-sm text-[var(--text-secondary)]">
                     Please add a product to get started.
@@ -105,12 +105,13 @@ export default function ProductGrid({
     }
 
     return (
-        <div className="space-y-4 px-3 sm:px-4 lg:px-0">
+        <div className="space-y-4">
             {/* Filters */}
-            <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-card)] flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-3 shadow-[var(--shadow-card)] sm:p-4">
+                <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center">
 
                 {/* Search */}
-                <div className="relative w-full lg:flex-2">
+                <div className="relative w-full xl:flex-1">
                     <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
 
                     <Input type="text" placeholder="Please Enter Product Name or SKU" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] py-2 pl-9 pr-9 text-sm text-[var(--text-primary)] outline-none transition-all placeholder-[var(--text-muted)] focus:ring-2 focus:ring-emerald-400" />
@@ -132,7 +133,7 @@ export default function ProductGrid({
                 )}
 
                 {/* Stock Filters */}
-                <div className="flex gap-2 overflow-x-auto">
+                <div className="flex gap-2 overflow-x-auto pb-1 2xl:pb-0">
                     {stockFilters.map((f) => {
                         const Icon = f.icon
                         const active = stockFilter === f.key
@@ -143,7 +144,7 @@ export default function ProductGrid({
                                 <span className="inline-flex items-center gap-1.5">
                                     <Icon size={14} className={active ? f.activeIcon : f.iconColor} />
                                     <span>{f.label}</span>
-                                    <span className={`absolute -top-0 -right-2 min-w-[20px] rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${active ? "bg-white/90 text-zinc-900" : "bg-var(--surface-primary) text-var(--text-primary)"} border border-[var(--border-input)]`} >
+                                    <span className={`absolute -top-0 -right-2 min-w-[20px] rounded-full border border-[var(--border-input)] px-1.5 py-0.5 text-[10px] font-semibold ${active ? "bg-white/90 text-zinc-900" : "bg-[var(--surface-primary)] text-[var(--text-primary)]"}`} >
                                         {count}
                                     </span>
                                 </span>
@@ -151,18 +152,19 @@ export default function ProductGrid({
                         )
                     })}
                 </div>
+                </div>
             </div>
 
             {/* Products */}
             {filteredGroups.length === 0 ? (
-                <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card)] p-8 text-center shadow-[var(--shadow-card)]">
+                <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-8 text-center shadow-[var(--shadow-card)]">
                     <p className="text-lg font-semibold"> No products to display</p>
                     <p className="text-sm text-[var(--text-secondary)]">Try adjusting your search or filter criteria.</p>
                 </div>
             ) : (
-                <div className="columns-1 gap-4 md:columns-2 xl:columns-3 2xl:columns-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {filteredGroups.map((group) => (
-                        <div key={group.key} className="mb-4 break-inside-avoid">
+                        <div key={group.key}>
                             <ProductGroupCard group={group} onSelect={() => onSelectGroup(group)} />
                         </div>
                     ))}

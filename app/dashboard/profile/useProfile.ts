@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/app/lib/firebase"
-import { getGoogleDriveAccessToken } from "@/app/lib/auth.service"
-import { loadProfileFromDrive, saveProfileToDrive } from "@/app/lib/profile.service"
-import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profileDb.service"
+import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
+import { loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
+import { scheduleProfileSync } from "@/app/lib/profile/profileSyncManager"
+import { migrateLocalUserData } from "@/app/lib/userDataMigration"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 
 export type ProfileState = {
   personal: {
@@ -39,6 +41,11 @@ export type ProfileState = {
   }
   userId?: string
   updatedAt?: string
+}
+
+export type ProfileSaveResult = {
+  profile: ProfileState
+  cloudSyncSkipped?: boolean
 }
 
 const defaultState: ProfileState = {
@@ -90,33 +97,32 @@ export default function useProfile() {
         return
       }
 
+      const userId = requireUserIdentityFromAuthUser(user)
+      await migrateLocalUserData(user)
+
       const firebaseProfile = buildFirebaseProfile(user)
       setProfile(firebaseProfile)
 
       try {
-        const localProfile = await loadProfileFromDb(user.uid)
+        const localProfile = await loadProfileFromDb(userId)
         const localMerged = localProfile ? mergeWithFirebaseProfile(localProfile, user) : firebaseProfile
 
         if (isMounted) {
           setProfile(localMerged)
         }
 
-        const token = await getGoogleDriveAccessToken(false)
-        if (token && typeof token === "string") {
-          const driveProfile = await loadProfileFromDrive(token)
+        const cloudProfile = await loadProfileFromSupabase();
 
-          if (driveProfile) {
-            const latestProfile = getLatestProfile(localProfile, driveProfile)
-            const mergedLatest = mergeWithFirebaseProfile(latestProfile, user)
+        const latestProfile = getLatestProfile(localProfile, cloudProfile);
 
-            if (isMounted) {
-              setProfile(mergedLatest)
-            }
+        const mergedLatest = mergeWithFirebaseProfile(latestProfile, user);
 
-            if (!localProfile || latestProfile.updatedAt !== localProfile.updatedAt) {
-              await persistProfileLocally(mergedLatest, user.uid)
-            }
-          }
+        if (isMounted) {
+          setProfile(mergedLatest);
+        }
+
+        if (!localProfile || latestProfile?.updatedAt !== localProfile?.updatedAt) {
+          await persistProfileLocally(mergedLatest, userId);
         }
       } catch (error) {
         console.error("Failed to initialize profile:", error)
@@ -133,22 +139,35 @@ export default function useProfile() {
     }
   }, [])
 
-  const saveProfile = useCallback(async (newData: ProfileState) => {
+  const saveProfile = useCallback(async (newData: ProfileState): Promise<ProfileSaveResult> => {
     const user = auth.currentUser
     if (!user) throw new Error("User not authenticated")
+    const userId = requireUserIdentityFromAuthUser(user)
 
     setSaving(true)
+
     try {
       const mergedProfile = mergeWithFirebaseProfile(newData, user)
-      const savedProfile = await persistProfileLocally(mergedProfile, user.uid)
+
+      // 1. Save locally
+      const savedProfile = await persistProfileLocally(mergedProfile, userId)
       setProfile(savedProfile)
 
-      const token = await getGoogleDriveAccessToken(false)
-      if (token && typeof token === "string") {
-        await saveProfileToDrive(stripProfileMeta(savedProfile), token)
-      }
+      // 2. Save to Supabase
+      try {
+        await saveProfileToSupabase(stripProfileMeta(savedProfile))
+        return { profile: savedProfile }
+      } catch (error) {
+        if (isSupabaseRlsError(error)) {
+          console.warn("Profile saved locally, but cloud sync is blocked by Supabase RLS.", error)
+          return {
+            profile: savedProfile,
+            cloudSyncSkipped: true,
+          }
+        }
 
-      return savedProfile
+        throw error
+      }
     } catch (error) {
       console.error("Save failed:", error)
       throw error
@@ -167,9 +186,11 @@ export default function useProfile() {
 }
 
 function buildFirebaseProfile(user: NonNullable<typeof auth.currentUser>): ProfileState {
+  const userId = requireUserIdentityFromAuthUser(user)
+
   return {
     ...defaultState,
-    userId: user.uid,
+    userId,
     personal: {
       ...defaultState.personal,
       displayName: user.displayName || "",
@@ -183,10 +204,12 @@ function mergeWithFirebaseProfile(
   profileData: ProfileState,
   user: NonNullable<typeof auth.currentUser>
 ): ProfileState {
+  const userId = requireUserIdentityFromAuthUser(user)
+
   return {
     ...defaultState,
     ...profileData,
-    userId: user.uid,
+    userId,
     personal: {
       ...defaultState.personal,
       ...profileData.personal,
@@ -197,13 +220,16 @@ function mergeWithFirebaseProfile(
   }
 }
 
-function getLatestProfile(
-  localProfile: ProfileState | null,
-  driveProfile: ProfileState
-): ProfileState {
-  const localUpdatedAt = localProfile?.updatedAt ? new Date(localProfile.updatedAt).getTime() : 0
-  const driveUpdatedAt = driveProfile.updatedAt ? new Date(driveProfile.updatedAt).getTime() : 0
-  return driveUpdatedAt >= localUpdatedAt ? driveProfile : (localProfile || driveProfile)
+function getLatestProfile(localProfile: ProfileState | null, cloudProfile: ProfileState | null): ProfileState {
+  if (!localProfile && !cloudProfile) return defaultState;
+
+  if (!localProfile) return cloudProfile!;
+  if (!cloudProfile) return localProfile;
+
+  const localTime = localProfile.updatedAt ? new Date(localProfile.updatedAt).getTime() : 0;
+  const cloudTime = cloudProfile.updatedAt ? new Date(cloudProfile.updatedAt).getTime() : 0;
+
+  return cloudTime >= localTime ? cloudProfile : localProfile;
 }
 
 function stripProfileMeta(profile: ProfileState): Omit<ProfileState, "userId" | "updatedAt"> {
@@ -213,4 +239,13 @@ function stripProfileMeta(profile: ProfileState): Omit<ProfileState, "userId" | 
 
 async function persistProfileLocally(profile: ProfileState, userId: string): Promise<ProfileState> {
   return saveProfileToDb(stripProfileMeta(profile), userId)
+}
+
+function isSupabaseRlsError(error: unknown) {
+  if (!error || typeof error !== "object") return false
+
+  const code = "code" in error ? error.code : undefined
+  const message = "message" in error ? error.message : undefined
+
+  return code === "42501" || message === "new row violates row-level security policy for table \"profiles\""
 }

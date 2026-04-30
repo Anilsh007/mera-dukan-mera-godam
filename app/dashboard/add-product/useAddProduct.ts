@@ -1,6 +1,7 @@
 import { db, Product } from "@/app/lib/db";
 import { auth } from "@/app/lib/firebase";
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service";
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity";
 import { v4 as uuidv4 } from "uuid";
 
 export default function useAddProduct() {
@@ -10,8 +11,7 @@ export default function useAddProduct() {
     options?: { skipImmediateSync?: boolean }
   ) => {
 
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not logged in");
+    const userId = requireUserIdentityFromAuthUser(auth.currentUser);
 
     const normalizedName = product.name.trim().toLowerCase();
     const normalizedCategory = (product.category || "").trim().toLowerCase();

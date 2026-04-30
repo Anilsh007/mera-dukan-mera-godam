@@ -98,7 +98,7 @@ export default function TableComponent({ data, onEdit, showSelection, selectedId
     }
 
     return (
-        <div className="w-full rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-card)] overflow-hidden">
+        <div className="w-full rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)] overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm" style={{ minWidth: 780 }}>
 

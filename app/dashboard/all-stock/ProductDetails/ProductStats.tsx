@@ -3,12 +3,14 @@
 import {
     AlertTriangle,
     CalendarClock,
+    Pencil,
     IndianRupee,
     Package2,
     ScanBarcode,
     TrendingDown,
     TrendingUp,
     Truck,
+    Trash2,
 } from "lucide-react"
 import Button from "@/app/components/utility/Button"
 import { Product } from "@/app/lib/db"
@@ -27,10 +29,14 @@ export default function ProductStats({
     product,
     logs,
     setModal,
+    onEditProduct,
+    onDeleteProduct,
 }: {
     product: Product
     logs: Log[]
     setModal: (type: "in" | "out" | null) => void
+    onEditProduct: () => void
+    onDeleteProduct: () => void
 }) {
     const stockLevel = getStockLevel(product.quantity)
     const isOut = stockLevel === "out"
@@ -169,7 +175,7 @@ export default function ProductStats({
     return (
         <div className="space-y-4 sm:space-y-5">
             <div className="overflow-hidden rounded-2xl sm:rounded-[28px]">
-                <div className="border border-[var(--border-card)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-card)] sm:p-6 md:flex md:items-center md:justify-between">
+                <div className="border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] sm:p-6 md:flex md:items-center md:justify-between">
                     <div className="min-w-0">
                         <h3 className="truncate text-lg font-bold sm:text-xl">{product.name}</h3>
                         <div className={`mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${stockStatus.tone}`}>
@@ -179,6 +185,13 @@ export default function ProductStats({
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 md:mt-0">
+                        <Button
+                            onClick={onEditProduct}
+                            title="Edit Product"
+                            icon={<Pencil size={16} />}
+                            variant="secondary"
+                            className="w-full text-xs sm:w-auto sm:text-sm"
+                        />
                         <Button
                             onClick={() => setModal("in")}
                             title="Add Stock"
@@ -193,10 +206,17 @@ export default function ProductStats({
                             variant="danger"
                             className="w-full text-xs sm:w-auto sm:text-sm"
                         />
+                        <Button
+                            onClick={onDeleteProduct}
+                            title="Delete Product"
+                            icon={<Trash2 size={16} />}
+                            variant="soft-danger"
+                            className="w-full text-xs sm:w-auto sm:text-sm"
+                        />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 border-t border-zinc-400/40 bg-[var(--bg-card)] p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 border-t border-zinc-400/40 bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 xl:grid-cols-4">
                     <InfoMiniCard icon={ScanBarcode} label="SKU" value={product.sku || "-"} className={cardClass} />
                     <InfoMiniCard icon={Truck} label="Supplier" value={product.supplier || "-"} className={cardClass} />
 

@@ -25,8 +25,8 @@ interface SuccessReceiptProps {
 export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessReceiptProps) {
   const printRef = useRef<HTMLDivElement>(null)
   const receiptRef = useMemo(
-    () => `REC-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-    []
+    () => `REC-${data.map((row) => row.id.slice(0, 2)).join("").slice(0, 8).toUpperCase() || "STOCK001"}`,
+    [data]
   )
 
   const totalAmount = data.reduce((sum, row) => 
@@ -70,10 +70,10 @@ export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessRece
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-[var(--border-card)] overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-2xl bg-[var(--bg-card-strong)] backdrop-blur-xl rounded-2xl shadow-2xl border border-[var(--border-card)] overflow-hidden max-h-[90vh] flex flex-col">
         
         {/* Header */}
-        <div className="bg-emerald-500 p-6 text-white flex items-center justify-between">
+        <div className="bg-emerald-500 p-4 text-white sm:p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <MdCheckCircle size={32} />
             <div>
@@ -96,7 +96,7 @@ export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessRece
           <div className="space-y-3">
             {data.map((row, index) => (
               <div key={row.id} className="bg-[var(--bg-primary)] rounded-xl p-4 border border-[var(--border-card)]">
-                <div className="flex justify-between items-start mb-2">
+                <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <span className="text-xs font-medium text-[var(--text-muted)]">#{index + 1}</span>
                     <h4 className="font-bold text-[var(--text-primary)] text-lg">{row.name || "Unnamed Product"}</h4>
@@ -116,7 +116,7 @@ export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessRece
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-sm mt-3 pt-3 border-t border-[var(--border-card)]">
+                <div className="mt-3 grid grid-cols-1 gap-2 border-t border-[var(--border-card)] pt-3 text-sm sm:grid-cols-2">
                   {row.sku && (
                     <div><span className="text-[var(--text-muted)]">SKU:</span> {row.sku}</div>
                   )}
@@ -127,7 +127,7 @@ export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessRece
                     <div><span className="text-[var(--text-muted)]">Supplier:</span> {row.supplier}</div>
                   )}
                   {row.note && (
-                    <div className="col-span-2 text-[var(--text-secondary)] italic">"{row.note}"</div>
+                    <div className="col-span-2 text-[var(--text-secondary)] italic">&quot;{row.note}&quot;</div>
                   )}
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function SuccessReceipt({ data, onClose, onAddMore }: SuccessRece
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-[var(--border-card)] flex gap-3 bg-[var(--bg-primary)]">
+        <div className="flex flex-col gap-3 border-t border-[var(--border-card)] bg-[var(--bg-primary)] p-4 sm:flex-row">
           <Button 
             type="button" 
             onClick={handlePrint} 

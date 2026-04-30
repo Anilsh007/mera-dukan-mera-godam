@@ -86,7 +86,7 @@ export default function EditTableRowModal({ open, item, onClose, onSave, }: Prop
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-5 shadow-[var(--shadow-card)]" onClick={(e) => e.stopPropagation()} >
+      <div className="w-full max-w-3xl rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]" onClick={(e) => e.stopPropagation()} >
         <div className="mb-5 flex items-start justify-between gap-4">
           <p className="text-lg font-semibold text-[var(--text-primary)]">
             {form.name || "Selected record"}

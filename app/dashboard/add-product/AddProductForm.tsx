@@ -38,7 +38,7 @@ const FIELDS = [
     { key: "sku", label: "SKU", required: false, type: "text", placeholder: "Enter SKU", datalist: undefined, cols: "col-span-2 sm:col-span-1" },
     { key: "price", label: <>Price/unit <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Enter price", datalist: undefined, cols: "col-span-1" },
     { key: "quantity", label: <>Quantity <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Quantity", datalist: undefined, cols: "col-span-1" },
-    { key: "supplier", label: "Supplier", required: false, type: "text", placeholder: "Enter supplier", datalist: undefined, cols: "col-span-2 sm:col-span-1" },
+    { key: "supplier", label: <>Supplier <span className="text-red-500">*</span></>, required: true, type: "text", placeholder: "Enter supplier", datalist: "suppliers", cols: "col-span-2 sm:col-span-1" },
     { key: "note", label: "Note", required: false, type: "text", placeholder: "Add note (optional)", datalist: undefined, cols: "col-span-2 sm:col-span-2 lg:col-span-2" },
 ]
 
@@ -75,7 +75,8 @@ export default function AddProductForm() {
             setLoading(true)
             const dataToSubmit = [...rows]
             for (const row of rows) {
-                const { id, ...rest } = row
+                const rest = { ...row }
+                delete rest.id
                 await createProduct(
                     { ...rest, name: row.name.trim(), price: Number(row.price), quantity: Number(row.quantity), userId: "" },
                     { skipImmediateSync: true }
@@ -105,10 +106,11 @@ export default function AddProductForm() {
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl shadow-[var(--shadow-card)]">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl shadow-[var(--shadow-card)]">
 
                 <Suggestions products={products} type="product" />
                 <Suggestions products={products} type="category" />
+                <Suggestions products={products} type="supplier" />
 
                 <p className="flex justify-end text-xs text-rose-400 font-medium mb-4">* Required fields are necessary to submit the form</p>
 

@@ -131,7 +131,7 @@ export default function Button({
                     onClick?.()
                 }}
                 className={[
-                    "relative w-fit flex items-center justify-center gap-2",
+                    "relative inline-flex max-w-full items-center justify-center gap-2",
                     "px-5 py-2 rounded-xl border font-medium",
                     "transition-all duration-200 ease-out",
                     "select-none",
@@ -152,7 +152,7 @@ export default function Button({
 
                 {/* label */}
                 {(title || loading) && (
-                    <span className="whitespace-nowrap">
+                    <span className="text-center leading-tight sm:whitespace-nowrap">
                         {loading ? "Processing..." : title}
                     </span>
                 )}

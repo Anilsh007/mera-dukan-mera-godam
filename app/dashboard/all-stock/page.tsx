@@ -29,7 +29,7 @@ export default function AllStockPage() {
     products.forEach((product) => {
       const key = normalizeCategory(product.category)
       if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(product)
+      map.get(key).push(product)
     })
 
     return Array.from(map.entries())
@@ -54,21 +54,22 @@ export default function AllStockPage() {
   }, [groupedProducts, selectedGroup])
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">All Stock</h1>
-      </div>
+    <>
+      <h2 className="text-2xl font-bold mb-6">All Stock</h2>
 
       {!selectedGroupLive ? (
         <ProductGrid groups={groupedProducts} loading={loading} onSelectGroup={handleSelectGroup} />
       ) : (
-        <ProductDetails group={selectedGroupLive} activeProductId={activeProductId} onChangeProduct={setActiveProductId}
+        <ProductDetails
+          group={selectedGroupLive}
+          activeProductId={activeProductId}
+          onChangeProduct={setActiveProductId}
           onBack={() => {
             setSelectedGroup(null)
             setActiveProductId(null)
           }}
         />
       )}
-    </div>
+    </>
   )
 }

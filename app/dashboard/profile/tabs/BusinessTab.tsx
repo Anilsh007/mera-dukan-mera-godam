@@ -11,7 +11,7 @@ interface Props {
 export default function BusinessTab({ data }: Props) {
   return (
     <div className="space-y-6">
-      <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
         <div className="flex items-center gap-2 mb-6 text-[var(--text-primary)]">
           <MdBusiness className="text-emerald-500" size={20} />
           <h3 className="font-bold text-lg">Complete Business Details</h3>
@@ -40,7 +40,7 @@ export default function BusinessTab({ data }: Props) {
         </div>
       </div>
 
-      <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
         <h3 className="font-bold text-[var(--text-primary)] mb-3">Invoice Terms & Conditions</h3>
         <p className="text-sm text-[var(--text-secondary)] italic border-l-4 border-emerald-500 pl-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-r-xl">
           "{data.settings.termsAndConditions}"

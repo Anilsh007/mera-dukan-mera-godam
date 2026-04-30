@@ -1,20 +1,20 @@
-import { syncDexieToSupabase } from "./supabaseSync.service";
+import { syncDexieToSupabase } from "./supabaseSync.service"
 
-let isSyncing = false;
+let isSyncing = false
 
 export async function autoSyncToSupabase() {
-  if (isSyncing) return;
+  if (isSyncing) return
 
   try {
-    isSyncing = true;
+    isSyncing = true
 
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) return
 
-    await syncDexieToSupabase();
-
+    await syncDexieToSupabase()
   } catch (err) {
-    console.error("❌ Supabase auto sync failed:", err);
+    console.error("Supabase auto sync failed:", err)
+    throw err
   } finally {
-    isSyncing = false;
+    isSyncing = false
   }
 }

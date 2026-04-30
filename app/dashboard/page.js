@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AlertTriangle, ArrowRight, Boxes, IndianRupee, PackageOpen, TrendingUp } from "lucide-react"
 import { db } from "@/app/lib/db"
 import { auth } from "@/app/lib/firebase"
 import { onAuthStateChanged } from "firebase/auth"
@@ -8,17 +9,27 @@ import { useRouter } from "next/navigation"
 
 function StatCard({ label, value, sub, icon, color, loading, onClick }) {
   return (
-    <div onClick={onClick} className={`p-5 rounded-2xl flex items-center gap-4 bg-[var(--bg-card)] border border-[var(--border-card)] shadow-[var(--shadow-card)] transition-all duration-200 ${onClick ? "cursor-pointer hover:-translate-y-1 hover:shadow-lg" : ""}`} >
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl" style={{ background: color + "18" }}>{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
-        {loading
-          ? <div className="skeleton h-7 w-24 mt-1" />
-          : <p className="text-2xl font-bold mt-0.5 text-[var(--text-primary)] truncate">{value}</p>
-        }
-        {sub && !loading && (
-          <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{sub}</p>
-        )}
+    <div onClick={onClick}
+      className={`group rounded-[24px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)] transition-all duration-200 ${
+        onClick ? "cursor-pointer hover:-translate-y-1" : ""
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl flex-shrink-0" style={{ background: color }}>
+          {icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+          {loading ? (
+            <div className="skeleton mt-1 h-7 w-24" />
+          ) : (
+            <p className="mt-0.5 truncate text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+          )}
+          {sub && !loading && <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{sub}</p>}
+        </div>
+
+        {onClick && <ArrowRight size={16} className="text-[var(--text-muted)] transition group-hover:text-[var(--text-primary)]" />}
       </div>
     </div>
   )
@@ -31,8 +42,8 @@ export default function DashboardHome() {
   const [userName, setUserName] = useState("")
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => {
-      if (u) setUserName(u.displayName?.split(" ")[0] || "")
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) setUserName(user.displayName?.split(" ")[0] || "")
     })
     return () => unsub()
   }, [])
@@ -40,88 +51,158 @@ export default function DashboardHome() {
   useEffect(() => {
     async function load() {
       try {
-        const [products, logs] = await Promise.all([
-          db.products.toArray(),
-          db.productLogs.toArray(),
-        ])
+        const [products, logs] = await Promise.all([db.products.toArray(), db.productLogs.toArray()])
 
         const totalProducts = products.length
-        const lowStock = products.filter(p => p.quantity > 0 && p.quantity <= 10).length
-        const outOfStock = products.filter(p => p.quantity === 0).length
-        const totalStockValue = products.reduce((s, p) => s + p.price * p.quantity, 0)
+        const lowStock = products.filter((product) => product.quantity > 0 && product.quantity <= 10).length
+        const outOfStock = products.filter((product) => product.quantity === 0).length
+        const totalStockValue = products.reduce((sum, product) => sum + product.price * product.quantity, 0)
 
-        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-        const todayOut = logs.filter(l => l.type === "out" && new Date(l.date) >= todayStart)
-        const salesToday = todayOut.reduce((s, l) => s + Math.abs(l.quantityAdded) * l.price, 0)
-        const unitsSold = todayOut.reduce((s, l) => s + Math.abs(l.quantityAdded), 0)
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        const todayOut = logs.filter((log) => log.type === "out" && new Date(log.date) >= todayStart)
+        const salesToday = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded) * log.price, 0)
+        const unitsSold = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded), 0)
 
-        // Near-expiry (within 30 days)
-        const soon = new Date(); soon.setDate(soon.getDate() + 30)
-        const nearExpiry = products.filter(p => p.expiry && new Date(p.expiry) <= soon && new Date(p.expiry) >= new Date()).length
+        const soon = new Date()
+        soon.setDate(soon.getDate() + 30)
+        const nearExpiry = products.filter((product) => product.expiry && new Date(product.expiry) <= soon && new Date(product.expiry) >= new Date()).length
 
         setStats({ totalProducts, lowStock, outOfStock, totalStockValue, salesToday, unitsSold, nearExpiry })
-      } catch (e) {
-        console.error(e)
+      } catch (error) {
+        console.error(error)
       } finally {
         setLoading(false)
       }
     }
+
     load()
   }, [])
 
   const cards = [
-    { label: "Total Products", value: stats ? stats.totalProducts : "—", icon: "📦", color: "#3b82f6", sub: stats?.outOfStock > 0 ? `${stats.outOfStock} out of stock` : "Sab in-stock", onClick: () => router.push("/dashboard/all-stock"), },
-    { label: "Low Stock", value: stats ? stats.lowStock : "—", icon: "⚠️", color: "#f59e0b", sub: stats?.lowStock > 0 ? "Restocking zaroori" : "Stock theek hai", onClick: () => router.push("/dashboard/all-stock"), },
-    { label: "Aaj ki Bikri", value: stats ? `₹${stats.salesToday.toLocaleString("en-IN")}` : "—", icon: "💰", color: "#10b981", sub: stats ? `${stats.unitsSold} units biche` : "",  onClick: () => router.push("/dashboard/all-stock"), },
-    { label: "Stock Value", value: stats ? `₹${stats.totalStockValue.toLocaleString("en-IN")}` : "—", icon: "🏦", color: "#8b5cf6", sub: "Current inventory value", onClick: () => router.push("/dashboard/all-stock"), },
+    {
+      label: "Total Products",
+      value: stats ? stats.totalProducts : "-",
+      icon: <Boxes size={20} className="text-white" />,
+      color: "linear-gradient(135deg, #2563eb 0%, #38bdf8 100%)",
+      sub: stats?.outOfStock > 0 ? `${stats.outOfStock} out of stock` : "Sab in-stock",
+      onClick: () => router.push("/dashboard/all-stock"),
+    },
+    {
+      label: "Low Stock",
+      value: stats ? stats.lowStock : "-",
+      icon: <AlertTriangle size={20} className="text-white" />,
+      color: "linear-gradient(135deg, #f59e0b 0%, #fb7185 100%)",
+      sub: stats?.lowStock > 0 ? "Restocking zaroori" : "Stock theek hai",
+      onClick: () => router.push("/dashboard/all-stock"),
+    },
+    {
+      label: "Aaj ki Bikri",
+      value: stats ? `Rs ${stats.salesToday.toLocaleString("en-IN")}` : "-",
+      icon: <TrendingUp size={20} className="text-white" />,
+      color: "linear-gradient(135deg, #10b981 0%, #14b8a6 100%)",
+      sub: stats ? `${stats.unitsSold} units biche` : "",
+      onClick: () => router.push("/dashboard/stock-history"),
+    },
+    {
+      label: "Stock Value",
+      value: stats ? `Rs ${stats.totalStockValue.toLocaleString("en-IN")}` : "-",
+      icon: <IndianRupee size={20} className="text-white" />,
+      color: "linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)",
+      sub: "Current inventory value",
+      onClick: () => router.push("/dashboard/reports"),
+    },
   ]
 
   return (
     <div className="space-y-6">
+      <div className="rounded-[24px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] sm:rounded-[28px] sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--text-muted)]">Overview</p>
+            <h2 className="mt-2 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+              {userName ? `Namaste, ${userName}` : "Inventory Overview"}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
+              Aaj ke stock, sales aur actions ka live snapshot. Yahin se fast decisions lo aur shop operations smooth rakho.
+            </p>
+          </div>
 
-      {/* Greeting */}
-      <div>
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-          {userName ? `Namaste, ${userName} 👋` : "Overview"}
-        </h2>
-        <p className="text-sm mt-1 text-[var(--text-secondary)]">The current state of my shop today</p>
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:grid-cols-3">
+            <QuickPill icon={<PackageOpen size={16} />} label="Products" value={stats ? String(stats.totalProducts) : "-"} />
+            <QuickPill icon={<TrendingUp size={16} />} label="Units Sold" value={stats ? String(stats.unitsSold) : "-"} />
+            <QuickPill icon={<AlertTriangle size={16} />} label="Expiry" value={stats ? String(stats.nearExpiry) : "-"} />
+          </div>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {cards.map(c => <StatCard key={c.label} {...c} loading={loading} />)}
+      <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <StatCard key={card.label} {...card} loading={loading} />
+        ))}
       </div>
 
-      {/* Near Expiry Alert */}
       {!loading && stats?.nearExpiry > 0 && (
-        <div onClick={() => router.push("/dashboard/all-stock")} className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition" >
-          <span className="text-2xl">⏰</span>
+        <div
+          onClick={() => router.push("/dashboard/expiry-alerts")}
+          className="flex cursor-pointer flex-col items-start gap-4 rounded-[24px] border border-amber-200 bg-amber-50 p-4 transition hover:-translate-y-0.5 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 sm:flex-row sm:items-center sm:p-5"
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-white">
+            <AlertTriangle size={18} />
+          </div>
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">
               {stats.nearExpiry} product{stats.nearExpiry > 1 ? "s" : ""} agle 30 din mein expire ho raha hai
             </p>
-            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">All Stock mein check karo →</p>
+            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-500">
+              Expiry center me jao aur priority items review karo
+            </p>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
       <div>
-        <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button onClick={() => router.push("/dashboard/add-product")} className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-200 group text-left">
-            <p className="text-2xl mb-2">➕</p>
-            <p className="font-semibold text-emerald-700 dark:text-emerald-400 group-hover:text-white">Naya Stock Add Karo</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 group-hover:text-emerald-100 mt-1">Products add karo ya restock karo</p>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">Quick Actions</h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <button
+            onClick={() => router.push("/dashboard/add-product")}
+            className="group rounded-[24px] border border-emerald-400/20 bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-1"
+          >
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+              <PackageOpen size={18} />
+            </div>
+            <p className="font-semibold text-[var(--text-primary)]">Naya Stock Add Karo</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+              Products add karo, restock karo, supplier detail save karo
+            </p>
           </button>
-          <button onClick={() => router.push("/dashboard/all-stock")} className="p-5 rounded-2xl bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 group text-left">
-            <p className="text-2xl mb-2">📋</p>
-            <p className="font-semibold text-blue-700 dark:text-blue-400 group-hover:text-white">Saara Stock Dekho</p>
-            <p className="text-xs text-blue-600 dark:text-blue-500 group-hover:text-blue-100 mt-1">Inventory manage karo, stock in/out karo</p>
+
+          <button
+            onClick={() => router.push("/dashboard/stock-history")}
+            className="group rounded-[24px] border border-blue-400/20 bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-1"
+          >
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <TrendingUp size={18} />
+            </div>
+            <p className="font-semibold text-[var(--text-primary)]">Stock History Review</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+              Sales, stock in aur GST-ready rows ko ek jagah handle karo
+            </p>
           </button>
         </div>
       </div>
+    </div>
+  )
+}
 
+function QuickPill({ icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-elevated)] px-4 py-3 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+        {icon}
+        <span className="text-[11px] font-medium uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="mt-2 text-base font-bold text-[var(--text-primary)] sm:text-lg">{value}</p>
     </div>
   )
 }

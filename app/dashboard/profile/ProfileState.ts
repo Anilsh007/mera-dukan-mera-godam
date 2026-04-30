@@ -1,4 +1,4 @@
-import { ProfileState } from "./types";
+import { ProfileState } from "./useProfile";
 
 const defaultState: ProfileState = {
   personal: {

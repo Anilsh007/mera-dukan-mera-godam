@@ -30,8 +30,15 @@ export default function ProfilePage() {
 
   const handleSave = async (data: typeof profile) => {
     try {
-      await saveProfile(data)
-      toast.success("Profile saved in database")
+      const result = await saveProfile(data)
+
+      if (result.cloudSyncSkipped) {
+        toast.success("Profile local database me save ho gaya")
+        toast.warning("Cloud sync abhi Supabase policy ki wajah se blocked hai")
+      } else {
+        toast.success("Profile saved in database")
+      }
+
       setIsEditing(false)
     } catch (error: any) {
       toast.error(error.message || "Save failed")
@@ -40,7 +47,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-card)]">
+      <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-6 shadow-[var(--shadow-card)]">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             {isEditing ? "Edit Profile" : "Business Profile"}
