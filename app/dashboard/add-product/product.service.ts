@@ -1,6 +1,7 @@
 import { db } from "@/app/components/client/useClient"
 import { Product } from "@/app/lib/db"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
+import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { buildSaleLogNote } from "@/app/lib/saleMetadata"
 import { v4 as uuidv4 } from "uuid"
 
@@ -16,6 +17,7 @@ export async function addProduct(data: {
   name: string
   price: number
   quantity: number
+  quantityUnit: string
   category?: string
   supplier?: string
   expiry?: string
@@ -25,15 +27,17 @@ export async function addProduct(data: {
 }) {
   const normalizedName = data.name.trim().toLowerCase()
   const normalizedCategory = (data.category || "").trim().toLowerCase()
+  const quantityUnit = normalizeQuantityUnit(data.quantityUnit)
 
   const existing = await db.products
-    .where("[userId+name+category]")
-    .equals([data.userId, normalizedName, normalizedCategory])
+    .where("[userId+name+category+quantityUnit]")
+    .equals([data.userId, normalizedName, normalizedCategory, quantityUnit])
     .first()
 
   if (existing) {
     await db.products.update(existing.id, {
       quantity: existing.quantity + data.quantity,
+      quantityUnit,
       price: data.price,
       expiry: data.expiry,
       supplier: data.supplier || existing.supplier,
@@ -45,6 +49,7 @@ export async function addProduct(data: {
       id: uuidv4(),
       productId: existing.id,
       quantityAdded: Number(data.quantity),
+      quantityUnit,
       type: "in",
       price: Number(data.price),
       expiry: data.expiry || undefined,
@@ -63,6 +68,7 @@ export async function addProduct(data: {
     name: normalizedName,
     price: Number(data.price),
     quantity: Number(data.quantity),
+    quantityUnit,
     category: normalizedCategory || undefined,
     supplier: data.supplier || undefined,
     expiry: data.expiry || undefined,
@@ -76,6 +82,7 @@ export async function addProduct(data: {
     id: uuidv4(),
     productId: newId,
     quantityAdded: Number(data.quantity),
+    quantityUnit,
     type: "in",
     price: Number(data.price),
     expiry: data.expiry || undefined,
@@ -90,6 +97,7 @@ export async function addProduct(data: {
 type StockOutInput = {
   productId: string
   quantity: number
+  quantityUnit?: string
   salePrice: number
   expiry?: string
   reason?: string
@@ -105,9 +113,10 @@ export async function stockOut(data: StockOutInput, options?: { skipImmediateSyn
 
   const normalizedReason = data.reason || "Sold"
   const normalizedSalePrice = Number(data.salePrice || 0)
+  const quantityUnit = normalizeQuantityUnit(data.quantityUnit || product.quantityUnit)
 
   if (data.quantity > product.quantity) {
-    throw new Error(`Only ${product.quantity} available, cannot stock out ${data.quantity}`)
+    throw new Error(`Only ${product.quantity} ${quantityUnit} available, cannot stock out ${data.quantity} ${quantityUnit}`)
   }
 
   await db.products.update(data.productId, {
@@ -118,6 +127,7 @@ export async function stockOut(data: StockOutInput, options?: { skipImmediateSyn
     id: uuidv4(),
     productId: data.productId,
     quantityAdded: -Number(data.quantity),
+    quantityUnit,
     type: "out",
     reason: normalizedReason,
     price: normalizedSalePrice,
@@ -153,6 +163,7 @@ type UpdateProductInput = {
   productId: string
   name: string
   price: number
+  quantityUnit?: string
   category?: string
   supplier?: string
   expiry?: string
@@ -163,6 +174,7 @@ type UpdateProductInput = {
 type UpdateProductLogInput = {
   logId: string
   quantity: number
+  quantityUnit?: string
   price: number
   type?: "in" | "out"
   reason?: string
@@ -180,14 +192,15 @@ export async function updateProductDetails(data: UpdateProductInput) {
 
   const normalizedName = data.name.trim().toLowerCase()
   const normalizedCategory = (data.category || "").trim().toLowerCase()
+  const quantityUnit = normalizeQuantityUnit(data.quantityUnit || product.quantityUnit)
 
   if (!normalizedName) {
     throw new Error("Product name is required")
   }
 
   const duplicate = await db.products
-    .where("[userId+name+category]")
-    .equals([product.userId, normalizedName, normalizedCategory])
+    .where("[userId+name+category+quantityUnit]")
+    .equals([product.userId, normalizedName, normalizedCategory, quantityUnit])
     .first()
 
   if (duplicate && duplicate.id !== product.id) {
@@ -197,6 +210,7 @@ export async function updateProductDetails(data: UpdateProductInput) {
   await db.products.update(product.id, {
     name: normalizedName,
     price: Number(data.price),
+    quantityUnit,
     category: normalizedCategory || undefined,
     supplier: data.supplier?.trim() || undefined,
     expiry: data.expiry || undefined,
@@ -231,6 +245,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
   const nextType = data.type || log.type || (log.quantityAdded < 0 ? "out" : "in")
   const nextQuantity = Number(data.quantity)
   const nextPrice = Number(data.price || 0)
+  const quantityUnit = normalizeQuantityUnit(data.quantityUnit || log.quantityUnit || product.quantityUnit)
 
   if (!nextQuantity || nextQuantity <= 0) {
     throw new Error("Quantity should be greater than 0")
@@ -254,6 +269,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
 
     await db.productLogs.update(log.id, {
       quantityAdded: nextSignedQuantity,
+      quantityUnit,
       type: nextType,
       reason: nextType === "out" ? data.reason || log.reason || "Sold" : undefined,
       price: nextPrice,

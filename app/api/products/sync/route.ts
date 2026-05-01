@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 import { createVerify } from "node:crypto"
 import { normalizeUserIdentity } from "@/app/lib/userIdentity"
+import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import {
   assertContentLength,
   assertFiniteNumber,
@@ -32,6 +33,7 @@ type SyncPayload = {
     name: string
     price: number
     quantity: number
+    quantityUnit?: string
     category?: string
     supplier?: string
     note?: string
@@ -44,6 +46,7 @@ type SyncPayload = {
     id: string
     productId: string
     quantityAdded: number
+    quantityUnit?: string
     type: "in" | "out"
     reason?: string
     price: number
@@ -152,6 +155,7 @@ export async function POST(request: NextRequest) {
         name: product.name,
         price: product.price,
         quantity: product.quantity,
+        quantity_unit: product.quantityUnit,
         category: product.category,
         supplier: product.supplier,
         note: product.note,
@@ -210,6 +214,7 @@ export async function POST(request: NextRequest) {
         id: log.id,
         product_id: log.productId,
         quantity_added: log.quantityAdded,
+        quantity_unit: log.quantityUnit,
         type: log.type,
         reason: log.reason,
         price: log.price,
@@ -380,6 +385,7 @@ function validateSyncPayload(payload: SyncPayload) {
     name: sanitizeRequiredText(product.name, 160, "Product name"),
     price: assertFiniteNumber(product.price, "Product price", { min: 0, max: 10_000_000 }),
     quantity: assertFiniteNumber(product.quantity, "Product quantity", { min: 0, max: 1_000_000 }),
+    quantityUnit: normalizeQuantityUnit(sanitizeOptionalText(product.quantityUnit, 40)),
     category: sanitizeOptionalText(product.category, 100),
     supplier: sanitizeOptionalText(product.supplier, 160),
     note: sanitizeOptionalText(product.note, 1000),
@@ -393,6 +399,7 @@ function validateSyncPayload(payload: SyncPayload) {
     id: sanitizeRequiredText(log.id, 120, "Log id"),
     productId: sanitizeRequiredText(log.productId, 120, "Log productId"),
     quantityAdded: assertFiniteNumber(log.quantityAdded, "Log quantity", { min: -1_000_000, max: 1_000_000 }),
+    quantityUnit: normalizeQuantityUnit(sanitizeOptionalText(log.quantityUnit, 40)),
     type: log.type === "in" || log.type === "out" ? log.type : (() => {
       throw new SecurityError("Invalid log type", 400)
     })(),

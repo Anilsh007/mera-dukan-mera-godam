@@ -1,6 +1,7 @@
 "use client"
 
 import useInventoryData from "../hooks/useInventoryData"
+import { formatQuantity } from "@/app/lib/quantityUnit"
 
 function getTodayRange() {
   const start = new Date()
@@ -102,7 +103,7 @@ export default function ReportsPage() {
                     <p className="text-xs text-[var(--text-secondary)]">{product.category || "Uncategorized"}</p>
                   </div>
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                    {product.quantity} left
+                    {formatQuantity(product.quantity, product.quantityUnit)} left
                   </span>
                 </div>
               ))

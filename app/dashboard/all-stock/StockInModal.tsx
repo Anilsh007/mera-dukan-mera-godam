@@ -9,11 +9,13 @@ import { toast } from "sonner"
 import Input from "@/app/components/utility/CommonInput"
 import Button from "@/app/components/utility/Button"
 import useProducts from "./useProducts"
+import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 
 type StockInForm = {
   name: string
   price: string
   quantity: string
+  quantityUnit: string
   category: string
   supplier: string
   expiry: string
@@ -25,6 +27,7 @@ const initForm = (product: Product): StockInForm => ({
   name: product.name,
   price: String(product.price),
   quantity: "",
+  quantityUnit: normalizeQuantityUnit(product.quantityUnit),
   category: product.category || "",
   supplier: product.supplier || "",
   expiry: product.expiry || "",
@@ -38,7 +41,7 @@ const fields = [
   { key: "expiry", label: "Expiry Date", required: true, type: "date", placeholder: "", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(20%-6px)]", readonly: false },
   { key: "sku", label: "SKU", required: false, type: "text", placeholder: "Enter SKU", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(20%-6px)]", readonly: true },
   { key: "price", label: "Price/unit", required: true, type: "number", placeholder: "Enter price", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(20%-6px)]", readonly: false },
-  { key: "quantity", label: "Quantity", required: true, type: "number", placeholder: "Kitna aaya?", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(20%-6px)]", readonly: false },
+  { key: "quantity", label: "Quantity", required: true, type: "quantity", placeholder: "Kitna aaya?", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(20%-6px)]", readonly: false },
   { key: "supplier", label: "Supplier", required: false, type: "text", placeholder: "Enter supplier", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(30%-6px)]", readonly: false },
   { key: "note", label: "Note", required: false, type: "text", placeholder: "Add note", width: "basis-full sm:basis-[calc(50%-6px)] lg:basis-[calc(50%-6px)]", readonly: false },
 ] as const
@@ -78,6 +81,7 @@ export default function StockInModal({
         name: form.name.trim(),
         price: Number(form.price),
         quantity: Number(form.quantity),
+        quantityUnit: form.quantityUnit,
         category: form.category,
         supplier: form.supplier,
         expiry: form.expiry,
@@ -85,7 +89,7 @@ export default function StockInModal({
         note: form.note,
         userId,
       })
-      toast.success(`+${form.quantity} stock added successfully`)
+      toast.success(`+${formatQuantity(form.quantity, form.quantityUnit)} stock added successfully`)
       onClose()
     } catch {
       toast.error("Failed to add stock")
@@ -123,6 +127,24 @@ export default function StockInModal({
                 </label>
                 <div className="w-full p-2 rounded-xl border bg-[var(--bg-input)] border-[var(--border-input)] text-[var(--text-muted)] capitalize opacity-60 select-none">
                   {form[field.key as keyof StockInForm] || "-"}
+                </div>
+              </div>
+            ) : field.type === "quantity" ? (
+              <div>
+                <label className="block mb-1 text-sm font-medium text-[var(--text-primary)]">
+                  {field.label} <span className="text-red-400">*</span>
+                </label>
+                <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] focus-within:ring-2 focus-within:ring-emerald-400">
+                  <input
+                    type="number"
+                    placeholder={field.placeholder}
+                    value={form.quantity}
+                    onChange={(e) => set("quantity", e.target.value)}
+                    className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none"
+                  />
+                  <span className="border-l border-[var(--border-input)] px-3 py-2 text-sm font-semibold text-[var(--text-secondary)]">
+                    {form.quantityUnit}
+                  </span>
                 </div>
               </div>
             ) : (

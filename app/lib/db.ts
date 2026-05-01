@@ -1,12 +1,14 @@
 import Dexie, { Table } from "dexie"
-import type { GSTInvoiceRecord } from "@/app/dashboard/gst-invoice/gst.types"
-import type { ProfileData } from "./profile.service"
+import type { GSTInvoiceRecord } from "@/app/dashboard/gst-invoice/types/gst.types"
+import type { ProfileData } from "./profile/profile.service"
+import { DEFAULT_QUANTITY_UNIT } from "./quantityUnit"
 
 export interface Product {
   id: string
   name: string
   price: number
   quantity: number
+  quantityUnit: string
   category?: string
   supplier?: string
   note?: string
@@ -20,6 +22,7 @@ export interface ProductLog {
   id: string
   productId: string
   quantityAdded: number
+  quantityUnit: string
   type: "in" | "out"
   reason?: string
   price: number
@@ -74,6 +77,24 @@ class StockDB extends Dexie {
       profiles: "userId,updatedAt",
       invoices: "id,[userId+invoiceNo],userId,invoiceNo,invoiceDate,buyerName,createdAt",
     })
+
+    this.version(9)
+      .stores({
+        products: "id,[userId+name+category],[userId+name+category+quantityUnit],userId,name,category,quantityUnit",
+        productLogs: "id,productId,date,type,quantityUnit",
+        profiles: "userId,updatedAt",
+        invoices: "id,[userId+invoiceNo],userId,invoiceNo,invoiceDate,buyerName,createdAt",
+      })
+      .upgrade((tx) => {
+        const products = tx.table("products").toCollection().modify((product) => {
+          if (!product.quantityUnit) product.quantityUnit = DEFAULT_QUANTITY_UNIT
+        })
+        const logs = tx.table("productLogs").toCollection().modify((log) => {
+          if (!log.quantityUnit) log.quantityUnit = DEFAULT_QUANTITY_UNIT
+        })
+
+        return Promise.all([products, logs])
+      })
   }
 }
 

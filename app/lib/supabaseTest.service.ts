@@ -22,6 +22,7 @@ export function testInsertProduct() {
         name: "Test Product",
         price: 100,
         quantity: 5,
+        quantity_unit: "pcs",
         category: "test",
       },
     ])

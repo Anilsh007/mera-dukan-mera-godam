@@ -11,13 +11,14 @@ export interface TableItem {
     expiry?: string
     price?: number
     quantity?: number
+    quantityUnit?: string
     createdAt?: string
     note?: string
 }
 
 type Props = {
     data: TableItem[]
-    onEdit: (item: TableItem) => void
+    onEdit?: (item: TableItem) => void
 
     // for print
     showSelection?: boolean
@@ -25,6 +26,9 @@ type Props = {
     onToggleSelect?: (id: string | number) => void
     onSelectAll?: () => void
     onPrintRow?: (row: TableItem) => void
+    showActions?: boolean
+    actionLabel?: string
+    minWidth?: number
 }
 
 function getRowId(item: TableItem, index: number) {
@@ -53,7 +57,7 @@ function ExpiryCell({ val }: { val?: string }) {
     return <span className={cls}>{label}</span>
 }
 
-function QtyCell({ qty }: { qty?: number }) {
+function QtyCell({ qty, unit }: { qty?: number; unit?: string }) {
     const q = qty ?? 0
     const stockLevel = getStockLevel(q)
     const dot = stockLevel === "out" ? "bg-red-500" : stockLevel === "critical" ? "bg-red-400" : stockLevel === "low" ? "bg-amber-400" : "bg-emerald-500"
@@ -61,7 +65,7 @@ function QtyCell({ qty }: { qty?: number }) {
     return (
         <span className={`inline-flex items-center gap-1.5 ${txt}`}>
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-            {q}
+            {q} {unit || "pcs"}
         </span>
     )
 }
@@ -87,7 +91,17 @@ const COLS = [
     { key: "note", label: "Note" },
 ] as const
 
-export default function TableComponent({ data, onEdit, showSelection, selectedIds, onToggleSelect, onSelectAll }: Props) {
+export default function TableComponent({
+    data,
+    onEdit,
+    showSelection,
+    selectedIds,
+    onToggleSelect,
+    onSelectAll,
+    showActions = false,
+    actionLabel = "Edit",
+    minWidth = 780,
+}: Props) {
     if (data.length === 0) {
         return (
             <div className="py-14 text-center text-[var(--text-muted)]">
@@ -100,7 +114,7 @@ export default function TableComponent({ data, onEdit, showSelection, selectedId
     return (
         <div className="w-full rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)] overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm" style={{ minWidth: 780 }}>
+                <table className="w-full text-left border-collapse text-sm" style={{ minWidth }}>
 
                     <thead className="bg-black/5 dark:bg-white/5">
                         <tr className="border-b border-[var(--border-card)]">
@@ -114,7 +128,9 @@ export default function TableComponent({ data, onEdit, showSelection, selectedId
                                     {c.label}
                                 </th>
                             ))}
-                            {/* <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Action</th> */}
+                            {showActions && (
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Action</th>
+                            )}
                         </tr>
                     </thead>
 
@@ -162,7 +178,7 @@ export default function TableComponent({ data, onEdit, showSelection, selectedId
 
                                     {/* Quantity */}
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                        <QtyCell qty={item.quantity} />
+                                        <QtyCell qty={item.quantity} unit={item.quantityUnit} />
                                     </td>
 
                                     {/* Total */}
@@ -182,10 +198,11 @@ export default function TableComponent({ data, onEdit, showSelection, selectedId
                                         </span>
                                     </td>
 
-                                    {/* Action */}
-                                    {/* <td className="px-4 py-3 whitespace-nowrap">
-                                        <Button title="Edit" variant="soft-primary" onClick={() => onEdit(item)} />
-                                    </td> */}
+                                    {showActions && (
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <Button title={actionLabel} variant="outline" onClick={() => onEdit?.(item)} />
+                                        </td>
+                                    )}
                                 </tr>
                             )
                         })}

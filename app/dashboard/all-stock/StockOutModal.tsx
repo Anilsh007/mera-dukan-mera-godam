@@ -9,6 +9,7 @@ import Input from "@/app/components/utility/CommonInput"
 import Button from "@/app/components/utility/Button"
 import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
+import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 
 const REASONS = ["Sold", "Expired", "Damaged", "Personal use", "Other"]
 
@@ -36,6 +37,7 @@ export default function StockOutModal({
   const [logsLoading, setLogsLoading] = useState(true)
   const [createInvoice, setCreateInvoice] = useState(true)
   const isSoldFlow = reason === "Sold"
+  const quantityUnit = normalizeQuantityUnit(product.quantityUnit)
 
   useEffect(() => {
     if (!product.id) return
@@ -52,14 +54,14 @@ export default function StockOutModal({
     const price = Number(salePrice)
 
     if (!qty || qty <= 0) return toast.error("Quantity sahi daalo")
-    if (qty > product.quantity) return toast.error(`Sirf ${product.quantity} available hai`)
+    if (qty > product.quantity) return toast.error(`Sirf ${formatQuantity(product.quantity, quantityUnit)} available hai`)
     if (isSoldFlow && (!price || price <= 0)) return toast.error("Sale price daalo")
     if (isSoldFlow && !buyerName.trim()) return toast.error("Buyer name required hai")
     if (!isSoldFlow && price < 0) return toast.error("Price negative nahi ho sakta")
     if (expiryOptions.length > 0 && !selectedExpiry) return toast.error("Expiry date select karo")
     const selectedBatch = expiryOptions.find((batch) => batch.expiry === selectedExpiry)
     if (selectedBatch && qty > selectedBatch.quantity) {
-      return toast.error(`Selected batch me sirf ${selectedBatch.quantity} qty available hai`)
+      return toast.error(`Selected batch me sirf ${formatQuantity(selectedBatch.quantity, quantityUnit)} available hai`)
     }
     if (!product.id) return
 
@@ -69,6 +71,7 @@ export default function StockOutModal({
       await stockOut({
         productId: product.id,
         quantity: qty,
+        quantityUnit,
         salePrice: isSoldFlow ? price : Math.max(price || 0, 0),
         expiry: selectedExpiry || undefined,
         reason,
@@ -84,7 +87,7 @@ export default function StockOutModal({
         invoiceItem.hsnCode = product.sku || ""
         invoiceItem.quantity = qty
         invoiceItem.rate = price
-        invoiceItem.unit = "pcs"
+        invoiceItem.unit = quantityUnit
 
         saveSaleInvoiceDraft({
           buyer: {
@@ -100,7 +103,7 @@ export default function StockOutModal({
         })
       }
 
-      toast.success(`-${qty} stock nikala gaya`)
+      toast.success(`-${formatQuantity(qty, quantityUnit)} stock nikala gaya`)
       onClose()
 
       if (isSoldFlow && createInvoice) {
@@ -120,7 +123,7 @@ export default function StockOutModal({
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl cursor-pointer">x</button>
       </div>
       <p className="text-sm text-gray-400 capitalize mb-4">
-        {product.name} · {product.quantity} available
+        {product.name} · {formatQuantity(product.quantity, quantityUnit)} available
       </p>
       <div className="border-t border-[var(--border-input)] mb-4" />
 
@@ -137,22 +140,32 @@ export default function StockOutModal({
             <select value={selectedExpiry} onChange={(e) => setSelectedExpiry(e.target.value)} className={selectClass}>
               {expiryOptions.map((batch) => (
                 <option key={batch.expiry} value={batch.expiry}>
-                  {batch.expiry} - {batch.quantity} qty {new Date(batch.expiry) >= new Date() ? "(nearest first)" : "(expired)"}
+                  {batch.expiry} - {formatQuantity(batch.quantity, quantityUnit)} {new Date(batch.expiry) >= new Date() ? "(nearest first)" : "(expired)"}
                 </option>
               ))}
             </select>
           )}
         </div>
 
-        <Input
-          label={<>Quantity <span className="text-red-400">*</span></>}
-          type="number"
-          placeholder={`Max ${product.quantity}`}
-          min={1}
-          max={product.quantity}
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+        <div>
+          <label className="block mb-1 text-sm font-medium text-[var(--text-primary)]">
+            Quantity <span className="text-red-400">*</span>
+          </label>
+          <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] focus-within:ring-2 focus-within:ring-emerald-400">
+            <input
+              type="number"
+              placeholder={`Max ${product.quantity}`}
+              min={1}
+              max={product.quantity}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none"
+            />
+            <span className="border-l border-[var(--border-input)] px-3 py-2 text-sm font-semibold text-[var(--text-secondary)]">
+              {quantityUnit}
+            </span>
+          </div>
+        </div>
 
         <Input
           label={

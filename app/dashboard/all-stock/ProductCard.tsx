@@ -6,6 +6,7 @@ import Button from "@/app/components/utility/Button"
 import StockInModal from "./StockInModal"
 import StockOutModal from "./StockOutModal"
 import { getExpiryInfo, getStockLevel } from "@/app/lib/inventory.utils"
+import { formatQuantity } from "@/app/lib/quantityUnit"
 
 type ModalType = "in" | "out" | null
 
@@ -56,7 +57,7 @@ export default function ProductCard({ product, onClick }: { product: Product; on
           <div className="bg-[var(--bg-primary)] rounded-xl p-2">
             <p className="text-xs text-[var(--text-muted)] mb-0.5">Qty</p>
             <p className={`font-bold text-sm ${isOut ? "text-red-500" : isCritical ? "text-red-400" : isLow ? "text-amber-500" : "text-[var(--text-primary)]"}`}>
-              {product.quantity}
+              {formatQuantity(product.quantity, product.quantityUnit)}
             </p>
           </div>
           <div className="bg-[var(--bg-primary)] rounded-xl p-2">

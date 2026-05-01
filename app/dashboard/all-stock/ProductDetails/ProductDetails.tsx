@@ -11,6 +11,7 @@ import StockOutModal from "../StockOutModal"
 import ProductStats from "./ProductStats"
 import MultiItemSaleModal from "../MultiItemSaleModal"
 import ProductManagementModal from "../ProductManagementModal"
+import { formatQuantity } from "@/app/lib/quantityUnit"
 
 type CategoryGroup = {
   key: string
@@ -226,7 +227,7 @@ export default function ProductDetails({
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
                         <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">SKU: {product.sku || "-"}</span>
-                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {product.quantity}</span>
+                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {formatQuantity(product.quantity, product.quantityUnit)}</span>
                       </div>
                     </div>
                   </label>
@@ -272,7 +273,7 @@ export default function ProductDetails({
                         <td className="px-4 py-3 font-medium capitalize text-[var(--text-primary)]">{product.name}</td>
                         <td className="px-4 py-3 text-[var(--text-secondary)]">{product.supplier || "-"}</td>
                         <td className="px-4 py-3 text-[var(--text-secondary)]">{product.sku || "-"}</td>
-                        <td className="px-4 py-3 text-[var(--text-primary)]">{product.quantity}</td>
+                        <td className="px-4 py-3 text-[var(--text-primary)]">{formatQuantity(product.quantity, product.quantityUnit)}</td>
                         <td className="px-4 py-3 font-semibold text-emerald-600">Rs {product.price.toLocaleString("en-IN")}</td>
                       </tr>
                     )

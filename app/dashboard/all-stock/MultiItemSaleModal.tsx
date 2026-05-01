@@ -12,6 +12,7 @@ import { buildBuyerSuggestions, matchBuyerSuggestion } from "@/app/dashboard/gst
 import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import useProfile from "@/app/dashboard/profile/useProfile"
+import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 
 type SaleLine = {
   productId: string
@@ -19,6 +20,7 @@ type SaleLine = {
   sku?: string
   category?: string
   availableQty: number
+  quantityUnit: string
   quantity: string
   salePrice: string
   gstRate: string
@@ -66,6 +68,7 @@ export default function MultiItemSaleModal({
       sku: product.sku,
       category: product.category,
       availableQty: product.quantity,
+      quantityUnit: normalizeQuantityUnit(product.quantityUnit),
       quantity: product.quantity > 0 ? "1" : "0",
       salePrice: String(product.price || 0),
       gstRate: "18",
@@ -167,6 +170,7 @@ export default function MultiItemSaleModal({
         validLines.map((line) => ({
           productId: line.productId,
           quantity: Number(line.quantity),
+          quantityUnit: line.quantityUnit,
           salePrice: Number(line.salePrice),
           reason: "Sold",
           buyerName: buyer.name.trim(),
@@ -195,7 +199,7 @@ export default function MultiItemSaleModal({
             item.quantity = Number(line.quantity)
             item.rate = Number(line.salePrice)
             item.gstRate = Number(line.gstRate || 18)
-            item.unit = "pcs"
+            item.unit = line.quantityUnit
             return item
           }),
           notes: buyer.note.trim() || undefined,
@@ -275,11 +279,17 @@ export default function MultiItemSaleModal({
                 <p className="font-medium capitalize text-[var(--text-primary)]">{line.name}</p>
                 <p className="text-xs text-[var(--text-secondary)]">{line.category || "Uncategorized"}{line.sku ? ` • ${line.sku}` : ""}</p>
               </div>
-              <p className="text-sm font-semibold text-[var(--text-secondary)]">Avail: {line.availableQty}</p>
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">Avail: {formatQuantity(line.availableQty, line.quantityUnit)}</p>
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input type="number" min={0} max={line.availableQty} label="Qty to Sell" value={line.quantity} onChange={(e) => updateLine(line.productId, "quantity", e.target.value)} />
+              <QuantityWithUnitInput
+                label="Qty to Sell"
+                value={line.quantity}
+                unit={line.quantityUnit}
+                max={line.availableQty}
+                onChange={(value) => updateLine(line.productId, "quantity", value)}
+              />
               <Input type="number" min={0} label="Sale Price" value={line.salePrice} onChange={(e) => updateLine(line.productId, "salePrice", e.target.value)} />
               <Input type="number" min={0} label="GST %" value={line.gstRate} onChange={(e) => updateLine(line.productId, "gstRate", e.target.value)} />
               <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-3 py-2">
@@ -310,9 +320,14 @@ export default function MultiItemSaleModal({
                   <p className="font-medium capitalize text-[var(--text-primary)]">{line.name}</p>
                   <p className="text-xs text-[var(--text-secondary)]">{line.category || "Uncategorized"}{line.sku ? ` • ${line.sku}` : ""}</p>
                 </td>
-                <td className="px-4 py-3">{line.availableQty}</td>
+                <td className="px-4 py-3">{formatQuantity(line.availableQty, line.quantityUnit)}</td>
                 <td className="px-4 py-3">
-                  <Input type="number" min={0} max={line.availableQty} value={line.quantity} onChange={(e) => updateLine(line.productId, "quantity", e.target.value)} />
+                  <QuantityWithUnitInput
+                    value={line.quantity}
+                    unit={line.quantityUnit}
+                    max={line.availableQty}
+                    onChange={(value) => updateLine(line.productId, "quantity", value)}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <Input type="number" min={0} value={line.salePrice} onChange={(e) => updateLine(line.productId, "salePrice", e.target.value)} />
@@ -358,6 +373,39 @@ export default function MultiItemSaleModal({
 
 function toTitleCase(value: string) {
   return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1))
+}
+
+function QuantityWithUnitInput({
+  label,
+  value,
+  unit,
+  max,
+  onChange,
+}: {
+  label?: string
+  value: string
+  unit: string
+  max: number
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      {label && <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{label}</label>}
+      <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] focus-within:ring-2 focus-within:ring-emerald-400">
+        <input
+          type="number"
+          min={0}
+          max={max}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] outline-none"
+        />
+        <span className="border-l border-[var(--border-input)] px-3 py-2 text-sm font-semibold text-[var(--text-secondary)]">
+          {unit}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function printSaleSummary(
@@ -410,7 +458,7 @@ function printSaleSummary(
               (line) => `
             <tr>
               <td>${toTitleCase(line.name)}</td>
-              <td>${line.quantity}</td>
+              <td>${formatQuantity(line.quantity, line.quantityUnit)}</td>
               <td>Rs ${Number(line.salePrice).toFixed(2)}</td>
               <td>${Number(line.gstRate || 0).toFixed(2)}%</td>
               <td>Rs ${(Number(line.quantity) * Number(line.salePrice)).toFixed(2)}</td>

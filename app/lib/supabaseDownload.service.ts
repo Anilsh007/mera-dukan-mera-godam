@@ -2,6 +2,7 @@
 
 import { db } from "./db"
 import { auth } from "./firebase"
+import { normalizeQuantityUnit } from "./quantityUnit"
 
 export async function syncSupabaseToDexie() {
   const user = auth.currentUser
@@ -46,6 +47,7 @@ export async function syncSupabaseToDexie() {
           name: product.name,
           price: Number(product.price),
           quantity: Number(product.quantity),
+          quantityUnit: normalizeQuantityUnit(product.quantity_unit),
           category: product.category,
           supplier: product.supplier,
           note: product.note,
@@ -63,6 +65,7 @@ export async function syncSupabaseToDexie() {
           id: log.id,
           productId: log.product_id,
           quantityAdded: Number(log.quantity_added),
+          quantityUnit: normalizeQuantityUnit(log.quantity_unit),
           type: log.type,
           reason: log.reason,
           price: Number(log.price),

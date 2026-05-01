@@ -15,6 +15,7 @@ import {
 import Button from "@/app/components/utility/Button"
 import { Product } from "@/app/lib/db"
 import { getStockLevel } from "@/app/lib/inventory.utils"
+import { formatQuantity } from "@/app/lib/quantityUnit"
 
 type Log = {
     id: string
@@ -116,25 +117,25 @@ export default function ProductStats({
     const stats = [
         {
             label: "Total In",
-            value: totalInQty,
+            value: formatQuantity(totalInQty, product.quantityUnit),
             sub: totalInValue > 0 ? `Rs ${totalInValue.toLocaleString("en-IN")} spent` : null,
             icon: TrendingUp,
             tone: "text-[var(--all-stock-text)] bg-[var(--all-stock)]",
         },
         {
             label: "Net Qty",
-            value: product.quantity,
+            value: formatQuantity(product.quantity, product.quantityUnit),
             sub: "Now available",
             icon: Package2,
             tone: "text-[var(--all-stock-text)] bg-[var(--all-stock)]",
         },
         {
             label: "Total Out",
-            value: totalOutQty,
+            value: formatQuantity(totalOutQty, product.quantityUnit),
             sub: soldQty > 0
-                ? `${soldQty} sold${nonSaleOutQty > 0 ? `, ${nonSaleOutQty} adjusted` : ""}`
+                ? `${formatQuantity(soldQty, product.quantityUnit)} sold${nonSaleOutQty > 0 ? `, ${formatQuantity(nonSaleOutQty, product.quantityUnit)} adjusted` : ""}`
                 : nonSaleOutQty > 0
-                    ? `${nonSaleOutQty} adjusted`
+                    ? `${formatQuantity(nonSaleOutQty, product.quantityUnit)} adjusted`
                     : null,
             icon: TrendingDown,
             tone: "text-[var(--out-stock-text)] bg-[var(--out-stock)]",
@@ -143,7 +144,7 @@ export default function ProductStats({
             label: "Inventory Value",
             value: inventoryValue > 0 ? `Rs ${inventoryValue.toLocaleString("en-IN")}` : "-",
             sub: product.quantity > 0
-                ? `${product.quantity} x Rs ${Number(product.price).toLocaleString("en-IN")}`
+                ? `${formatQuantity(product.quantity, product.quantityUnit)} x Rs ${Number(product.price).toLocaleString("en-IN")}`
                 : null,
             icon: IndianRupee,
             tone: "text-[var(--all-stock-text)] bg-[var(--all-stock)]",
@@ -226,9 +227,7 @@ export default function ProductStats({
                                 <div className="min-w-0 flex-1">
                                     <p className="text-xs text-[var(--text-secondary)] sm:text-sm">{stat.label}</p>
                                     <p className="mt-1 truncate text-base font-bold sm:text-xl">
-                                        {typeof stat.value === "number"
-                                            ? stat.value.toLocaleString("en-IN")
-                                            : stat.value}
+                                        {stat.value}
                                     </p>
                                     {stat.sub && (
                                         <p className="mt-0.5 truncate text-[11px] text-[var(--text-secondary)]">

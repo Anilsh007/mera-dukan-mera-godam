@@ -7,15 +7,18 @@ import { Pencil, Search } from "lucide-react"
 import { Product } from "@/app/lib/db"
 import Button from "@/app/components/utility/Button"
 import Input from "@/app/components/utility/CommonInput"
+import CommonTable, { TableItem } from "@/app/components/utility/CommonTable"
 import { parseSaleLogNote } from "@/app/lib/saleMetadata"
 import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import InventoryLogCorrectionModal from "./InventoryLogCorrectionModal"
+import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 
 type Log = {
   id: string
   date: string
   quantityAdded: number
+  quantityUnit?: string
   type?: "in" | "out"
   reason?: string
   price: number
@@ -31,10 +34,12 @@ type HistoryRow = {
   productId?: string
   productName: string
   category: string
+  supplier: string
   sku: string
   logType: "in" | "out"
   reason: string
   quantity: number
+  quantityUnit: string
   price: number
   date: string
   expiry: string
@@ -107,10 +112,12 @@ export default function StockHistoryTabs({
         productId: log.productId,
         productName: product?.name || "Deleted product",
         category: product?.category || "Uncategorized",
+        supplier: product?.supplier || "",
         sku: product?.sku || "",
         logType: log.quantityAdded > 0 ? "in" : "out",
         reason: log.reason || (log.quantityAdded > 0 ? "Stock In" : "Stock Out"),
         quantity: Math.abs(log.quantityAdded),
+        quantityUnit: normalizeQuantityUnit(log.quantityUnit || product?.quantityUnit),
         price: Number(log.price || 0),
         date: log.date,
         expiry: log.expiry || "",
@@ -162,6 +169,33 @@ export default function StockHistoryTabs({
   const selectedRows = useMemo(
     () => filteredRows.filter((row) => selectedIds.has(row.id)),
     [filteredRows, selectedIds]
+  )
+
+  const tableRows = useMemo<TableItem[]>(
+    () =>
+      paginatedRows.map((row) => ({
+        id: row.id,
+        name: row.productName,
+        category: row.logType === "in" ? "in" : "out",
+        supplier:
+          row.logType === "in"
+            ? row.supplier || row.reason
+            : row.buyerName
+              ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}`
+              : row.reason,
+        expiry: row.expiry || "-",
+        price: row.price,
+        quantity: row.quantity,
+        quantityUnit: row.quantityUnit,
+        createdAt: row.date,
+        note: [row.note, row.correctedAt ? "Corrected" : ""].filter(Boolean).join(" • ") || "-",
+      })),
+    [paginatedRows]
+  )
+
+  const visibleSelectedIds = useMemo<Set<string | number>>(
+    () => new Set(tableRows.map((row) => row.id).filter((id): id is string | number => Boolean(id) && selectedIds.has(String(id)))),
+    [selectedIds, tableRows]
   )
 
   const editingRow = useMemo(
@@ -245,7 +279,7 @@ export default function StockHistoryTabs({
         item.quantity = row.quantity
         item.rate = row.price
         item.gstRate = 18
-        item.unit = "pcs"
+        item.unit = row.quantityUnit
         return item
       }),
       notes: saleRows.map((row) => row.note).filter(Boolean).join(", ") || undefined,
@@ -274,6 +308,7 @@ export default function StockHistoryTabs({
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
           <div className="relative md:col-span-2 xl:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">Search</label>
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
             <Input
               type="text"
@@ -355,13 +390,22 @@ export default function StockHistoryTabs({
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
                     <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Category: {row.category}</span>
-                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {row.quantity}</span>
+                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {formatQuantity(row.quantity, row.quantityUnit)}</span>
                     <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Price: Rs {row.price.toLocaleString("en-IN")}</span>
                     <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">SKU: {row.sku || "-"}</span>
                   </div>
 
                   <div className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
-                    <p><span className="font-medium text-[var(--text-primary)]">Buyer/Reason:</span> {row.buyerName ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}` : row.reason}</p>
+                    <p>
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {row.logType === "in" ? "Supplier/Reason:" : "Buyer/Reason:"}
+                      </span>{" "}
+                      {row.logType === "in"
+                        ? row.supplier || row.reason
+                        : row.buyerName
+                          ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}`
+                          : row.reason}
+                    </p>
                     {row.note ? <p><span className="font-medium text-[var(--text-primary)]">Note:</span> {row.note}</p> : null}
                   </div>
 
@@ -386,7 +430,21 @@ export default function StockHistoryTabs({
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)] md:block">
+      <div className="hidden md:block">
+        <CommonTable
+          data={tableRows}
+          showSelection
+          selectedIds={visibleSelectedIds}
+          onToggleSelect={(id) => toggleSelection(String(id))}
+          onSelectAll={toggleSelectPage}
+          showActions
+          actionLabel="Correct"
+          minWidth={980}
+          onEdit={(item) => item.id && setEditingRowId(String(item.id))}
+        />
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="bg-black/5 dark:bg-white/5">
@@ -440,7 +498,7 @@ export default function StockHistoryTabs({
                     <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {row.buyerName ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}` : row.reason}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">{row.quantity}</td>
+                    <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">{formatQuantity(row.quantity, row.quantityUnit)}</td>
                     <td className="px-4 py-3 font-semibold text-emerald-600">Rs {row.price.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3 text-[var(--text-secondary)]">{row.sku || "-"}</td>
                     <td className="px-4 py-3 text-[var(--text-secondary)]">
@@ -584,7 +642,7 @@ function printRows(rows: HistoryRow[]) {
               <td>${toTitleCase(row.productName)}</td>
               <td>${row.category}</td>
               <td>${row.buyerName || row.reason}</td>
-              <td>${row.quantity}</td>
+              <td>${formatQuantity(row.quantity, row.quantityUnit)}</td>
               <td>Rs ${row.price.toFixed(2)}</td>
               <td>Rs ${(row.price * row.quantity).toFixed(2)}</td>
             </tr>`

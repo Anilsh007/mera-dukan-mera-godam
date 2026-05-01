@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import Button from "@/app/components/utility/Button"
 import Input from "@/app/components/utility/CommonInput"
 import { Product } from "@/app/lib/db"
+import { formatQuantity, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import {
   deleteProductWithLogs,
   updateProductDetails,
@@ -25,6 +26,7 @@ type FormState = {
   supplier: string
   expiry: string
   price: string
+  quantityUnit: string
   sku: string
   note: string
 }
@@ -35,6 +37,7 @@ const emptyForm: FormState = {
   supplier: "",
   expiry: "",
   price: "",
+  quantityUnit: "pcs",
   sku: "",
   note: "",
 }
@@ -59,6 +62,7 @@ export default function ProductManagementModal({
       supplier: product.supplier || "",
       expiry: product.expiry || "",
       price: String(product.price ?? ""),
+      quantityUnit: normalizeQuantityUnit(product.quantityUnit),
       sku: product.sku || "",
       note: product.note || "",
     })
@@ -77,6 +81,7 @@ export default function ProductManagementModal({
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error("Product name required hai")
     if (!form.price || Number(form.price) < 0) return toast.error("Valid price dalo")
+    if (!form.quantityUnit.trim()) return toast.error("Quantity unit required hai")
 
     try {
       setLoading(true)
@@ -84,6 +89,7 @@ export default function ProductManagementModal({
         productId: product.id,
         name: form.name,
         price: Number(form.price),
+        quantityUnit: form.quantityUnit,
         category: form.category,
         supplier: form.supplier,
         expiry: form.expiry,
@@ -136,12 +142,23 @@ export default function ProductManagementModal({
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <datalist id="product-management-quantity-units">
+                {QUANTITY_UNITS.map((unit) => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
+                ))}
+              </datalist>
               <Input label="Product name" value={form.name} onChange={(e) => setField("name", e.target.value)} />
               <Input label="Category" value={form.category} onChange={(e) => setField("category", e.target.value)} />
               <Input label="Supplier" value={form.supplier} onChange={(e) => setField("supplier", e.target.value)} />
               <Input label="SKU" value={form.sku} onChange={(e) => setField("sku", e.target.value)} />
               <Input label="Expiry date" type="date" value={form.expiry} onChange={(e) => setField("expiry", e.target.value)} />
               <Input label="Default price" type="number" min={0} value={form.price} onChange={(e) => setField("price", e.target.value)} />
+              <Input
+                label={<>Quantity unit <span className="text-red-400">*</span></>}
+                value={form.quantityUnit}
+                onChange={(e) => setField("quantityUnit", e.target.value)}
+                datalist="product-management-quantity-units"
+              />
               <Input
                 label="Product note"
                 value={form.note}
@@ -151,7 +168,7 @@ export default function ProductManagementModal({
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:grid-cols-3">
-              <InfoChip label="Current Qty" value={String(product.quantity)} />
+              <InfoChip label="Current Qty" value={formatQuantity(product.quantity, product.quantityUnit)} />
               <InfoChip label="History Entries" value={String(historyCount)} />
               <InfoChip label="Inventory Value" value={`Rs ${inventoryValue.toLocaleString("en-IN")}`} />
             </div>
@@ -177,7 +194,7 @@ export default function ProductManagementModal({
             </div>
 
             <div className="mt-5 space-y-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-300">
-              <p>Current quantity: <b>{product.quantity}</b></p>
+              <p>Current quantity: <b>{formatQuantity(product.quantity, product.quantityUnit)}</b></p>
               <p>History entries: <b>{historyCount}</b></p>
               <p>Delete tab ke through ki gayi removal sync me bhi reflect hogi.</p>
             </div>

@@ -11,9 +11,10 @@ import { toast } from "sonner"
 import Suggestions from "./Suggestions"
 import SuccessReceipt from "@/app/components/utility/SuccessReceipt"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
+import { DEFAULT_QUANTITY_UNIT, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 
 type ProductRow = {
-    id: string; name: string; price: string; quantity: string
+    id: string; name: string; price: string; quantity: string; quantityUnit: string
     category: string; supplier: string; expiry: string; note: string; sku: string
 }
 
@@ -24,6 +25,7 @@ const createEmptyRow = (): ProductRow => ({
     name: "",
     price: "",
     quantity: "",
+    quantityUnit: DEFAULT_QUANTITY_UNIT,
     category: "",
     supplier: "",
     expiry: "",
@@ -32,14 +34,14 @@ const createEmptyRow = (): ProductRow => ({
 });
 
 const FIELDS = [
-    { key: "name", label: <>Product Name <span className="text-red-500">*</span></>, required: true, type: "text", placeholder: "Enter product name", datalist: "productNames", cols: "col-span-2 sm:col-span-1 lg:col-span-2" },
+    { key: "name", label: <>Product Name <span className="text-red-500">*</span></>, required: true, type: "text", placeholder: "Enter product name", datalist: "productNames", cols: "col-span-2 sm:col-span-1 lg:col-span-1" },
     { key: "category", label: "Category", required: false, type: "text", placeholder: "Enter category", datalist: "categories", cols: "col-span-2 sm:col-span-1" },
     { key: "expiry", label: <>Expiry Date <span className="text-red-500">*</span></>, required: true, type: "date", placeholder: "", datalist: undefined, cols: "col-span-2 sm:col-span-1" },
-    { key: "sku", label: "SKU", required: false, type: "text", placeholder: "Enter SKU", datalist: undefined, cols: "col-span-2 sm:col-span-1" },
+    { key: "sku", label: "SKU", required: false, type: "text", placeholder: "Enter SKU", datalist: undefined, cols: "col-span-1 sm:col-span-1" },
     { key: "price", label: <>Price/unit <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Enter price", datalist: undefined, cols: "col-span-1" },
-    { key: "quantity", label: <>Quantity <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Quantity", datalist: undefined, cols: "col-span-1" },
+    { key: "quantity", label: <>Quantity <span className="text-red-500">*</span></>, required: true, type: "quantity", placeholder: "Quantity", datalist: undefined, cols: "col-span-1" },
     { key: "supplier", label: <>Supplier <span className="text-red-500">*</span></>, required: true, type: "text", placeholder: "Enter supplier", datalist: "suppliers", cols: "col-span-2 sm:col-span-1" },
-    { key: "note", label: "Note", required: false, type: "text", placeholder: "Add note (optional)", datalist: undefined, cols: "col-span-2 sm:col-span-2 lg:col-span-2" },
+    { key: "note", label: "Note", required: false, type: "text", placeholder: "Add note (optional)", datalist: undefined, cols: "col-span-2 sm:col-span-2 lg:col-span-1" },
 ]
 
 export default function AddProductForm() {
@@ -58,7 +60,8 @@ export default function AddProductForm() {
     const grandTotal = rows.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.quantity) || 0), 0)
 
     const isFormValid = rows.every(row =>
-        FIELDS.every(f => !f.required || String(row[f.key as keyof ProductRow]).trim() !== "")
+        FIELDS.every(f => !f.required || String(row[f.key as keyof ProductRow]).trim() !== "") &&
+        row.quantityUnit.trim() !== ""
     )
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -75,10 +78,9 @@ export default function AddProductForm() {
             setLoading(true)
             const dataToSubmit = [...rows]
             for (const row of rows) {
-                const rest = { ...row }
-                delete rest.id
+                const { id: _id, ...rest } = row
                 await createProduct(
-                    { ...rest, name: row.name.trim(), price: Number(row.price), quantity: Number(row.quantity), userId: "" },
+                    { ...rest, name: row.name.trim(), price: Number(row.price), quantity: Number(row.quantity), quantityUnit: row.quantityUnit, userId: "" },
                     { skipImmediateSync: true }
                 )
             }
@@ -111,6 +113,11 @@ export default function AddProductForm() {
                 <Suggestions products={products} type="product" />
                 <Suggestions products={products} type="category" />
                 <Suggestions products={products} type="supplier" />
+                <datalist id="quantityUnits">
+                    {QUANTITY_UNITS.map((unit) => (
+                        <option key={unit.value} value={unit.value}>{unit.label}</option>
+                    ))}
+                </datalist>
 
                 <p className="flex justify-end text-xs text-rose-400 font-medium mb-4">* Required fields are necessary to submit the form</p>
 
@@ -147,8 +154,32 @@ export default function AddProductForm() {
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 {FIELDS.map(f => (
                                     <div key={f.key} className={f.cols}>
-                                        <Input type={f.type} label={f.label} placeholder={f.placeholder} value={row[f.key as keyof ProductRow]} onChange={e => handleChange(row.id, f.key as keyof ProductRow, e.target.value)}
-                                            {...(f.datalist ? { list: f.datalist } : {})} />
+                                        {f.type === "quantity" ? (
+                                            <div>
+                                                <label className="block mb-1 text-sm font-medium text-[var(--text-primary)]">
+                                                    {f.label}
+                                                </label>
+                                                <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] focus-within:ring-2 focus-within:ring-emerald-400">
+                                                    <input
+                                                        type="number"
+                                                        placeholder={f.placeholder}
+                                                        value={row.quantity}
+                                                        onChange={(e) => handleChange(row.id, "quantity", e.target.value)}
+                                                        className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none"
+                                                    />
+                                                    <input
+                                                        list="quantityUnits"
+                                                        aria-label="Quantity unit"
+                                                        value={row.quantityUnit}
+                                                        onChange={(e) => handleChange(row.id, "quantityUnit", e.target.value)}
+                                                        className="w-20 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Input type={f.type} label={f.label} placeholder={f.placeholder} value={row[f.key as keyof ProductRow]} onChange={e => handleChange(row.id, f.key as keyof ProductRow, e.target.value)}
+                                                datalist={f.datalist} />
+                                        )}
                                     </div>
                                 ))}
                             </div>

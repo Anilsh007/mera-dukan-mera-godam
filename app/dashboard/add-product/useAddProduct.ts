@@ -1,6 +1,7 @@
 import { db, Product } from "@/app/lib/db";
 import { auth } from "@/app/lib/firebase";
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service";
+import { normalizeQuantityUnit } from "@/app/lib/quantityUnit";
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity";
 import { v4 as uuidv4 } from "uuid";
 
@@ -15,15 +16,17 @@ export default function useAddProduct() {
 
     const normalizedName = product.name.trim().toLowerCase();
     const normalizedCategory = (product.category || "").trim().toLowerCase();
+    const quantityUnit = normalizeQuantityUnit(product.quantityUnit);
 
     const existing = await db.products
-      .where("[userId+name+category]")
-      .equals([userId, normalizedName, normalizedCategory])
+      .where("[userId+name+category+quantityUnit]")
+      .equals([userId, normalizedName, normalizedCategory, quantityUnit])
       .first();
 
     if (existing) {
       await db.products.update(existing.id!, {
         quantity: existing.quantity + Number(product.quantity),
+        quantityUnit,
         price: Number(product.price),
       });
 
@@ -31,6 +34,7 @@ export default function useAddProduct() {
         id: uuidv4(),
         productId: existing.id!,
         quantityAdded: Number(product.quantity),
+        quantityUnit,
         type: "in",
         price: Number(product.price),
         date: new Date().toISOString(),
@@ -46,6 +50,7 @@ export default function useAddProduct() {
         name: normalizedName,
         price: Number(product.price),
         quantity: Number(product.quantity),
+        quantityUnit,
         category: normalizedCategory || undefined,
         supplier: product.supplier || undefined,
         expiry: product.expiry || undefined,
@@ -59,6 +64,7 @@ export default function useAddProduct() {
         id: uuidv4(),
         productId: newId,
         quantityAdded: Number(product.quantity),
+        quantityUnit,
         type: "in",
         price: Number(product.price),
         date: new Date().toISOString(),

@@ -1,6 +1,7 @@
 "use client"
 
 import useInventoryData from "../hooks/useInventoryData"
+import { formatQuantity } from "@/app/lib/quantityUnit"
 
 function getDaysLeft(expiry?: string) {
   if (!expiry) return null
@@ -84,7 +85,7 @@ export default function ExpiryAlertsPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-xl bg-black/5 p-3 dark:bg-white/5">
                     <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Quantity</p>
-                    <p className="mt-1 font-semibold text-[var(--text-primary)]">{product.quantity}</p>
+                    <p className="mt-1 font-semibold text-[var(--text-primary)]">{formatQuantity(product.quantity, product.quantityUnit)}</p>
                   </div>
                   <div className="rounded-xl bg-black/5 p-3 dark:bg-white/5">
                     <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Expiry Date</p>
