@@ -4,7 +4,7 @@ import { toPng } from 'html-to-image'
 
 interface Props {
   data: {
-    business: { shopName: string; gstNumber: string; upiId: string }
+    business: { shopName: string; gstNumber: string; upiId: string; logoUrl?: string }
     personal: { displayName: string; phone: string; email: string }
     address: { district: string; state: string }
   }
@@ -33,19 +33,40 @@ export default function BusinessCard({ data }: Props) {
           <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white blur-3xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 rounded-full bg-emerald-300 blur-3xl"></div>
         </div>
-        
+
         <div className="relative z-10 h-full flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start mb-8">
-              <div>
-                <p className="text-emerald-200 text-xs uppercase tracking-wider">Business Card</p>
-                <h4 className="text-xl font-bold">{data.business.shopName}</h4>
+
+              <div className="flex items-center gap-3">
+
+                {/* ✅ LOGO */}
+                {data.business.logoUrl ? (
+                  <img
+                    src={data.business.logoUrl}
+                    alt="Logo"
+                    className="w-12 h-12 object-contain rounded-lg bg-white/10 p-1"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <MdBusiness size={20} />
+                  </div>
+                )}
+
+                {/* Shop Info */}
+                <div>
+                  <p className="text-emerald-200 text-xs uppercase tracking-wider">
+                    Business Card
+                  </p>
+                  <h4 className="text-xl font-bold">
+                    {data.business.shopName}
+                  </h4>
+                </div>
+
               </div>
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                <MdBusiness size={20} />
-              </div>
+
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <p className="text-emerald-200 text-xs">Owner</p>
@@ -63,7 +84,7 @@ export default function BusinessCard({ data }: Props) {
               )}
             </div>
           </div>
-          
+
           <div className="border-t border-white/20 pt-4">
             <div className="flex items-center justify-between">
               <div className="text-xs text-emerald-200">
@@ -78,7 +99,7 @@ export default function BusinessCard({ data }: Props) {
           </div>
         </div>
       </div>
-      
+
       <p className="text-center text-xs text-[var(--text-muted)] mt-3">This card can be downloaded</p>
     </div>
   )

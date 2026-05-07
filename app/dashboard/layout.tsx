@@ -4,6 +4,7 @@ import { ProtectedRoute, Sidebar, Header } from "@/app/components/client/useClie
 import { useState } from "react"
 import { Toaster } from "sonner"
 import SupabaseSyncManager from "../lib/dataSyncManager"
+import ProfileCompletionNotice from "./profile/ProfileCompletionNotice"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <Header onMenuClick={() => setIsOpen(true)} />
             <div className="mx-auto w-full max-w-[1600px] px-3 pb-4 pt-20 sm:px-4 sm:pb-5 sm:pt-24 lg:px-5 lg:pt-5 xl:px-6">
+              <ProfileCompletionNotice />
               {children}
             </div>
           </main>

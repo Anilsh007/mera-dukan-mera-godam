@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, IdCard, Hash, Building2 } from "lucide-react";
+import { Mail, Phone, MapPin, Building2 } from "lucide-react";
 import { SellerSectionProps } from "../types/ui.types";
 
 export default function SellerSection({ seller }: SellerSectionProps) {

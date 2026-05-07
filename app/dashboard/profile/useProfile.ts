@@ -23,6 +23,7 @@ export type ProfileState = {
     businessType: string
     upiId: string
     invoicePrefix: string
+    logoUrl?: string
   }
   address: {
     address: string
@@ -62,6 +63,7 @@ const defaultState: ProfileState = {
     businessType: "retail",
     upiId: "",
     invoicePrefix: "INV",
+    logoUrl: "",
   },
   address: {
     address: "",

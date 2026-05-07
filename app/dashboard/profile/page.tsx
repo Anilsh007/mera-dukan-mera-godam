@@ -40,40 +40,37 @@ export default function ProfilePage() {
       }
 
       setIsEditing(false)
+      return result
     } catch (error: any) {
       toast.error(error.message || "Save failed")
+      throw error
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-6 shadow-[var(--shadow-card)]">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            {isEditing ? "Edit Profile" : "Business Profile"}
-          </h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            {isEditing
-              ? "Apne business ki details update karein"
-              : "Apne business ka complete overview"}
-          </p>
-        </div>
+      {isEditing ? (
+        <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-2 shadow-[var(--shadow-card)]">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              {isEditing ? "" : "Business Profile"}
+            </h1>
+            <p className="text-sm text-[var(--text-muted)]">
+              {isEditing
+                ? "Update your business information. This will help us personalize your experience and generate accurate invoices."
+                : ""}
+            </p>
+          </div>
 
-        {!isProfileEmpty && (
-          <Button
-            variant={isEditing ? "outline" : "primary"}
-            icon={isEditing ? <MdArrowBack /> : <MdEdit />}
-            title={isEditing ? "Back to Profile" : "Edit Profile"}
-            onClick={() => setIsEditing((prev) => !prev)}
-          />
-        )}
-      </div>
+          {!isProfileEmpty && (
+            <Button variant={isEditing ? "outline" : "primary"} icon={isEditing ? <MdArrowBack /> : <MdEdit />} title={isEditing ? "Back to Profile" : "Edit Profile"} onClick={() => setIsEditing((prev) => !prev)} />
+          )}
+        </div>
+      ) : ("")}
 
       <div className="min-h-[500px]">
         {isEditing ? (
-          <ProfileForm
-            initialData={profile}
-            onSave={handleSave}
+          <ProfileForm initialData={profile} onSave={handleSave}
             onCancel={() => {
               if (!isProfileEmpty) {
                 setIsEditing(false)

@@ -48,9 +48,9 @@ export async function downloadAllData() {
     db.productLogs.toArray(),
   ])
 
-  const nameMap: Record<number, string> = {}
+  const nameMap: Record<string, string> = {}
   products.forEach((p) => {
-    if (p.id) nameMap[p.id] = p.name
+    if (p.id) nameMap[String(p.id)] = p.name
   })
 
   const productHeaders = [
@@ -135,9 +135,9 @@ export async function downloadByDateRange(from: string, to: string) {
     db.productLogs.toArray(),
   ])
 
-  const nameMap: Record<number, string> = {}
+  const nameMap: Record<string, string> = {}
   products.forEach((p) => {
-    if (p.id) nameMap[p.id] = p.name
+    if (p.id) nameMap[String(p.id)] = p.name
   })
 
   const filteredLogs = logs.filter((l) => {

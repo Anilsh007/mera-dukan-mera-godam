@@ -29,7 +29,7 @@ export default function AllStockPage() {
     products.forEach((product) => {
       const key = normalizeCategory(product.category)
       if (!map.has(key)) map.set(key, [])
-      map.get(key).push(product)
+      map.get(key)?.push(product)
     })
 
     return Array.from(map.entries())

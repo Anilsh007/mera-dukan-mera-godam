@@ -11,57 +11,75 @@ import InvoiceHistory from "./components/InvoiceHistory"
 import InvoicePreview from "./Preview/InvoicePreview"
 
 import useProfile from "@/app/dashboard/profile/useProfile"
-import useProducts from "@/app/dashboard/all-stock/useProducts"
+import { toast } from "sonner"
 
-import { buildSellerFromProfile, buildBankDetailsFromProfile, buildInvoiceNumber, loadInvoicesFromDb, saveInvoiceToDb, } from "./invoice.service"
-import { buildBuyerSuggestions, matchBuyerSuggestion } from "./buyerSuggestions";
-import { createEmptyInvoice, createEmptyInvoiceItem, type GSTInvoice, type GSTInvoiceItem, type GSTInvoiceRecord, } from "./types/gst.types";
-//import { matchBuyerSuggestion } from "./components/BuyerSection"
+import {
+  buildSellerFromProfile,
+  buildBankDetailsFromProfile,
+  buildInvoiceNumber,
+  loadInvoicesFromDb,
+  saveInvoiceToDb,
+  saveInvoiceToSupabase,
+} from "./invoice.service"
 
+import { buildBuyerSuggestions } from "./buyerSuggestions"
+
+import {
+  calculateGST,
+  createEmptyInvoice,
+  createEmptyInvoiceItem,
+  buildInvoiceTotals,
+  type GSTInvoice,
+  type GSTInvoiceRecord,
+} from "./types/gst.types"
+
+import { getStateFromGSTIN } from "./lib/getStateFromGSTIN"
+import { syncSupabaseToDexie } from "@/app/lib/supabaseDownload.service"
+import { findHsnSacTaxInfo } from "./lib/hsnSacLookup"
 
 const today = new Date().toISOString().slice(0, 10)
 
 export default function GstForm() {
-
-  // ✅ STATE (THIS WAS MISSING ❗)
   const [invoice, setInvoice] = useState<GSTInvoice>(createEmptyInvoice())
   const [invoices, setInvoices] = useState<GSTInvoiceRecord[]>([])
   const [saving, setSaving] = useState(false)
 
   const { profile } = useProfile()
-  const { products } = useProducts()
+  // 🔥 INTER / INTRA STATE
+  const isInterState =
+    invoice.seller.state?.trim().toLowerCase() !==
+    invoice.buyer.state?.trim().toLowerCase()
 
-  // ✅ PRODUCT SUGGESTIONS
-  const productSuggestions = useMemo(
-    () =>
-      products.map((p) => ({
-        name: p.name,
-        displayName: p.name,
-        rate: p.price,
-        hsnCode: p.sku || "",
-      })),
-    [products]
-  )
-
-  // ✅ BUYER SUGGESTIONS
+  // -----------------------------
+  // BUYER SUGGESTIONS
+  // -----------------------------
   const buyerSuggestions = useMemo(
     () => buildBuyerSuggestions(invoices),
     [invoices]
   )
 
-  // ✅ INITIAL LOAD
+  // -----------------------------
+  // INITIAL LOAD
+  // -----------------------------
   useEffect(() => {
     async function init() {
       const data = await loadInvoicesFromDb()
       setInvoices(data)
 
-      setInvoice((prev: any) => ({
+      setInvoice((prev) => ({
         ...prev,
         invoiceNo: buildInvoiceNumber(profile, data),
         invoiceDate: today,
         dueDate: today,
         seller: buildSellerFromProfile(profile),
         bankDetails: buildBankDetailsFromProfile(profile),
+        shippingSameAsBilling: true,
+        shippingAddress: {
+          address: prev.buyer.address || "",
+          city: prev.buyer.city || "",
+          state: prev.buyer.state || "",
+          pincode: prev.buyer.pincode || "",
+        },
       }))
     }
 
@@ -69,64 +87,181 @@ export default function GstForm() {
   }, [profile])
 
   // -----------------------------
-  // ✅ HANDLERS
+  // BUYER CHANGE
   // -----------------------------
-
-  const handleMetaChange = (field: string, value: string) => {
-    setInvoice((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
   const handleBuyerChange = (field: string, value: string) => {
-    const matched = matchBuyerSuggestion(
-      buyerSuggestions,
-      field as any,
-      value
-    )
+    const updatedBuyer = { ...invoice.buyer, [field]: value }
 
-    setInvoice((prev) => ({
-      ...prev,
-      buyer: matched
-        ? { ...prev.buyer, ...matched.buyer, [field]: value }
-        : { ...prev.buyer, [field]: value },
-    }))
-  }
-
-  const handleItemChange = (
-    index: number,
-    field: keyof GSTInvoiceItem,
-    value: string
-  ) => {
-    const items = [...invoice.items]
-
-    if (field === "quantity" || field === "rate" || field === "gstRate") {
-      items[index][field] = Number(value) as never
-    } else {
-      items[index][field] = value as never
+    if (field === "gstin") {
+      const state = getStateFromGSTIN(value)
+      if (state) updatedBuyer.state = state
     }
 
     setInvoice((prev) => ({
       ...prev,
-      items,
+      buyer: updatedBuyer,
+      shippingAddress: prev.shippingSameAsBilling
+        ? {
+            address: updatedBuyer.address || "",
+            city: updatedBuyer.city || "",
+            state: updatedBuyer.state || "",
+            pincode: updatedBuyer.pincode || "",
+          }
+        : prev.shippingAddress,
     }))
   }
 
-  const addItem = () => {
+  const handleShippingAddressChange = (field: string, value: string) => {
     setInvoice((prev) => ({
       ...prev,
-      items: [...prev.items, createEmptyInvoiceItem()],
+      shippingAddress: {
+        ...prev.shippingAddress,
+        [field]: value,
+      },
     }))
+  }
+
+  const handleShippingSameChange = (checked: boolean) => {
+    setInvoice((prev) => ({
+      ...prev,
+      shippingSameAsBilling: checked,
+      shippingAddress: checked
+        ? {
+            address: prev.buyer.address || "",
+            city: prev.buyer.city || "",
+            state: prev.buyer.state || "",
+            pincode: prev.buyer.pincode || "",
+          }
+        : prev.shippingAddress,
+    }))
+  }
+
+  // -----------------------------
+  // ITEM CHANGE (🔥 MAIN FIX)
+  // -----------------------------
+
+  const handleItemChange = (index: number, field: string, value: string | number) => {
+    setInvoice(prev => {
+      const updatedItems = [...prev.items]
+
+      const item = {
+        ...updatedItems[index],
+        [field]:
+          field === "rate" || field === "quantity" || field === "discount"
+            ? Number(value)
+            : value,
+      }
+
+      const taxInfo = findHsnSacTaxInfo(item.hsnCode)
+      const cgstRate = taxInfo?.cgstRate ?? item.cgstRate ?? 9
+      const sgstRate = taxInfo?.sgstRate ?? item.sgstRate ?? 9
+      const igstRate = taxInfo?.igstRate ?? item.igstRate ?? 18
+      const gstRate = isInterState ? igstRate : cgstRate + sgstRate
+
+      const gst = calculateGST(
+        gstRate,
+        item.quantity,
+        item.rate,
+        item.discount,
+        isInterState,
+        { cgstRate, sgstRate, igstRate }
+      )
+
+      updatedItems[index] = {
+        ...item,
+        description: item.name,
+        hsnSacType: taxInfo?.type,
+        hsnSacDescription: taxInfo?.description || "",
+        gstCondition: taxInfo?.condition || "",
+        gstRate,
+        cgstRate,
+        sgstRate,
+        igstRate,
+        taxableValue: gst.taxableValue,
+        cgstAmount: gst.cgst,
+        sgstAmount: gst.sgst,
+        igstAmount: gst.igst,
+        total: gst.total,
+      }
+
+      return {
+        ...prev,
+        items: updatedItems,
+        totals: buildInvoiceTotals(updatedItems),
+      }
+    })
+  }
+
+  // -----------------------------
+  // 🔥 STATE CHANGE RE-CALCULATION
+  // -----------------------------
+  useEffect(() => {
+    setInvoice((prev) => {
+      const updatedItems = prev.items.map((item) => {
+        const taxInfo = findHsnSacTaxInfo(item.hsnCode)
+        const cgstRate = taxInfo?.cgstRate ?? item.cgstRate ?? 9
+        const sgstRate = taxInfo?.sgstRate ?? item.sgstRate ?? 9
+        const igstRate = taxInfo?.igstRate ?? item.igstRate ?? 18
+        const gstRate = isInterState ? igstRate : cgstRate + sgstRate
+        const result = calculateGST(
+          gstRate,
+          item.quantity,
+          item.rate,
+          item.discount,
+          isInterState,
+          { cgstRate, sgstRate, igstRate }
+        )
+
+        return {
+          ...item,
+          description: item.name,
+          hsnSacType: taxInfo?.type,
+          hsnSacDescription: taxInfo?.description || item.hsnSacDescription || "",
+          gstCondition: taxInfo?.condition || item.gstCondition || "",
+          gstRate,
+          cgstRate,
+          sgstRate,
+          igstRate,
+          taxableValue: result.taxableValue,
+          cgstAmount: result.cgst,
+          sgstAmount: result.sgst,
+          igstAmount: result.igst,
+          total: result.total,
+        }
+      })
+
+      return { ...prev, items: updatedItems, totals: buildInvoiceTotals(updatedItems) }
+    })
+  }, [invoice.buyer.state, invoice.seller.state, isInterState])
+
+  // -----------------------------
+  // ADD / REMOVE
+  // -----------------------------
+  const addItem = () => {
+    setInvoice((prev) => {
+      const items = [...prev.items, createEmptyInvoiceItem()]
+      return {
+        ...prev,
+        items,
+        totals: buildInvoiceTotals(items),
+      }
+    })
   }
 
   const removeItem = (index: number) => {
-    setInvoice((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }))
+    setInvoice((prev) => {
+      const items = prev.items.filter((_, i) => i !== index)
+      return {
+        ...prev,
+        items: items.length ? items : [createEmptyInvoiceItem()],
+        totals: buildInvoiceTotals(items.length ? items : [createEmptyInvoiceItem()]),
+      }
+    })
   }
 
+  // -----------------------------
+  // RESET
+  // -----------------------------
   const resetInvoice = () => {
     setInvoice({
       ...createEmptyInvoice(),
@@ -135,61 +270,105 @@ export default function GstForm() {
       dueDate: today,
       seller: buildSellerFromProfile(profile),
       bankDetails: buildBankDetailsFromProfile(profile),
+      shippingSameAsBilling: true,
     })
   }
 
+  // -----------------------------
+  // SAVE
+  // -----------------------------
   const saveInvoice = async () => {
+    const missing = [
+      !invoice.seller.name && "seller name",
+      !invoice.seller.gstin && "GSTIN",
+      !invoice.seller.state && "state",
+    ].filter(Boolean)
+
+    if (missing.length) {
+      toast.error(`Complete seller profile: ${missing.join(", ")}`)
+      return
+    }
+
     setSaving(true)
     try {
       const saved = await saveInvoiceToDb(invoice)
+      try {
+        await saveInvoiceToSupabase(saved)
+      } catch (cloudError) {
+        console.error("Invoice cloud sync failed:", cloudError)
+        toast.error("Invoice local me save ho gaya, cloud sync pending hai")
+      }
       setInvoices((prev) => [saved, ...prev])
+      toast.success("Invoice save ho gaya")
       resetInvoice()
     } catch (err) {
       console.error(err)
+      toast.error("Invoice save nahi ho paya")
     } finally {
       setSaving(false)
     }
   }
 
+  // -----------------------------
+  // LOAD HISTORY
+  // -----------------------------
   const loadInvoiceFromHistory = (inv: GSTInvoiceRecord) => {
-    setInvoice(inv)
+    setInvoice({
+      ...inv,
+      shippingSameAsBilling: inv.shippingSameAsBilling !== false,
+      shippingAddress: inv.shippingAddress || {
+        address: inv.buyer.address || "",
+        city: inv.buyer.city || "",
+        state: inv.buyer.state || "",
+        pincode: inv.buyer.pincode || "",
+      },
+    })
   }
 
-  // -----------------------------
-  // ✅ UI
-  // -----------------------------
+  useEffect(() => {
+    async function syncData() {
+      try {
+        await syncSupabaseToDexie()
+      } catch (err) {
+        console.error("Manual sync failed:", err)
+      }
+    }
 
+    syncData()
+  }, [])
+
+  // -----------------------------
+  // UI
+  // -----------------------------
   return (
-    <div className="">
-
-      {/* LEFT */}
+    <div>
       <div className="space-y-6">
-
-        <InvoiceHeader invoice={invoice} onChange={handleMetaChange} onSave={saveInvoice} onReset={resetInvoice} saving={saving} />
+        <InvoiceHeader invoice={invoice} onChange={(f, v) => setInvoice({ ...invoice, [f]: v })} onSave={saveInvoice} onReset={resetInvoice} saving={saving} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SellerSection seller={invoice.seller} />
-          <BankNotesSection invoice={invoice} onChange={handleMetaChange} />
+          <BankNotesSection invoice={invoice} onChange={(f, v) => setInvoice({ ...invoice, [f]: v })} />
         </div>
 
-        <div className="p-4 mb-4 sm:p-6 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl shadow-[var(--shadow-card)]">
-          <BuyerSection buyer={invoice.buyer} onChange={handleBuyerChange} suggestions={buyerSuggestions} />
+        <div className="p-6 bg-[var(--bg-card-strong)] rounded-2xl">
+          <BuyerSection
+            buyer={invoice.buyer}
+            shippingAddress={invoice.shippingAddress}
+            shippingSameAsBilling={invoice.shippingSameAsBilling}
+            onBuyerChange={handleBuyerChange}
+            onShippingAddressChange={handleShippingAddressChange}
+            onShippingSameChange={handleShippingSameChange}
+            suggestions={buyerSuggestions}
+          />
 
-          <ItemsSection items={invoice.items} onChange={handleItemChange} addItem={addItem} removeItem={removeItem} productSuggestions={productSuggestions} />
+          <ItemsSection items={invoice.items} onChange={handleItemChange} addItem={addItem} removeItem={removeItem} isInterState={isInterState} />
         </div>
-
       </div>
 
-      {/* RIGHT */}
       <div className="space-y-6 sticky top-4">
-
         <InvoicePreview invoice={invoice} />
-
-        <InvoiceHistory invoices={invoices} onSelect={loadInvoiceFromHistory}
-        />
-
+        <InvoiceHistory invoices={invoices} onSelect={loadInvoiceFromHistory} />
       </div>
-
     </div>
   )
 }

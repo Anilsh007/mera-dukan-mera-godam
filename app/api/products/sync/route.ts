@@ -1,8 +1,10 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
-import { createVerify } from "node:crypto"
-import { normalizeUserIdentity } from "@/app/lib/userIdentity"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
+import {
+  createSupabaseAdminClient,
+  getUserIdentityFromRequest,
+  toApiErrorResponse,
+} from "@/app/api/_lib/auth"
 import {
   assertContentLength,
   assertFiniteNumber,
@@ -14,18 +16,6 @@ import {
 } from "@/app/api/_lib/security"
 
 export const runtime = "nodejs"
-
-const FIREBASE_CERTS_URL =
-  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
-
-type FirebaseTokenPayload = {
-  aud: string
-  email?: string
-  exp: number
-  iat: number
-  iss: string
-  sub: string
-}
 
 type SyncPayload = {
   products: Array<{
@@ -92,7 +82,7 @@ export async function GET(request: NextRequest) {
       logs: logs || [],
     })
   } catch (error) {
-    return toErrorResponse(error)
+    return toApiErrorResponse(error, "Unexpected products API error")
   }
 }
 
@@ -233,141 +223,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (error) {
-    return toErrorResponse(error)
-  }
-}
-
-function createSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase server credentials are not configured")
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
-}
-
-async function getUserIdentityFromRequest(request: NextRequest) {
-  const authorization = request.headers.get("authorization")
-
-  if (!authorization?.startsWith("Bearer ")) {
-    throw new ApiError("Missing Firebase token", 401)
-  }
-
-  const token = authorization.slice("Bearer ".length)
-  const payload = await verifyFirebaseToken(token)
-
-  if (!payload.email) {
-    throw new ApiError("Firebase token is missing email", 401)
-  }
-
-  return normalizeUserIdentity(payload.email)
-}
-
-async function verifyFirebaseToken(token: string): Promise<FirebaseTokenPayload> {
-  const [encodedHeader, encodedPayload, encodedSignature] = token.split(".")
-
-  if (!encodedHeader || !encodedPayload || !encodedSignature) {
-    throw new ApiError("Invalid Firebase token format", 401)
-  }
-
-  const header = JSON.parse(base64UrlDecode(encodedHeader)) as { alg?: string; kid?: string }
-  const payload = JSON.parse(base64UrlDecode(encodedPayload)) as FirebaseTokenPayload
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-
-  if (!projectId) {
-    throw new Error("Firebase project id is not configured")
-  }
-
-  if (header.alg !== "RS256" || !header.kid) {
-    throw new ApiError("Unsupported Firebase token header", 401)
-  }
-
-  if (payload.aud !== projectId) {
-    throw new ApiError("Firebase token audience mismatch", 401)
-  }
-
-  if (payload.iss !== `https://securetoken.google.com/${projectId}`) {
-    throw new ApiError("Firebase token issuer mismatch", 401)
-  }
-
-  if (!payload.sub) {
-    throw new ApiError("Firebase token subject is missing", 401)
-  }
-
-  const now = Math.floor(Date.now() / 1000)
-  if (payload.exp <= now || payload.iat > now) {
-    throw new ApiError("Firebase token is expired or invalid", 401)
-  }
-
-  const certificates = await fetchFirebaseCertificates()
-  const certificate = certificates[header.kid]
-
-  if (!certificate) {
-    throw new ApiError("Firebase signing certificate not found", 401)
-  }
-
-  const verifier = createVerify("RSA-SHA256")
-  verifier.update(`${encodedHeader}.${encodedPayload}`)
-  verifier.end()
-
-  const isValid = verifier.verify(certificate, base64UrlToBuffer(encodedSignature))
-  if (!isValid) {
-    throw new ApiError("Firebase token signature verification failed", 401)
-  }
-
-  return payload
-}
-
-async function fetchFirebaseCertificates(): Promise<Record<string, string>> {
-  const response = await fetch(FIREBASE_CERTS_URL, {
-    next: { revalidate: 3600 },
-  })
-
-  if (!response.ok) {
-    throw new Error("Unable to fetch Firebase signing certificates")
-  }
-
-  return (await response.json()) as Record<string, string>
-}
-
-function toErrorResponse(error: unknown) {
-  if (error instanceof SecurityError) {
-    return NextResponse.json({ message: error.message }, { status: error.status })
-  }
-
-  if (error instanceof ApiError) {
-    return NextResponse.json({ message: error.message }, { status: error.status })
-  }
-
-  const message = error instanceof Error ? error.message : "Unexpected products API error"
-  return NextResponse.json({ message }, { status: 500 })
-}
-
-function base64UrlDecode(value: string) {
-  return Buffer.from(normalizeBase64Url(value), "base64").toString("utf8")
-}
-
-function base64UrlToBuffer(value: string) {
-  return Buffer.from(normalizeBase64Url(value), "base64")
-}
-
-function normalizeBase64Url(value: string) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/")
-  const padding = (4 - (normalized.length % 4)) % 4
-
-  return `${normalized}${"=".repeat(padding)}`
-}
-
-class ApiError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message)
+    return toApiErrorResponse(error, "Unexpected products API error")
   }
 }
 

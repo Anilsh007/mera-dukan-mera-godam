@@ -1,7 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
+import { NextRequest, NextResponse } from "next/server"
 import { createVerify } from "crypto"
+import { normalizeUserIdentity } from "@/app/lib/userIdentity"
+import { SecurityError } from "./security"
 
-const FIREBASE_CERTS_URL = "https://www.googleapis.com/service_accounts/v1/jwt/securetoken@system.gserviceaccount.com"
+const FIREBASE_CERTS_URL = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
 
 type FirebaseTokenPayload = {
   aud: string
@@ -33,6 +36,36 @@ export function createSupabaseAdminClient() {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false },
   })
+}
+
+export async function getUserIdentityFromRequest(request: NextRequest) {
+  const authorization = request.headers.get("authorization")
+
+  if (!authorization?.startsWith("Bearer ")) {
+    throw new ApiError("Missing Firebase token", 401)
+  }
+
+  const token = authorization.slice("Bearer ".length)
+  const payload = await verifyFirebaseToken(token)
+
+  if (!payload.email) {
+    throw new ApiError("Firebase token is missing email", 401)
+  }
+
+  return normalizeUserIdentity(payload.email)
+}
+
+export function toApiErrorResponse(error: unknown, fallbackMessage: string) {
+  if (error instanceof SecurityError) {
+    return NextResponse.json({ message: error.message }, { status: error.status })
+  }
+
+  if (error instanceof ApiError) {
+    return NextResponse.json({ message: error.message }, { status: error.status })
+  }
+
+  const message = error instanceof Error ? error.message : fallbackMessage
+  return NextResponse.json({ message }, { status: 500 })
 }
 
 /**

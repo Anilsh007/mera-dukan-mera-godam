@@ -8,7 +8,7 @@ import OverviewTab from "../tabs/OverviewTab"
 import BusinessTab from "../tabs/BusinessTab"
 import AddressTab from "../tabs/AddressTab"
 import BusinessCard from "./BusinessCard"
-import { ProfileData } from "@/app/lib/profile.service"
+import { ProfileData } from "@/app/lib/profile/profile.service"
 
 interface Props {
   data: ProfileData

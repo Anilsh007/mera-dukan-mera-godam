@@ -103,6 +103,7 @@ export function buildSellerFromProfile(profile: ProfileState) {
     pincode: profile.address.pincode || "",
     phone: profile.personal.phone || "",
     email: profile.personal.email || "",
+    logoUrl: profile.business.logoUrl || "",
   };
 }
 

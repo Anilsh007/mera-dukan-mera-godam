@@ -1,4 +1,4 @@
-import { Landmark, User, CreditCard, Fingerprint, Gavel, StickyNote } from "lucide-react";
+import { Landmark, Gavel, StickyNote } from "lucide-react";
 import type { BankNotesProps } from "../types/ui.types";
 
 export default function BankNotesSection({ invoice, onChange }: BankNotesProps) {

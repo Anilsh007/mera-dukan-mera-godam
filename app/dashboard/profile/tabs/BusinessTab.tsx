@@ -3,7 +3,7 @@ import InfoItem from "../components/InfoItem"
 
 interface Props {
   data: {
-    business: { shopName: string; gstNumber: string; businessType: string; invoicePrefix: string; upiId: string }
+    business: { shopName: string; gstNumber: string; businessType: string; invoicePrefix: string; upiId: string; logoUrl?: string }
     settings: { termsAndConditions: string }
   }
 }

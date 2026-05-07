@@ -4,7 +4,7 @@ import Button from "@/app/components/utility/Button"
 interface Props {
   data: {
     personal: { displayName: string; photoURL: string }
-    business: { shopName: string; businessType: string }
+    business: { shopName: string; businessType: string; logoUrl?: string }
     updatedAt?: string
   }
   onEdit: () => void

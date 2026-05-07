@@ -12,7 +12,7 @@ import Button from "../utility/Button";
 import { toast } from "sonner";
 
 const AnimatedBackground = () => {
-  const meshRef = useRef<{ color: { setHSL: (h: number, s: number, l: number) => void } } | null>(null);
+  const meshRef = useRef<any>(null);
 
   useFrame((state) => {
     if (meshRef.current) {

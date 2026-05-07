@@ -357,9 +357,7 @@ export default function StockHistoryTabs({
 
       <div className="space-y-3 md:hidden">
         {paginatedRows.length === 0 ? (
-          <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-4 py-10 text-center text-[var(--text-muted)] shadow-[var(--shadow-card)]">
-            Is filter combination me koi history row nahi mili.
-          </div>
+          <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-4 py-10 text-center text-[var(--text-muted)] shadow-[var(--shadow-card)]">In this filter combination, no history rows were found.</div>
         ) : (
           paginatedRows.map((row) => (
             <div
@@ -443,90 +441,6 @@ export default function StockHistoryTabs({
           onEdit={(item) => item.id && setEditingRowId(String(item.id))}
         />
       </div>
-
-      <div className="hidden overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl shadow-[var(--shadow-card)]">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left text-sm">
-            <thead className="bg-black/5 dark:bg-white/5">
-              <tr className="border-b border-[var(--border-card)]">
-                <th className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={paginatedRows.length > 0 && paginatedRows.every((row) => selectedIds.has(row.id))}
-                    onChange={toggleSelectPage}
-                    className="h-4 w-4 cursor-pointer"
-                  />
-                </th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Date</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Product</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Category</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Type</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Buyer / Reason</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Qty</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Price</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">SKU</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Note</th>
-                <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-card)]">
-              {paginatedRows.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-[var(--text-muted)]">
-                    Is filter combination me koi history row nahi mili.
-                  </td>
-                </tr>
-              ) : (
-                paginatedRows.map((row) => (
-                  <tr key={row.id} className={selectedIds.has(row.id) ? "bg-emerald-50/40 dark:bg-emerald/[0.04]" : "hover:bg-emerald-50/30 dark:hover:bg-emerald/[0.03]"}>
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(row.id)}
-                        onChange={() => toggleSelection(row.id)}
-                        className="h-4 w-4 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">{formatDateTime(row.date)}</td>
-                    <td className="px-4 py-3 font-medium capitalize text-[var(--text-primary)]">{row.productName}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">{row.category}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.logType === "in" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400"}`}>
-                        {row.logType === "in" ? "Stock In" : row.reason.toLowerCase() === "sold" ? "Sale Out" : "Stock Out"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">
-                      {row.buyerName ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}` : row.reason}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">{formatQuantity(row.quantity, row.quantityUnit)}</td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600">Rs {row.price.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">{row.sku || "-"}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">
-                      <div className="space-y-2">
-                        <p>{row.note || "-"}</p>
-                        {row.correctedAt && (
-                          <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300">
-                            Corrected
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        title="Correct"
-                        variant="outline"
-                        icon={<Pencil size={15} />}
-                        onClick={() => setEditingRowId(row.id)}
-                      />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-[var(--text-secondary)]">Rows per page</span>
@@ -554,9 +468,7 @@ export default function StockHistoryTabs({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)]">
           <div>
             <p className="text-sm font-medium text-[var(--text-primary)]">{selectedRows.length} row selected</p>
-            <p className="text-xs text-[var(--text-secondary)]">
-              Mixed category sale rows bhi select kar sakte ho. GST bill ke liye same buyer hona zaroori hai.
-            </p>
+            <p className="text-xs text-[var(--text-secondary)]">You can select multiple rows at once. for example, to create a consolidated GST bill.</p>
           </div>
 
           <div className="flex flex-wrap gap-2">

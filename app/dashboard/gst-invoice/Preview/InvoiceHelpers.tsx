@@ -23,24 +23,51 @@ export function PartyCard({
   fallback: string
   customLabels?: Partial<Record<"gstin" | "address" | "city", string>>
 }) {
+  const fullAddress = [
+    party.address,
+    party.city,
+    party.state,
+    party.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ")
+
   const lines = [
     party.name,
-    party.gstin && `${customLabels?.gstin || "GSTIN"}: ${party.gstin}`,
-    party.address && `${customLabels?.address || "Address"}: ${party.address}`,
-    party.city && `${customLabels?.city || "City"}: ${party.city}`,
-    party.state && `State: ${party.state}`,
-    party.pincode && `Pincode: ${party.pincode}`,
-    party.phone && `Phone: ${party.phone}`,
-    party.email && `Email: ${party.email}`,
+
+    party.gstin && (
+      <span>
+        <strong>{customLabels?.gstin || "GSTIN"}:</strong> {party.gstin}
+      </span>
+    ),
+
+    fullAddress && (
+      <span>
+        <strong>{customLabels?.address || "Address"}:</strong> {fullAddress}
+      </span>
+    ),
+
+    party.phone && (
+      <span>
+        <strong>Phone:</strong> {party.phone}
+      </span>
+    ),
+
+    party.email && (
+      <span>
+        <strong>Email:</strong> {party.email}
+      </span>
+    ),
   ].filter(Boolean)
 
   return (
     <div className="rounded-xl border border-slate-200 p-4">
       <p className="text-sm font-semibold">{title}</p>
+
       {lines.length ? (
         <div className="mt-2 space-y-1 break-words text-sm text-slate-600">
-          {lines.map((line) => (
-            <p key={line}>{line}</p>
+          {lines.map((line, index) => (
+            <p key={index}>{line}</p>
           ))}
         </div>
       ) : (
@@ -50,12 +77,24 @@ export function PartyCard({
   )
 }
 
-// -------------------- SummaryRow --------------------
-export function SummaryRow({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
+// -------------------- SummaryRow (UNCHANGED) --------------------
+export function SummaryRow({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string
+  value: number
+  strong?: boolean
+}) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className={strong ? "font-semibold" : "text-slate-500"}>{label}</span>
-      <span className={strong ? "font-bold" : "font-semibold"}>Rs {value.toFixed(2)}</span>
+      <span className={strong ? "font-semibold" : "text-slate-500"}>
+        {label}
+      </span>
+      <span className={strong ? "font-bold" : "font-semibold"}>
+        Rs {value.toFixed(2)}
+      </span>
     </div>
   )
 }

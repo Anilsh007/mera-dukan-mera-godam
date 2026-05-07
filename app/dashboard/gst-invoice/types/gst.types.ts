@@ -11,14 +11,29 @@ export interface GSTInvoiceParty {
   pincode: string;
   phone?: string;
   email?: string;
+  logoUrl?: string;
+}
+
+export interface GSTInvoiceAddress {
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
 }
 
 /* ----------------------------------------------------------- */
 export interface GSTInvoiceItem {
+  name: string;
   description: string;
+  category?: string;
   hsnCode: string;
+  hsnSacType?: "HSN" | "SAC";
+  hsnSacDescription?: string;
+  gstCondition?: string;
   quantity: number;
   unit: string;
+  discount: number;
+  expiry: string;
   rate: number;
   gstRate: number;
   taxableValue: number;
@@ -48,6 +63,8 @@ export interface GSTInvoice {
   dueDate?: string;
   seller: GSTInvoiceParty;
   buyer: GSTInvoiceParty;
+  shippingSameAsBilling: boolean;
+  shippingAddress: GSTInvoiceAddress;
   items: GSTInvoiceItem[];
   totals: GSTInvoiceTotals;
   bankDetails?: {
@@ -69,17 +86,31 @@ export interface GSTInvoiceRecord extends GSTInvoice {
   updatedAt: string;
 }
 
+export type ProductSuggestion = {
+  label: string;
+  value: string;
+  category: string;
+  price?: number;
+  unit?: string;
+};
+
 /* ----------------------------------------------------------- */
 /* Helper functions – they can stay in the same file or be
    moved to a separate utils file; the important thing is that
    they are **exported**. */
 export function createEmptyInvoiceItem(): GSTInvoiceItem {
   return {
+    name: "",
     description: "",
     hsnCode: "",
+    hsnSacType: undefined,
+    hsnSacDescription: "",
+    gstCondition: "",
     quantity: 1,
     unit: "pcs",
     rate: 0,
+    discount: 0,
+    expiry: "",
     gstRate: 18,
     taxableValue: 0,
     cgstRate: 9,
@@ -117,6 +148,13 @@ export function createEmptyInvoice(): GSTInvoice {
       pincode: "",
       phone: "",
       email: "",
+    },
+    shippingSameAsBilling: true,
+    shippingAddress: {
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
     },
     items: [createEmptyInvoiceItem()],
     totals: createEmptyTotals(),
@@ -212,32 +250,43 @@ export const calculateGST = (
   gstRate: number,
   quantity: number,
   price: number,
-  isInterState: boolean
+  discount: number, // ₹ amount
+  isInterState: boolean,
+  rates?: {
+    cgstRate?: number
+    sgstRate?: number
+    igstRate?: number
+  }
 ) => {
-  const taxableValue = roundToTwo(quantity * price);
+  const taxableValue = roundToTwo(quantity * price)
+
+  const discountedValue = Math.max(0, roundToTwo(taxableValue - discount))
+  const cgstRate = rates?.cgstRate ?? gstRate / 2
+  const sgstRate = rates?.sgstRate ?? gstRate / 2
+  const igstRate = rates?.igstRate ?? gstRate
 
   if (isInterState) {
-    const igst = roundToTwo((taxableValue * gstRate) / 100);
+    const igst = roundToTwo((discountedValue * igstRate) / 100)
     return {
-      taxableValue,
+      taxableValue: discountedValue,
       cgst: 0,
       sgst: 0,
       igst,
-      total: roundToTwo(taxableValue + igst),
-    };
+      total: roundToTwo(discountedValue + igst),
+    }
   }
 
-  const halfRate = gstRate / 2;
-  const cgst = roundToTwo((taxableValue * halfRate) / 100);
-  const sgst = roundToTwo((taxableValue * halfRate) / 100);
+  const cgst = roundToTwo((discountedValue * cgstRate) / 100)
+  const sgst = roundToTwo((discountedValue * sgstRate) / 100)
+
   return {
-    taxableValue,
+    taxableValue: discountedValue,
     cgst,
     sgst,
     igst: 0,
-    total: roundToTwo(taxableValue + cgst + sgst),
-  };
-};
+    total: roundToTwo(discountedValue + cgst + sgst),
+  }
+}
 
 /* -----------------------------------------------------------
    buildInvoiceTotals – now uses the exported ZERO_TOTALS.
@@ -275,4 +324,3 @@ export function buildInvoiceTotals(items: GSTInvoiceItem[]): GSTInvoiceTotals {
     amountInWords: numberToWords(Math.round(roundedGrandTotal)),
   };
 }
-

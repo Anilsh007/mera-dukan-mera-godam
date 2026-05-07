@@ -4,7 +4,7 @@ import InfoItem from "../components/InfoItem"
 interface Props {
   data: {
     personal: { displayName: string; email: string; phone: string; alternateEmail: string }
-    business: { shopName: string; gstNumber: string; invoicePrefix: string; businessType: string }
+    business: { shopName: string; gstNumber: string; invoicePrefix: string; businessType: string; logoUrl?: string }
   }
   onViewBusiness: () => void
 }

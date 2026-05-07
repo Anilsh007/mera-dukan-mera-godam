@@ -34,7 +34,7 @@ const emptyForm: TableItem = { id: undefined, name: "", category: "", supplier: 
 
 const fields: FieldConfig[] = [
   { key: "name", label: "Product", placeholder: "Enter product name" },
-  { key: "category", label: "Type / Category", placeholder: "Stock In / Stock Out" },
+  { key: "category", label: "Type / Category", placeholder: "Type / Category" },
   { key: "supplier", label: "Supplier / Reason", placeholder: "Enter supplier or reason" },
   { key: "expiry", label: "Expiry", placeholder: "DD MMM YYYY" },
   { key: "price", label: "Price", placeholder: "Enter price", type: "number" },

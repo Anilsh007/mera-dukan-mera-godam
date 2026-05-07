@@ -70,15 +70,6 @@ function QtyCell({ qty, unit }: { qty?: number; unit?: string }) {
     )
 }
 
-function TypeBadge({ category }: { category?: string }) {
-    if (!category || category === "-") return <span className="text-[var(--text-muted)]">—</span>
-    if (category.includes("↑") || category === "in")
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 whitespace-nowrap">↑ Stock In</span>
-    if (category.includes("↓") || category === "out")
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 whitespace-nowrap">↓ Stock Out</span>
-    return <span className="capitalize text-[var(--text-primary)]">{category}</span>
-}
-
 const COLS = [
     { key: "name", label: "Product" },
     { key: "category", label: "Type / Category" },
@@ -158,7 +149,7 @@ export default function TableComponent({
 
                                     {/* Type / Category */}
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                        <TypeBadge category={item.category} />
+                                        {item.category}
                                     </td>
 
                                     {/* Supplier / Reason */}

@@ -1,6 +1,5 @@
 import type { GSTInvoice, GSTInvoiceItem, GSTInvoiceRecord } from "./gst.types"
 import type { BuyerSuggestion } from "../buyerSuggestions"
-import { CommonInvoiceProps } from "../lib/commonProps"
 
 export type InvoiceHeaderProps = {
   invoice: GSTInvoice
@@ -11,10 +10,14 @@ export type InvoiceHeaderProps = {
 }
 
 export type BuyerSectionProps = {
-  buyer: GSTInvoice["buyer"];                 // the buyer object
-  onChange: (field: keyof GSTInvoice["buyer"], value: string) => void;
-  suggestions: BuyerSuggestion[];
-};
+  buyer: GSTInvoice["buyer"]
+  shippingAddress: GSTInvoice["shippingAddress"]
+  shippingSameAsBilling: boolean
+  onBuyerChange: (field: keyof GSTInvoice["buyer"], value: string) => void
+  onShippingAddressChange: (field: keyof GSTInvoice["shippingAddress"], value: string) => void
+  onShippingSameChange: (checked: boolean) => void
+  suggestions: BuyerSuggestion[]
+}
 
 export type SellerSectionProps = {
   seller: GSTInvoice["seller"]
@@ -25,7 +28,7 @@ export type ItemsSectionProps = {
   onChange: (index: number, field: keyof GSTInvoiceItem, value: string) => void
   addItem: () => void
   removeItem: (index: number) => void
-  productSuggestions: any[]
+  isInterState: boolean
 }
 
 export type ItemCardProps = {
@@ -33,6 +36,7 @@ export type ItemCardProps = {
   index: number
   onChange: (index: number, field: keyof GSTInvoiceItem, value: string) => void
   onRemove: (index: number) => void
+  isInterState: boolean
 }
 
 export type BankNotesProps = {

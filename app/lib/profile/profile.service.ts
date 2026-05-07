@@ -14,6 +14,7 @@ export interface ProfileData {
     businessType: string;
     upiId: string;
     invoicePrefix: string;
+    logoUrl?: string;
   };
   address: {
     address: string;
