@@ -78,12 +78,12 @@ export default function Button({
 
     const variants: Record<string, string> = {
         // solid on hover
-        primary: "bg-emerald-500/10 text-emerald-600 border-emerald-400/40 hover:bg-emerald-500 hover:text-[var(--text-primary)] hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25",
-        secondary: "bg-blue-500/10 text-blue-600 border-blue-400/40 hover:bg-blue-500 hover:text-[var(--text-primary)] hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/25",
-        danger: "bg-red-500/10 text-red-600 border-red-400/40 hover:bg-red-500 hover:text-[var(--text-primary)] hover:border-red-500 hover:shadow-lg hover:shadow-red-500/25",
-        warning: "bg-amber-500/10 text-amber-600 border-amber-400/40 hover:bg-amber-500 hover:text-[var(--text-primary)] hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/25",
-        success: "bg-green-500/20 text-[var(--text-primary)] border-green-500/50 hover:bg-green-600 hover:border-green-600 hover:shadow-lg hover:shadow-green-500/30",
-        black: "bg-transparent text-gray-600 border-black-200 hover:bg-gray-900 hover:text-[var(--text-primary)] hover:border-gray-900 hover:shadow-lg",
+        primary: "bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-700 hover:text-white hover:border-teal-700 hover:shadow-lg hover:shadow-teal-700/20 dark:bg-teal-400/10 dark:text-teal-300 dark:border-teal-400/35 dark:hover:bg-teal-500 dark:hover:text-slate-950",
+        secondary: "bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white hover:border-blue-700 hover:shadow-lg hover:shadow-blue-700/20 dark:bg-blue-400/10 dark:text-blue-300 dark:border-blue-400/35 dark:hover:bg-blue-500 dark:hover:text-slate-950",
+        danger: "bg-red-50 text-red-700 border-red-300 hover:bg-red-600 hover:text-white hover:border-red-600 hover:shadow-lg hover:shadow-red-700/20 dark:bg-red-400/10 dark:text-red-300 dark:border-red-400/35 dark:hover:bg-red-500 dark:hover:text-white",
+        warning: "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-500 hover:text-slate-950 hover:border-amber-500 hover:shadow-lg hover:shadow-amber-600/20 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/35",
+        success: "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-700/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-400/35 dark:hover:bg-emerald-500 dark:hover:text-slate-950",
+        black: "bg-transparent text-[var(--text-secondary)] border-[var(--border-input)] hover:bg-slate-900 hover:text-white hover:border-slate-900 hover:shadow-lg dark:hover:bg-white dark:hover:text-slate-950",
 
         // always soft fill
         "soft-primary": "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40",
@@ -92,9 +92,9 @@ export default function Button({
         "soft-secondary": "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/40",
 
         // minimal
-        ghost: "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10",
+        ghost: "bg-black/5 text-[var(--text-secondary)] border-transparent hover:bg-black/10 dark:bg-white/5 dark:text-[var(--text-secondary)] dark:hover:bg-white/10",
         outline: "bg-transparent text-[var(--text-primary)] border-[var(--border-input)] hover:bg-[var(--bg-primary)]",
-        dotBorder: "border-2 border-dashed border-slate-300 text-slate-400 hover:text-blue-500 hover:border-blue-400 hover:bg-blue-50 dark:border-slate-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20",
+        dotBorder: "border-2 border-dashed border-[var(--border-input)] text-[var(--text-muted)] hover:text-teal-700 hover:border-teal-400 hover:bg-teal-50 dark:hover:text-teal-300 dark:hover:border-teal-400 dark:hover:bg-teal-400/10",
         delete: "border-none text-rose-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl",
         menu: "lg:hidden border-transparent bg-transparent text-[var(--text-primary)]",
         login: "border border-white/60 text-[var(--text-primary)] hover:bg-white/10",
@@ -132,7 +132,7 @@ export default function Button({
                 }}
                 className={[
                     "relative inline-flex max-w-full items-center justify-center gap-2",
-                    "px-5 py-2 rounded-xl border font-medium",
+                    "min-h-10 rounded-xl border px-3 py-2 font-medium sm:px-5",
                     "transition-all duration-200 ease-out",
                     "select-none",
                     "capitalize",

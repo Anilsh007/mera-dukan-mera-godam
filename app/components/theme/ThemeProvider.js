@@ -8,26 +8,25 @@ const ThemeContext = createContext({
 });
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
-
-  useEffect(() => {
-    // localStorage se saved theme lo, ya system preference check karo
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("mdmg-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = saved || (prefersDark ? "dark" : "light");
-    applyTheme(initial);
-    setTheme(initial);
-  }, []);
+    return saved || (prefersDark ? "dark" : "light");
+  });
 
   function applyTheme(t) {
     document.documentElement.setAttribute("data-theme", t);
     localStorage.setItem("mdmg-theme", t);
   }
 
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
-    applyTheme(next);
   };
 
   // ✅ HAMESHA Provider ke andar render karo — mounted guard hata diya

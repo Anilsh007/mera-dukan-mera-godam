@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { MdArrowBack, MdEdit } from "react-icons/md"
 import { toast } from "sonner"
 import Button from "@/app/components/utility/Button"
@@ -12,12 +12,6 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const { profile, loading, saveProfile } = useProfile()
 
-  useEffect(() => {
-    if (!loading && !profile.business?.shopName) {
-      setIsEditing(true)
-    }
-  }, [loading, profile.business?.shopName])
-
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -27,6 +21,7 @@ export default function ProfilePage() {
   }
 
   const isProfileEmpty = !profile.business?.shopName
+  const showEditor = isEditing || isProfileEmpty
 
   const handleSave = async (data: typeof profile) => {
     try {
@@ -41,35 +36,36 @@ export default function ProfilePage() {
 
       setIsEditing(false)
       return result
-    } catch (error: any) {
-      toast.error(error.message || "Save failed")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Save failed"
+      toast.error(message)
       throw error
     }
   }
 
   return (
     <div className="space-y-6">
-      {isEditing ? (
+      {showEditor ? (
         <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-2 shadow-[var(--shadow-card)]">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              {isEditing ? "" : "Business Profile"}
+              {showEditor ? "" : "Business Profile"}
             </h1>
             <p className="text-sm text-[var(--text-muted)]">
-              {isEditing
+              {showEditor
                 ? "Update your business information. This will help us personalize your experience and generate accurate invoices."
                 : ""}
             </p>
           </div>
 
           {!isProfileEmpty && (
-            <Button variant={isEditing ? "outline" : "primary"} icon={isEditing ? <MdArrowBack /> : <MdEdit />} title={isEditing ? "Back to Profile" : "Edit Profile"} onClick={() => setIsEditing((prev) => !prev)} />
+            <Button variant={showEditor ? "outline" : "primary"} icon={showEditor ? <MdArrowBack /> : <MdEdit />} title={showEditor ? "Back to Profile" : "Edit Profile"} onClick={() => setIsEditing((prev) => !prev)} />
           )}
         </div>
       ) : ("")}
 
       <div className="min-h-[500px]">
-        {isEditing ? (
+        {showEditor ? (
           <ProfileForm initialData={profile} onSave={handleSave}
             onCancel={() => {
               if (!isProfileEmpty) {

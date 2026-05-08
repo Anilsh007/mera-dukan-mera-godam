@@ -4,6 +4,34 @@ import { db } from "./db"
 import { auth } from "./firebase"
 import { normalizeQuantityUnit } from "./quantityUnit"
 
+type ProductSyncRow = {
+  id: string
+  name: string
+  price: number | string
+  quantity: number | string
+  quantity_unit?: string | null
+  category?: string
+  supplier?: string
+  note?: string
+  expiry?: string
+  sku?: string
+  user_id: string
+  created_at: string
+}
+
+type ProductLogSyncRow = {
+  id: string
+  product_id: string
+  quantity_added: number | string
+  quantity_unit?: string | null
+  type: "in" | "out"
+  reason?: string
+  price: number | string
+  expiry?: string
+  date: string
+  note?: string
+}
+
 export async function syncSupabaseToDexie() {
   const user = auth.currentUser
   if (!user) throw new Error("User not logged in")
@@ -26,8 +54,8 @@ export async function syncSupabaseToDexie() {
   }
 
   const { products, logs } = (await response.json()) as {
-    products: any[]
-    logs: any[]
+    products: ProductSyncRow[]
+    logs: ProductLogSyncRow[]
   }
 
   const existingProductIds = await db.products.where("userId").equals(userId).primaryKeys()

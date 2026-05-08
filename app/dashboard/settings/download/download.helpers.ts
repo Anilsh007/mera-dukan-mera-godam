@@ -1,8 +1,13 @@
 import { db } from "@/app/lib/db"
+import { auth } from "@/app/lib/firebase"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { toast } from "sonner"
 
-function toCSV(rows: Record<string, any>[], headers: string[]) {
-  const escape = (val: any) => {
+type CsvValue = string | number | boolean | null | undefined
+type CsvRow = Record<string, CsvValue>
+
+function toCSV(rows: CsvRow[], headers: string[]) {
+  const escape = (val: CsvValue) => {
     const str = val === null || val === undefined ? "" : String(val)
     return str.includes(",") || str.includes('"') || str.includes("\n")
       ? `"${str.replace(/"/g, '""')}"`
@@ -42,11 +47,19 @@ function formatDate(iso: string) {
   })
 }
 
+async function loadCurrentUserInventory() {
+  const userId = requireUserIdentityFromAuthUser(auth.currentUser)
+  const products = await db.products.where("userId").equals(userId).toArray()
+  const productIds = products.map((product) => product.id)
+  const logs = productIds.length
+    ? await db.productLogs.where("productId").anyOf(productIds).toArray()
+    : []
+
+  return { products, logs }
+}
+
 export async function downloadAllData() {
-  const [products, logs] = await Promise.all([
-    db.products.toArray(),
-    db.productLogs.toArray(),
-  ])
+  const { products, logs } = await loadCurrentUserInventory()
 
   const nameMap: Record<string, string> = {}
   products.forEach((product) => {
@@ -131,10 +144,7 @@ export async function downloadByDateRange(from: string, to: string) {
     return
   }
 
-  const [products, logs] = await Promise.all([
-    db.products.toArray(),
-    db.productLogs.toArray(),
-  ])
+  const { products, logs } = await loadCurrentUserInventory()
 
   const nameMap: Record<string, string> = {}
   products.forEach((product) => {

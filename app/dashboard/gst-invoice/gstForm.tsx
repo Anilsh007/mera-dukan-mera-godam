@@ -341,8 +341,8 @@ export default function GstForm() {
   // UI
   // -----------------------------
   return (
-    <div>
-      <div className="space-y-6">
+    <div className="grid min-w-0 grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+      <div className="min-w-0 space-y-6">
         <InvoiceHeader invoice={invoice} onChange={(f, v) => setInvoice({ ...invoice, [f]: v })} onSave={saveInvoice} onReset={resetInvoice} saving={saving} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -350,7 +350,7 @@ export default function GstForm() {
           <BankNotesSection invoice={invoice} onChange={(f, v) => setInvoice({ ...invoice, [f]: v })} />
         </div>
 
-        <div className="p-6 bg-[var(--bg-card-strong)] rounded-2xl">
+        <div className="min-w-0 rounded-2xl bg-[var(--bg-card-strong)] p-4 sm:p-6">
           <BuyerSection
             buyer={invoice.buyer}
             shippingAddress={invoice.shippingAddress}
@@ -365,7 +365,7 @@ export default function GstForm() {
         </div>
       </div>
 
-      <div className="space-y-6 sticky top-4">
+      <div className="min-w-0 space-y-6 2xl:sticky 2xl:top-4 2xl:self-start">
         <InvoicePreview invoice={invoice} />
         <InvoiceHistory invoices={invoices} onSelect={loadInvoiceFromHistory} />
       </div>

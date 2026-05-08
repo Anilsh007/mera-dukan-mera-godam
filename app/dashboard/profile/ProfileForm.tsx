@@ -18,6 +18,8 @@ interface ProfileFormProps {
   onCancel: () => void
 }
 
+type EditableProfileSection = "personal" | "business" | "address" | "banking" | "settings"
+
 export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFormProps) {
   const [profile, setProfile] = useState<ProfileState>(initialData)
   const [saving, setSaving] = useState(false)
@@ -26,11 +28,11 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
     setProfile(initialData)
   }, [initialData])
 
-  const handleChange = (section: keyof ProfileState, field: string, value: string) => {
+  const handleChange = (section: EditableProfileSection, field: string, value: string) => {
     setProfile((prev) => ({
       ...prev,
       [section]: {
-        ...(prev[section] as Record<string, any>),
+        ...(prev[section] as Record<string, string | undefined>),
         [field]: value,
       },
     }))
@@ -62,7 +64,7 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
     setSaving(true)
     try {
       await onSave(profile)
-    } catch (error) {
+    } catch {
       toast.error("Save karne mein error aaya")
     } finally {
       setSaving(false)
@@ -70,7 +72,7 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
   }
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-32 sm:pb-24">
       <PersonalInfo data={profile.personal} onChange={(field, value) => handleChange("personal", field, value)} />
 
       <BusinessInfo data={profile.business} onChange={(field, value) => handleChange("business", field, value)} />
@@ -81,7 +83,7 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
 
       <TermsSection value={profile.settings.termsAndConditions} onChange={(val) => handleChange("settings", "termsAndConditions", val)} />
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] shadow-lg rounded-full px-6 py-3 z-50">
+      <div className="fixed inset-x-3 bottom-3 z-50 flex flex-col gap-2 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-3 py-3 shadow-lg backdrop-blur-xl sm:left-1/2 sm:right-auto sm:bottom-6 sm:-translate-x-1/2 sm:flex-row sm:rounded-full sm:px-6">
         <Button variant="outline" icon={<MdClose />} title="Cancel" onClick={onCancel} />
         <Button onClick={handleSave} variant="primary" icon={<MdSave />} title={saving ? "Saving..." : "Save Changes"} loading={saving} disabled={saving} />
       </div>

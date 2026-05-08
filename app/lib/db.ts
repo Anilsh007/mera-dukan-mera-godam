@@ -33,7 +33,7 @@ export interface ProductLog {
   correctionLabel?: string
 }
 
-export interface ProfileRecord extends ProfileData {}
+export type ProfileRecord = ProfileData
 
 class StockDB extends Dexie {
   products!: Table<Product>

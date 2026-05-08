@@ -1,7 +1,8 @@
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 import { saveProfileToSupabase } from "./profileSupabase.service";
+import type { ProfileData } from "./profile.service";
 
-export function scheduleProfileSync(profileData: any) {
+export function scheduleProfileSync(profileData: Omit<ProfileData, "userId" | "updatedAt">) {
   if (syncTimeout) {
     clearTimeout(syncTimeout);
   }

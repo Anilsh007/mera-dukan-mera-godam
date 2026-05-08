@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { signOut, onAuthStateChanged, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { auth, ThemeToggle } from "@/app/components/client/useClient";
+import { auth } from "@/app/lib/firebase";
+import ThemeToggle from "@/app/components/theme/ThemeToggle";
 import Link from "next/link";
-import { Bell, LogOut, Menu, Search, User as UserIcon } from "lucide-react";
+import { LogOut, Menu, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
@@ -32,7 +33,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_88%,transparent)] px-3 py-2 shadow-[var(--shadow-header)] backdrop-blur-xl sm:flex-nowrap sm:gap-3 sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
+    <header className="fixed inset-x-0 top-0 z-40 flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_88%,transparent)] px-3 py-2 shadow-[var(--shadow-header)] backdrop-blur-xl sm:flex-nowrap sm:gap-3 sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
 
       <div className="flex min-w-0 items-center justify-center">
         <button onClick={onMenuClick} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--bg-elevated)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] lg:hidden"

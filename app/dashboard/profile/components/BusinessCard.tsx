@@ -27,8 +27,9 @@ export default function BusinessCard({ data }: Props) {
   }
 
   return (
-    <div className="sticky top-6">
-      <div ref={cardRef} className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl p-6 text-white shadow-xl aspect-[1/1.2] relative overflow-hidden">
+    <div className="lg:sticky lg:top-6">
+      <button id="download-card-btn" type="button" className="hidden" onClick={downloadCard} />
+      <div ref={cardRef} className="relative aspect-[1/1.2] min-h-[320px] overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 p-5 text-white shadow-xl sm:p-6">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white blur-3xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 rounded-full bg-emerald-300 blur-3xl"></div>

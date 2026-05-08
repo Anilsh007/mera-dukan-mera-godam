@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, Sphere } from "@react-three/drei";
 import { FcGoogle } from "react-icons/fc";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ElementRef } from "react";
 import logo from "../../../assets/logo.svg";
 import Button from "../utility/Button";
 import { toast } from "sonner";
 
 const AnimatedBackground = () => {
-  const meshRef = useRef<any>(null);
+  const meshRef = useRef<ElementRef<typeof MeshDistortMaterial> | null>(null);
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -58,8 +58,11 @@ export default function Login() {
 
       await signInWithPopup(auth, provider);
       router.push("/dashboard");
-    } catch (error: any) {
-      const code = error?.code || "";
+    } catch (error: unknown) {
+      const code =
+        typeof error === "object" && error && "code" in error && typeof error.code === "string"
+          ? error.code
+          : "";
 
       if (
         code === "auth/popup-blocked" ||

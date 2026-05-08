@@ -1,4 +1,4 @@
-import { db } from "@/app/components/client/useClient"
+import { db } from "@/app/lib/db"
 import { Product } from "@/app/lib/db"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
@@ -24,7 +24,7 @@ export async function addProduct(data: {
   note?: string
   sku?: string
   userId: string
-}) {
+}, options?: { skipImmediateSync?: boolean }) {
   const normalizedName = data.name.trim().toLowerCase()
   const normalizedCategory = (data.category || "").trim().toLowerCase()
   const quantityUnit = normalizeQuantityUnit(data.quantityUnit)
@@ -57,7 +57,9 @@ export async function addProduct(data: {
       note: data.note || undefined,
     })
 
-    await ensureCloudSync("Stock update")
+    if (!options?.skipImmediateSync) {
+      await ensureCloudSync("Stock update")
+    }
     return "updated"
   }
 
@@ -90,7 +92,9 @@ export async function addProduct(data: {
     note: data.note || undefined,
   })
 
-  await ensureCloudSync("Product creation")
+  if (!options?.skipImmediateSync) {
+    await ensureCloudSync("Product creation")
+  }
   return "created"
 }
 

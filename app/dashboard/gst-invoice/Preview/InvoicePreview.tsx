@@ -19,7 +19,7 @@ export default function InvoicePreview({ invoice }: { invoice: GSTInvoice }) {
       invoice.buyer.state.trim().toLowerCase();
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white p-4 text-black shadow print:shadow-none sm:p-6">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white p-3 text-black shadow print:shadow-none sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <SellerHeader seller={invoice.seller} />
 
@@ -66,7 +66,7 @@ export default function InvoicePreview({ invoice }: { invoice: GSTInvoice }) {
 
       <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-collapse text-sm">
+          <table className="w-full min-w-[760px] border-collapse text-xs sm:min-w-[1080px] sm:text-sm">
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <Th>#</Th>
@@ -120,7 +120,7 @@ export default function InvoicePreview({ invoice }: { invoice: GSTInvoice }) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
         <div className="rounded-xl border border-slate-200 p-4">
           <p className="text-sm font-semibold">Notes</p>
           <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">

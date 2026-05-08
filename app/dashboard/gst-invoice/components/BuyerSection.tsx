@@ -40,7 +40,7 @@ export default function BuyerSection({
           ))}
         </datalist>
 
-        <div className="grid md:grid-cols-4 gap-3 mt-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {buyerForm.map((input, index) => (
             <Input
               key={index}
@@ -72,7 +72,7 @@ export default function BuyerSection({
         </div>
 
         {!shippingSameAsBilling && (
-          <div className="mt-4 grid md:grid-cols-4 gap-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {shippingForm.map((input, index) => (
               <Input
                 key={index}

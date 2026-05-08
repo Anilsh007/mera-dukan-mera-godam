@@ -12,8 +12,8 @@ export default function ItemsSection({
 }: ItemsSectionProps) {
 
   return (
-    <section className="card">
-      <div className="flex justify-between">
+    <section className="card min-w-0">
+      <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
         <h3>Items</h3>
         <Button
           title="Add Item"

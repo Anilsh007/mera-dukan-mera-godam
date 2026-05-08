@@ -11,22 +11,22 @@ export default function BankNotesSection({ invoice, onChange }: BankNotesProps) 
       </h3>
 
       {/* Bank Details 2x2 Grid */}
-      <div className="grid grid-cols-2 gap-y-8 gap-x-6 px-2 mb-10">
+      <div className="mb-10 grid grid-cols-1 gap-4 px-2 min-[420px]:grid-cols-2 sm:gap-x-6 sm:gap-y-8">
         <div>
-          <p className="text-[9px] text-slate-600 uppercase font-extrabold mb-1 tracking-tighter">Bank Name</p>
-          <p className="text-sm text-slate-100 font-semibold tracking-tight">{bank?.bankName || "---"}</p>
+          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Bank Name</p>
+          <p className="text-sm text-[var(--text-primary)] font-semibold tracking-tight">{bank?.bankName || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-slate-600 uppercase font-extrabold mb-1 tracking-tighter">Account Holder</p>
-          <p className="text-sm text-slate-100 font-semibold tracking-tight">{bank?.accountName || "---"}</p>
+          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Account Holder</p>
+          <p className="text-sm text-[var(--text-primary)] font-semibold tracking-tight">{bank?.accountName || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-slate-600 uppercase font-extrabold mb-1 tracking-tighter">Account No</p>
-          <p className="text-sm font-mono text-slate-100 tracking-[0.1em]">{bank?.accountNo || "---"}</p>
+          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Account No</p>
+          <p className="text-sm font-mono text-[var(--text-primary)] tracking-[0.1em]">{bank?.accountNo || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-slate-600 uppercase font-extrabold mb-1 tracking-tighter">IFSC Code</p>
-          <p className="text-sm font-mono text-slate-100 uppercase tracking-widest">{bank?.ifsc || "---"}</p>
+          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">IFSC Code</p>
+          <p className="text-sm font-mono text-[var(--text-primary)] uppercase tracking-widest">{bank?.ifsc || "---"}</p>
         </div>
       </div>
 

@@ -19,14 +19,14 @@ export default function Input({
     const inputId = id || generatedId
 
     return (
-        <div className={containerClassName}>
+        <div className={`min-w-0 ${containerClassName || ""}`}>
             {label && (
                 <label htmlFor={inputId} className="block mb-1 text-sm font-medium text-[var(--text-primary)]" >
                     {label}
                 </label>
             )}
 
-            <input id={inputId} list={datalist} {...props} className={`w-full p-2 rounded-xl border bg-[var(--bg-input)] border-[var(--border-input)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:ring-2 focus:ring-emerald-400 outline-none transition-all ${className}`} />
+            <input id={inputId} list={datalist} {...props} className={`min-h-10 w-full min-w-0 rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-all focus:ring-2 focus:ring-emerald-400 sm:text-sm ${className}`} />
         </div>
     )
 }

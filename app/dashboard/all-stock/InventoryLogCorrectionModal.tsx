@@ -133,12 +133,12 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
   }
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4" onClick={onClose}>
       <div
-        className="w-full max-w-3xl rounded-[28px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-5 shadow-2xl sm:p-6"
+        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-2xl sm:rounded-[28px] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
               History Correction

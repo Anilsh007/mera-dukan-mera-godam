@@ -18,7 +18,7 @@ export default function AddressTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* Address */}
-      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
         <div className="flex items-center gap-2 mb-6 text-[var(--text-primary)]">
           <MdLocationOn className="text-amber-500" size={20} />
           <h3 className="font-bold text-lg">Address Details</h3>
@@ -36,7 +36,7 @@ export default function AddressTab({ data }: Props) {
       </div>
 
       {/* Banking */}
-      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
         <div className="flex items-center gap-2 mb-6 text-[var(--text-primary)]">
           <MdAccountBalance className="text-purple-500" size={20} />
           <h3 className="font-bold text-lg">Banking Information</h3>

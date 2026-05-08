@@ -13,7 +13,7 @@ export default function OverviewTab({ data, onViewBusiness }: Props) {
   return (
     <div className="space-y-6">
       {/* Personal Info */}
-      <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
         <div className="flex items-center gap-2 mb-4 text-[var(--text-primary)]">
           <MdPerson className="text-emerald-500" size={20} />
           <h3 className="font-bold text-lg">Personal Information</h3>
@@ -35,7 +35,7 @@ export default function OverviewTab({ data, onViewBusiness }: Props) {
           </div>
           <button onClick={onViewBusiness} className="text-sm text-emerald-600 hover:underline">View Details →</button>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
           <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
             <p className="text-xs text-[var(--text-muted)] uppercase">Shop Name</p>
             <p className="font-semibold text-[var(--text-primary)] text-lg">{data.business.shopName}</p>

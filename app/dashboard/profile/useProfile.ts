@@ -5,7 +5,6 @@ import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/app/lib/firebase"
 import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
 import { loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
-import { scheduleProfileSync } from "@/app/lib/profile/profileSyncManager"
 import { migrateLocalUserData } from "@/app/lib/userDataMigration"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 
@@ -235,7 +234,9 @@ function getLatestProfile(localProfile: ProfileState | null, cloudProfile: Profi
 }
 
 function stripProfileMeta(profile: ProfileState): Omit<ProfileState, "userId" | "updatedAt"> {
-  const { userId, updatedAt, ...rest } = profile
+  const rest: ProfileState = { ...profile }
+  delete rest.userId
+  delete rest.updatedAt
   return rest
 }
 

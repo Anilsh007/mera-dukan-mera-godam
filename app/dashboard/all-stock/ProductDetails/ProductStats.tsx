@@ -11,6 +11,7 @@ import {
     TrendingUp,
     Truck,
     Trash2,
+    type LucideIcon,
 } from "lucide-react"
 import Button from "@/app/components/utility/Button"
 import { Product } from "@/app/lib/db"
@@ -253,7 +254,7 @@ function InfoMiniCard({
     value,
     className,
 }: {
-    icon: any
+    icon: LucideIcon
     label: string
     value: string
     className?: string

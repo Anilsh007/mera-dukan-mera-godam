@@ -118,7 +118,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col overflow-y-auto pr-1">
+        <nav className="flex flex-1 min-w-0 flex-col overflow-y-auto pr-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const menuOpen =

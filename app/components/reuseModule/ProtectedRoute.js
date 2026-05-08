@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "../client/useClient";
+import { auth } from "@/app/lib/firebase";
 
 export default function ProtectedRoute({ children }) {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   return children;
 }

@@ -9,7 +9,7 @@ interface SectionCardProps {
 
 export default function SectionCard({ title, icon, iconColor = "text-blue-500", children }: SectionCardProps) {
   return (
-    <div className="bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl p-6 shadow-[var(--shadow-card)]">
+    <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
       <div className="flex items-center gap-3 mb-6 border-b border-[var(--border-card)] pb-4">
         <div className={`text-2xl ${iconColor}`}>{icon}</div>
         <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>

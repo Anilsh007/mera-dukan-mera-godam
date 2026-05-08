@@ -1,37 +1,37 @@
 @import "tailwindcss";
 
 html {
-  --bg-primary: #f1f5f9;
+  --bg-primary: #f6f8fb;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-strong: rgba(255, 255, 255, 0.92);
-  --bg-elevated: #f8fafc;
+  --bg-card-strong: rgba(255, 255, 255, 0.96);
+  --bg-elevated: #eef6f4;
   --bg-input: #ffffff;
   --bg-sidebar: #ffffff;
   --bg-header: #ffffff;
-  --bg-soft: #f8fafc;
-  --surface-card: rgba(255, 255, 255, 0.86);
-  --surface-primary: #f8fafc;
-  --surface-secondary: #eef2ff;
+  --bg-soft: #eef6f4;
+  --surface-card: rgba(255, 255, 255, 0.9);
+  --surface-primary: #f3f7f6;
+  --surface-secondary: #e8f3ff;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #111827;
+  --text-secondary: #4b5f5b;
+  --text-muted: #7b8d89;
 
-  --border-color: #e2e8f0;
-  --border-input: #abb4bf;
-  --border-card: #e2e8f0;
-  --border-primary: rgba(16, 185, 129, 0.35);
+  --border-color: #dce7e4;
+  --border-input: #9fb1ad;
+  --border-card: #dce7e4;
+  --border-primary: rgba(13, 148, 136, 0.36);
 
-  --shadow-card: 0 0px 10px rgba(166, 166, 166, 0.3);
-  --shadow-header: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 10px 28px rgba(15, 23, 42, 0.08);
+  --shadow-header: 0 1px 2px rgba(15, 23, 42, 0.08);
 
-  --sidebar-active: #22c55e;
-  --sidebar-hover: #22c55e99;
-  --btn-primary: #10b981;
-  --accent: #10b981;
-  --accent-soft: rgba(16, 185, 129, 0.14);
-  --toggle-bg: #e2e8f0;
+  --sidebar-active: #0f766e;
+  --sidebar-hover: rgba(13, 148, 136, 0.12);
+  --btn-primary: #0d9488;
+  --accent: #0d9488;
+  --accent-soft: rgba(13, 148, 136, 0.14);
+  --toggle-bg: #d9e7e3;
 
   /* Stock Status Colors - Light */
   --all-stock: rgba(34, 197, 94, 0.18);
@@ -57,44 +57,44 @@ html {
   --low-expiry-text: #92400e;
 
   /* selected row*/
-  --selected-row: #cad5e2;
+  --selected-row: #d8eee9;
 }
 
 /* ============================================
    DARK THEME
    ============================================= */
 html[data-theme="dark"] {
-  --bg-primary: #0b1120;
-  --bg-secondary: #111827;
-  --bg-card: #1f2937;
-  --bg-card-strong: rgba(17, 24, 39, 0.95);
-  --bg-elevated: #162033;
-  --bg-input: #111827;
-  --bg-sidebar: #020617;
-  --bg-header: #111827;
+  --bg-primary: #0b1413;
+  --bg-secondary: #111c1b;
+  --bg-card: #152321;
+  --bg-card-strong: rgba(17, 28, 27, 0.96);
+  --bg-elevated: #172927;
+  --bg-input: #0f1a19;
+  --bg-sidebar: #091210;
+  --bg-header: #101b1a;
   --bg-soft: rgba(255, 255, 255, 0.05);
-  --surface-card: rgba(17, 24, 39, 0.88);
-  --surface-primary: #162033;
-  --surface-secondary: #0f172a;
+  --surface-card: rgba(20, 35, 33, 0.9);
+  --surface-primary: #142321;
+  --surface-secondary: #10203a;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #64748b;
+  --text-primary: #f4fbf8;
+  --text-secondary: #c4d7d2;
+  --text-muted: #8da3a0;
 
-  --border-color: #1e293b;
-  --border-input: #3b435d;
-  --border-card: #1e293b;
-  --border-primary: rgba(52, 211, 153, 0.35);
+  --border-color: #243835;
+  --border-input: #405854;
+  --border-card: #243835;
+  --border-primary: rgba(45, 212, 191, 0.35);
 
-  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.5);
-  --shadow-header: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 16px 36px rgba(0, 0, 0, 0.34);
+  --shadow-header: 0 1px 3px rgba(0, 0, 0, 0.34);
 
-  --sidebar-active: #3b82f633;
-  --sidebar-hover: #ffffff0d;
-  --btn-primary: #34d399;
-  --accent: #34d399;
-  --accent-soft: rgba(52, 211, 153, 0.14);
-  --toggle-bg: #334155;
+  --sidebar-active: #0f766e;
+  --sidebar-hover: rgba(45, 212, 191, 0.11);
+  --btn-primary: #2dd4bf;
+  --accent: #2dd4bf;
+  --accent-soft: rgba(45, 212, 191, 0.14);
+  --toggle-bg: #263d39;
 
   /* Stock Status Colors - Dark */
   --all-stock: rgba(34, 197, 94, 0.22);
@@ -121,7 +121,7 @@ html[data-theme="dark"] {
   --low-expiry-text: #fcd34d;
 
   /* selected row*/
-  --selected-row: #020618;
+  --selected-row: #12332f;
 }
 
 html {
@@ -135,19 +135,51 @@ html[data-theme="dark"] {
 body {
   min-height: 100vh;
   overflow-x: hidden;
+  font-family: Arial, Helvetica, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 24%),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 28%),
+    radial-gradient(circle at top right, rgba(13, 148, 136, 0.13), transparent 24%),
     linear-gradient(180deg, var(--bg-primary) 0%, color-mix(in srgb, var(--bg-primary) 92%, #ffffff 8%) 100%);
   color: var(--text-primary);
   text-rendering: optimizeLegibility;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+  font-size: 16px;
+}
+
+main,
+section,
+article,
+aside,
+div,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+span,
+button {
+  overflow-wrap: anywhere;
+}
+
 html[data-theme="dark"] body {
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 20%),
-    linear-gradient(180deg, #07111f 0%, #091424 100%);
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.12), transparent 20%),
+    linear-gradient(180deg, #08110f 0%, #0d1716 100%);
 }
 
 * {
@@ -234,6 +266,10 @@ img {
 /* gst */
 /* src/app/globals.css */
 @layer components {
+  .card {
+    @apply rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-5;
+  }
+
   /* कार्ड‑बेस – हर कॉम्पोनेन्ट में बार‑बार लिखी गई क्लासें */
   .cardBase {
     @apply rounded-xl border border-slate-200 p-4 bg-[var(--bg-card-strong)] backdrop-blur-xl;

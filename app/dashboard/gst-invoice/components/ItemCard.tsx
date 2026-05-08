@@ -27,8 +27,8 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
   );
 
   return (
-    <div className="border p-4 rounded-xl relative">
-      <div className="flex justify-between">
+    <div className="relative min-w-0 rounded-xl border p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-3">
         <p>Item {index + 1}</p>
         <Button
           variant="delete"
@@ -37,7 +37,7 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
         />
       </div>
 
-      <div className="grid md:grid-cols-4 gap-2 mt-3">
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
 
         {/* 🔥 PRODUCT INPUT + DROPDOWN */}
         <div className="relative">
@@ -67,10 +67,16 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
           <Input label="HSN / SAC" value={item.hsnCode} onChange={(e) => onChange(index, "hsnCode", e.target.value)} className="pr-10" />
           {item.hsnSacDescription && (
             <div className="group absolute right-3 top-[38px]">
-              <button type="button" className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]" aria-label="View HSN or SAC details">
+              <button
+                type="button"
+                className="rounded-full bg-sky-100 p-1 text-sky-700 shadow-sm ring-1 ring-sky-200 transition hover:bg-sky-200 hover:text-sky-900"
+                aria-label="View HSN or SAC details"
+              >
                 <Info size={16} />
               </button>
-              <div className="pointer-events-none absolute right-0 z-50 mt-2 hidden w-80 rounded-2xl border border-sky-200 bg-white p-3 text-left shadow-xl group-hover:block">
+              <div className="absolute right-0 top-full z-50 hidden max-w-[calc(100vw-2rem)] pt-2 group-hover:block">
+                <div className="absolute right-3 top-[3px] h-3 w-3 rotate-45 border-l border-t border-sky-200 bg-white" />
+                <div className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-sky-200 bg-white p-3 text-left shadow-xl">
                 <div className="flex items-start gap-2">
                   <CircleAlert size={16} className="mt-0.5 shrink-0 text-sky-700" />
                   <div className="min-w-0 text-sm text-slate-700">
@@ -85,6 +91,7 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
                       <p className="mt-2 text-xs leading-5 text-slate-600">{item.gstCondition}</p>
                     )}
                   </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -113,11 +120,11 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
         </div>
 
         {/* 🔥 MAIN TAX ROW */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl bg-[var(--bg-input)] border p-3">
+        <div className="flex flex-col gap-3 rounded-xl border bg-[var(--bg-input)] p-3 md:flex-row md:items-center md:justify-between">
 
           {/* LEFT: Taxable */}
           <div className="flex-1 text-center md:text-left">
-            <p className="text-xs text-gray-400">Taxable</p>
+            <p className="text-xs text-[var(--text-muted)]">Taxable</p>
             <p className="text-lg font-semibold">
               ₹ {item.taxableValue.toFixed(2)}
             </p>
@@ -127,7 +134,7 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
           <FaPlus size={20} />
 
           {/* TAX SECTION */}
-          <div className="flex flex-1 items-center justify-center gap-4">
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-3 sm:gap-4">
 
             {isInterState ? (
                 <div className="text-center">
@@ -161,7 +168,7 @@ export default function ItemCard({ item, index, onChange, onRemove, isInterState
 
           {/* RIGHT: TOTAL */}
           <div className="flex-1 text-center md:text-right">
-            <p className="text-xs text-gray-400">Total</p>
+            <p className="text-xs text-[var(--text-muted)]">Total</p>
             <p className="text-xl font-bold text-[var(--text-primary)]">
               ₹ {item.total.toFixed(2)}
             </p>

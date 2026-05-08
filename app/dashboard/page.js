@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, ArrowRight, Boxes, IndianRupee, PackageOpen, TrendingUp } from "lucide-react"
-import { db } from "@/app/lib/db"
 import { auth } from "@/app/lib/firebase"
 import { onAuthStateChanged } from "firebase/auth"
 import { useRouter } from "next/navigation"
+import useInventoryData from "./hooks/useInventoryData"
 
 function StatCard({ label, value, sub, icon, color, loading, onClick }) {
   return (
@@ -37,8 +37,7 @@ function StatCard({ label, value, sub, icon, color, loading, onClick }) {
 
 export default function DashboardHome() {
   const router = useRouter()
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { products, logs, loading } = useInventoryData()
   const [userName, setUserName] = useState("")
 
   useEffect(() => {
@@ -48,36 +47,29 @@ export default function DashboardHome() {
     return () => unsub()
   }, [])
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [products, logs] = await Promise.all([db.products.toArray(), db.productLogs.toArray()])
+  const stats = useMemo(() => {
+    const totalProducts = products.length
+    const lowStock = products.filter((product) => product.quantity > 0 && product.quantity <= 10).length
+    const outOfStock = products.filter((product) => product.quantity === 0).length
+    const totalStockValue = products.reduce((sum, product) => sum + product.price * product.quantity, 0)
 
-        const totalProducts = products.length
-        const lowStock = products.filter((product) => product.quantity > 0 && product.quantity <= 10).length
-        const outOfStock = products.filter((product) => product.quantity === 0).length
-        const totalStockValue = products.reduce((sum, product) => sum + product.price * product.quantity, 0)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayOut = logs.filter((log) => log.type === "out" && new Date(log.date) >= todayStart)
+    const salesToday = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded) * log.price, 0)
+    const unitsSold = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded), 0)
 
-        const todayStart = new Date()
-        todayStart.setHours(0, 0, 0, 0)
-        const todayOut = logs.filter((log) => log.type === "out" && new Date(log.date) >= todayStart)
-        const salesToday = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded) * log.price, 0)
-        const unitsSold = todayOut.reduce((sum, log) => sum + Math.abs(log.quantityAdded), 0)
+    const now = new Date()
+    const soon = new Date()
+    soon.setDate(soon.getDate() + 30)
+    const nearExpiry = products.filter((product) => {
+      if (!product.expiry) return false
+      const expiry = new Date(product.expiry)
+      return expiry <= soon && expiry >= now
+    }).length
 
-        const soon = new Date()
-        soon.setDate(soon.getDate() + 30)
-        const nearExpiry = products.filter((product) => product.expiry && new Date(product.expiry) <= soon && new Date(product.expiry) >= new Date()).length
-
-        setStats({ totalProducts, lowStock, outOfStock, totalStockValue, salesToday, unitsSold, nearExpiry })
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    load()
-  }, [])
+    return { totalProducts, lowStock, outOfStock, totalStockValue, salesToday, unitsSold, nearExpiry }
+  }, [products, logs])
 
   const cards = [
     {

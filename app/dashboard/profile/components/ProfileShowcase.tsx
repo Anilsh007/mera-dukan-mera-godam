@@ -37,8 +37,8 @@ export default function ProfileShowcase({ data, onEdit }: Props) {
 
       <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           {activeTab === 'overview' && (
             <OverviewTab 
               data={data} 
@@ -49,7 +49,7 @@ export default function ProfileShowcase({ data, onEdit }: Props) {
           {activeTab === 'address' && <AddressTab data={data} />}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="min-w-0 lg:col-span-1">
           <BusinessCard data={data} />
         </div>
       </div>

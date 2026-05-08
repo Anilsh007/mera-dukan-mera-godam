@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import useAddProduct from "./useAddProduct"
+import { addProduct } from "./product.service"
 import useProducts from "../all-stock/useProducts"
 import Button from "@/app/components/utility/Button"
 import { MdOutlineAddchart, MdAdd, MdDeleteOutline } from "react-icons/md"
@@ -12,6 +12,8 @@ import Suggestions from "./Suggestions"
 import SuccessReceipt from "@/app/components/utility/SuccessReceipt"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { DEFAULT_QUANTITY_UNIT, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { auth } from "@/app/lib/firebase"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 
 type ProductRow = {
     id: string; name: string; price: string; quantity: string; quantityUnit: string
@@ -45,7 +47,6 @@ const FIELDS = [
 ]
 
 export default function AddProductForm() {
-    const { createProduct } = useAddProduct()
     const { products } = useProducts()
     const [rows, setRows] = useState<ProductRow[]>([createEmptyRow()])
     const [loading, setLoading] = useState(false)
@@ -76,13 +77,21 @@ export default function AddProductForm() {
         }
         try {
             setLoading(true)
+            const userId = requireUserIdentityFromAuthUser(auth.currentUser)
             const dataToSubmit = [...rows]
             for (const row of rows) {
-                const { id: _id, ...rest } = row
-                await createProduct(
-                    { ...rest, name: row.name.trim(), price: Number(row.price), quantity: Number(row.quantity), quantityUnit: row.quantityUnit, userId: "" },
-                    { skipImmediateSync: true }
-                )
+                await addProduct({
+                    name: row.name.trim(),
+                    price: Number(row.price),
+                    quantity: Number(row.quantity),
+                    quantityUnit: row.quantityUnit,
+                    category: row.category,
+                    supplier: row.supplier,
+                    expiry: row.expiry,
+                    note: row.note,
+                    sku: row.sku,
+                    userId,
+                }, { skipImmediateSync: true })
             }
             await autoSyncToSupabase()
             toast.success(`✅ ${rows.length} product${rows.length > 1 ? "s" : ""} It will be added to your stock list.`)
@@ -151,7 +160,7 @@ export default function AddProductForm() {
                             </div>
 
                             {/* Input grid — CSS grid for better mobile layout */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-2 lg:grid-cols-4">
                                 {FIELDS.map(f => (
                                     <div key={f.key} className={f.cols}>
                                         {f.type === "quantity" ? (
@@ -172,7 +181,7 @@ export default function AddProductForm() {
                                                         aria-label="Quantity unit"
                                                         value={row.quantityUnit}
                                                         onChange={(e) => handleChange(row.id, "quantityUnit", e.target.value)}
-                                                        className="w-20 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
+                                                        className="w-20 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
                                                     />
                                                 </div>
                                             </div>
