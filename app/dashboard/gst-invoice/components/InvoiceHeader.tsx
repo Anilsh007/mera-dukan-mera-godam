@@ -1,5 +1,5 @@
-import Button from "@/app/components/utility/Button"
-import Input from "@/app/components/utility/CommonInput"
+import Button from "@/app/components/ui/Button"
+import Input from "@/app/components/ui/Input"
 import { MdOutlinePrint, MdOutlineWallet, MdSave } from "react-icons/md"
 import { InvoiceHeaderProps } from "../types/ui.types"
 

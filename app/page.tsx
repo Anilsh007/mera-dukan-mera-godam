@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Login from "@/app/components/reuseModule/login";
+import Login from "@/app/components/auth/Login";
 
 export const metadata: Metadata = {
   title: "Inventory Management & GST Billing App for Shops in India",

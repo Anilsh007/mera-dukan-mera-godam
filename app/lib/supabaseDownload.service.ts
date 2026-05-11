@@ -2,7 +2,10 @@
 
 import { db } from "./db"
 import { auth } from "./firebase"
+import { authHeaders, isMissingTableError, readApiError } from "./apiClient"
 import { normalizeQuantityUnit } from "./quantityUnit"
+import { getUserIdentityFromAuthUser } from "./userIdentity"
+import type { PurchaseRecord } from "./db"
 
 type ProductSyncRow = {
   id: string
@@ -15,6 +18,9 @@ type ProductSyncRow = {
   note?: string
   expiry?: string
   sku?: string
+  hsn_code?: string | null
+  low_stock_threshold?: number | string | null
+  critical_stock_threshold?: number | string | null
   user_id: string
   created_at: string
 }
@@ -32,23 +38,25 @@ type ProductLogSyncRow = {
   note?: string
 }
 
+type PurchaseSyncResponse = {
+  purchases: PurchaseRecord[]
+}
+
 export async function syncSupabaseToDexie() {
   const user = auth.currentUser
   if (!user) throw new Error("User not logged in")
 
   const token = await user.getIdToken()
-  const userId = normalizeUserIdentity(user.email)
+  const userId = getUserIdentityFromAuthUser(user)
   if (!userId) throw new Error("Authenticated user is missing an email address")
 
   const response = await fetch("/api/products/sync", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token),
   })
 
   if (!response.ok) {
-    const error = await readApiError(response)
+    const error = await readApiError(response, "Products fetch request")
     console.error("Fetch products error:", error)
     throw error
   }
@@ -81,6 +89,9 @@ export async function syncSupabaseToDexie() {
           note: product.note,
           expiry: product.expiry,
           sku: product.sku,
+          hsnCode: product.hsn_code || undefined,
+          lowStockThreshold: normalizeOptionalNumber(product.low_stock_threshold),
+          criticalStockThreshold: normalizeOptionalNumber(product.critical_stock_threshold),
           userId: String(product.user_id),
           createdAt: product.created_at,
         }))
@@ -105,19 +116,59 @@ export async function syncSupabaseToDexie() {
     }
   })
 
+  await syncPurchasesFromSupabase(token, userId)
+
   console.log("Supabase to Dexie sync complete")
 }
 
-function normalizeUserIdentity(email: string | null | undefined) {
-  return email?.trim().toLowerCase() || null
+async function syncPurchasesFromSupabase(token: string, userId: string) {
+  const response = await fetch("/api/purchases/sync", {
+    method: "GET",
+    headers: authHeaders(token),
+  })
+
+  if (!response.ok) {
+    const error = await readApiError(response, "Purchases fetch request")
+    if (isMissingTableError(error, "purchases")) {
+      console.warn("Purchase download skipped because Supabase purchases table is not created yet.")
+      return
+    }
+    console.error("Fetch purchases error:", error)
+    throw error
+  }
+
+  const { purchases } = (await response.json()) as PurchaseSyncResponse
+  const existingPurchaseIds = await db.purchases.where("userId").equals(userId).primaryKeys()
+
+  await db.transaction("rw", db.purchases, async () => {
+    const normalizedPurchaseIds = existingPurchaseIds.map(String)
+    if (normalizedPurchaseIds.length) {
+      await db.purchases.bulkDelete(normalizedPurchaseIds)
+    }
+
+    if (purchases.length) {
+      await db.purchases.bulkPut(
+        purchases.map((purchase) => ({
+          ...purchase,
+          userId,
+          amountPaid: Number(purchase.amountPaid || 0),
+          totalAmount: Number(purchase.totalAmount || 0),
+          dueAmount: Number(purchase.dueAmount || 0),
+          items: purchase.items.map((item) => ({
+            ...item,
+            price: Number(item.price || 0),
+            quantity: Number(item.quantity || 0),
+            quantityUnit: normalizeQuantityUnit(item.quantityUnit),
+            lineTotal: Number(item.lineTotal || 0),
+          })),
+        }))
+      )
+    }
+  })
 }
 
-async function readApiError(response: Response) {
-  try {
-    return await response.json()
-  } catch {
-    return {
-      message: `Products fetch request failed with status ${response.status}`,
-    }
-  }
+function normalizeOptionalNumber(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
 }

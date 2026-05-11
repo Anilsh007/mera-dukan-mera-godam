@@ -14,6 +14,9 @@ export interface Product {
   note?: string
   expiry?: string
   sku?: string
+  hsnCode?: string
+  lowStockThreshold?: number
+  criticalStockThreshold?: number
   userId: string
   createdAt: string
 }
@@ -33,6 +36,41 @@ export interface ProductLog {
   correctionLabel?: string
 }
 
+export type PurchasePaymentStatus = "paid" | "partial" | "unpaid"
+
+export interface PurchaseItem {
+  id: string
+  productId: string
+  name: string
+  price: number
+  quantity: number
+  quantityUnit: string
+  category?: string
+  expiry?: string
+  sku?: string
+  hsnCode?: string
+  note?: string
+  lineTotal: number
+}
+
+export interface PurchaseRecord {
+  id: string
+  userId: string
+  billNo: string
+  supplierName: string
+  purchaseDate: string
+  purchaseDateTime?: string
+  paymentStatus: PurchasePaymentStatus
+  paymentMode?: string
+  amountPaid: number
+  totalAmount: number
+  dueAmount: number
+  note?: string
+  items: PurchaseItem[]
+  createdAt: string
+  updatedAt: string
+}
+
 export type ProfileRecord = ProfileData
 
 class StockDB extends Dexie {
@@ -40,6 +78,7 @@ class StockDB extends Dexie {
   productLogs!: Table<ProductLog>
   profiles!: Table<ProfileRecord>
   invoices!: Table<GSTInvoiceRecord>
+  purchases!: Table<PurchaseRecord>
 
   constructor() {
     super("StockDatabase")
@@ -95,6 +134,22 @@ class StockDB extends Dexie {
 
         return Promise.all([products, logs])
       })
+
+    this.version(10).stores({
+      products: "id,[userId+name+category],[userId+name+category+quantityUnit],userId,name,category,quantityUnit",
+      productLogs: "id,productId,date,type,quantityUnit",
+      profiles: "userId,updatedAt",
+      invoices: "id,[userId+invoiceNo],userId,invoiceNo,invoiceDate,buyerName,createdAt",
+      purchases: "id,[userId+billNo],userId,billNo,supplierName,purchaseDate,paymentStatus,createdAt",
+    })
+
+    this.version(11).stores({
+      products: "id,[userId+name+category],[userId+name+category+quantityUnit],userId,name,category,quantityUnit",
+      productLogs: "id,productId,date,type,quantityUnit",
+      profiles: "userId,updatedAt",
+      invoices: "id,[userId+invoiceNo],userId,invoiceNo,invoiceDate,buyerName,createdAt",
+      purchases: "id,[userId+billNo],userId,billNo,supplierName,purchaseDate,paymentStatus,createdAt",
+    })
   }
 }
 

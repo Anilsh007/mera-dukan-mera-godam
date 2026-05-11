@@ -1,5 +1,5 @@
-import Input from "@/app/components/utility/CommonInput";
-import Button from "@/app/components/utility/Button";
+import Input from "@/app/components/ui/Input";
+import Button from "@/app/components/ui/Button";
 import { MdDeleteOutline } from "react-icons/md";
 import { ItemCardProps } from "../types/ui.types";
 import { FaEquals, FaPlus } from "react-icons/fa";

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { MdArrowBack, MdEdit } from "react-icons/md"
 import { toast } from "sonner"
-import Button from "@/app/components/utility/Button"
+import Button from "@/app/components/ui/Button"
 import ProfileForm from "./ProfileForm"
 import ProfileShowcase from "./components/ProfileShowcase"
 import useProfile from "./useProfile"

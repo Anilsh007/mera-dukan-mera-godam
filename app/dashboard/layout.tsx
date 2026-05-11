@@ -4,9 +4,9 @@ import { useState } from "react"
 import { Toaster } from "sonner"
 import SupabaseSyncManager from "../lib/dataSyncManager"
 import ProfileCompletionNotice from "./profile/ProfileCompletionNotice"
-import ProtectedRoute from "@/app/components/reuseModule/ProtectedRoute"
-import Sidebar from "@/app/components/common/Sidebar"
-import Header from "@/app/components/common/Header"
+import ProtectedRoute from "@/app/components/auth/ProtectedRoute"
+import Sidebar from "@/app/components/layout/Sidebar"
+import Header from "@/app/components/layout/Header"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)

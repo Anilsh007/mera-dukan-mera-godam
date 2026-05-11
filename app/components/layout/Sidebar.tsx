@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PlusCircle, ChevronLeft, Settings, ChevronDown, ChevronRight, Download, SlidersHorizontal, History, TriangleAlert, Truck, BarChart3, type LucideIcon, } from "lucide-react";
+import { LayoutDashboard, Package, PlusCircle, ChevronLeft, Settings, ChevronDown, ChevronRight, Download, SlidersHorizontal, History, TriangleAlert, Truck, BarChart3, ShoppingCart, type LucideIcon, } from "lucide-react";
 import logo from "@/assets/logo.svg";
+import { en } from "@/app/messages/en";
 
 type NavItem = {
   href?: string;
@@ -18,18 +19,19 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/add-product", label: "Add Product", icon: PlusCircle },
-  { href: "/dashboard/all-stock", label: "All Stock", icon: Package },
-  { href: "/dashboard/stock-history", label: "Stock History", icon: History },
-  { href: "/dashboard/expiry-alerts", label: "Expiry Alerts", icon: TriangleAlert },
-  { href: "/dashboard/suppliers", label: "Suppliers", icon: Truck },
-  { href: "/dashboard/gst-invoice", label: "GST Invoice", icon: SlidersHorizontal },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { href: "/dashboard", label: en.nav.overview, icon: LayoutDashboard },
+  { href: "/dashboard/add-product", label: en.nav.quickPurchase, icon: PlusCircle },
+  { href: "/dashboard/purchases", label: en.nav.purchases, icon: ShoppingCart },
+  { href: "/dashboard/all-stock", label: en.nav.inventory, icon: Package },
+  { href: "/dashboard/stock-history", label: en.nav.stockHistory, icon: History },
+  { href: "/dashboard/expiry-alerts", label: en.nav.expiryAlerts, icon: TriangleAlert },
+  { href: "/dashboard/suppliers", label: en.nav.suppliers, icon: Truck },
+  { href: "/dashboard/gst-invoice", label: en.nav.gstInvoice, icon: SlidersHorizontal },
+  { href: "/dashboard/reports", label: en.nav.reports, icon: BarChart3 },
   {
-    label: "Setting",
+    label: en.nav.settings,
     icon: Settings,
-    children: [{ href: "/dashboard/settings/download", label: "Download Data", icon: Download }],
+    children: [{ href: "/dashboard/settings/download", label: en.nav.downloadData, icon: Download }],
   },
 ];
 
@@ -47,7 +49,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    Setting: true,
+    [en.nav.settings]: true,
   });
 
   useEffect(() => {
@@ -103,17 +105,17 @@ export default function Sidebar({
         <div className="relative mb-2 flex items-center justify-start px-2">
 
           <div className="flex items-center justify-center border-b border-[var(--border-color)] pb-3 w-full">
-            <img src={logo.src} className="h-7 w-7 object-contain" alt="Logo" />
+            <img src={logo.src} className="h-7 w-7 object-contain" alt={en.common.appName} />
             {(!isCollapsed || isMobile) && (
               <div className="ml-2 hidden min-w-0 flex-col items-start sm:flex">
-                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">Mera Dukan Mera Godam</p>
-                <p className="hidden text-[11px] text-[var(--text-muted)] sm:block">Inventory and billing workspace</p>
+                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
+                <p className="hidden text-[11px] text-[var(--text-muted)] sm:block">{en.nav.workspaceTagline}</p>
               </div>
             )}
           </div>
 
 
-          <button onClick={handleSidebarToggle} className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full absolute top-[49dvh] right-[-21px] -translate-y-1/2 shadow-[var(--shadow-card)] cursor-pointer border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-2 text-[var(--text-primary)] transition hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)]" aria-label="Collapse sidebar" >
+          <button onClick={handleSidebarToggle} className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full absolute top-[49dvh] right-[-21px] -translate-y-1/2 shadow-[var(--shadow-card)] cursor-pointer border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-2 text-[var(--text-primary)] transition hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)]" aria-label={en.common.collapseSidebar} >
             <ChevronLeft size={20} className={`transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`} />
           </button>
         </div>
@@ -122,7 +124,7 @@ export default function Sidebar({
           {navItems.map((item) => {
             const Icon = item.icon;
             const menuOpen =
-              item.label === "Setting" && pathname.startsWith("/dashboard/settings")
+              item.label === en.nav.settings && pathname.startsWith("/dashboard/settings")
                 ? true
                 : openMenus[item.label] || false;
             const parentActive = hasActiveChild(item);

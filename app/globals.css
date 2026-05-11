@@ -241,6 +241,29 @@ html[data-theme="dark"] body {
   }
 }
 
+@keyframes btn-ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
 .skeleton {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   background: color-mix(in srgb, var(--text-muted) 18%, transparent);

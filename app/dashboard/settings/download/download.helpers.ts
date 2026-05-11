@@ -2,6 +2,7 @@ import { db } from "@/app/lib/db"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { toast } from "sonner"
+import { en } from "@/app/messages/en"
 
 type CsvValue = string | number | boolean | null | undefined
 type CsvRow = Record<string, CsvValue>
@@ -73,6 +74,8 @@ export async function downloadAllData() {
     "price",
     "quantity",
     "quantityUnit",
+    "criticalStockThreshold",
+    "lowStockThreshold",
     "supplier",
     "expiry",
     "sku",
@@ -87,6 +90,8 @@ export async function downloadAllData() {
     price: product.price,
     quantity: product.quantity,
     quantityUnit: product.quantityUnit || "pcs",
+    criticalStockThreshold: product.criticalStockThreshold ?? "",
+    lowStockThreshold: product.lowStockThreshold ?? "",
     supplier: product.supplier || "",
     expiry: product.expiry || "",
     sku: product.sku || "",
@@ -126,12 +131,12 @@ export async function downloadAllData() {
     downloadFile(toCSV(logRows, logHeaders), "logs_all.csv")
   }, 500)
 
-  toast.success(`✅ Downloaded — ${products.length} products, ${logs.length} logs`)
+  toast.success(`${en.download.allDownloaded}: ${products.length} products, ${logs.length} logs`)
 }
 
 export async function downloadByDateRange(from: string, to: string) {
   if (!from || !to) {
-    toast.error("Dono dates select karo")
+    toast.error(en.download.selectBothDates)
     return
   }
 
@@ -140,7 +145,7 @@ export async function downloadByDateRange(from: string, to: string) {
   toDate.setHours(23, 59, 59, 999)
 
   if (fromDate > toDate) {
-    toast.error("From date, To date se pehle honi chahiye")
+    toast.error(en.download.invalidRange)
     return
   }
 
@@ -157,7 +162,7 @@ export async function downloadByDateRange(from: string, to: string) {
   })
 
   if (!filteredLogs.length) {
-    toast.error("No logs found in this date range ❌")
+    toast.error(en.download.noLogs)
     return
   }
 
@@ -189,5 +194,5 @@ export async function downloadByDateRange(from: string, to: string) {
 
   const label = `${from}_to_${to}`
   downloadFile(toCSV(logRows, logHeaders), `logs_${label}.csv`)
-  toast.success(`✅ ${filteredLogs.length} records downloaded`)
+  toast.success(`${filteredLogs.length} ${en.download.recordsDownloadedSuffix}`)
 }

@@ -1,4 +1,4 @@
-import useProducts from "@/app/dashboard/all-stock/useProducts";
+import useProducts from "@/app/hooks/useProducts";
 import type { Product } from "@/app/lib/db";
 
 export interface ProductSuggestion {
@@ -19,7 +19,7 @@ export const useProductSuggestions = () => {
     category: p.category || "",
     price: p.price || 0,
     unit: p.quantityUnit || "pcs",
-    hsnCode: p.sku || "",
+    hsnCode: p.hsnCode || "",
   }));
 
   return { suggestions };

@@ -23,6 +23,9 @@ export async function addProduct(data: {
   expiry?: string
   note?: string
   sku?: string
+  hsnCode?: string
+  lowStockThreshold?: number
+  criticalStockThreshold?: number
   userId: string
 }, options?: { skipImmediateSync?: boolean }) {
   const normalizedName = data.name.trim().toLowerCase()
@@ -42,7 +45,10 @@ export async function addProduct(data: {
       expiry: data.expiry,
       supplier: data.supplier || existing.supplier,
       sku: data.sku || existing.sku,
+      hsnCode: data.hsnCode || existing.hsnCode,
       note: data.note || existing.note,
+      lowStockThreshold: data.lowStockThreshold ?? existing.lowStockThreshold,
+      criticalStockThreshold: data.criticalStockThreshold ?? existing.criticalStockThreshold,
     })
 
     await db.productLogs.add({
@@ -75,7 +81,10 @@ export async function addProduct(data: {
     supplier: data.supplier || undefined,
     expiry: data.expiry || undefined,
     sku: data.sku || undefined,
+    hsnCode: data.hsnCode || undefined,
     note: data.note || undefined,
+    lowStockThreshold: data.lowStockThreshold,
+    criticalStockThreshold: data.criticalStockThreshold,
     userId: data.userId,
     createdAt: new Date().toISOString(),
   })
@@ -173,6 +182,9 @@ type UpdateProductInput = {
   expiry?: string
   note?: string
   sku?: string
+  hsnCode?: string
+  lowStockThreshold?: number
+  criticalStockThreshold?: number
 }
 
 type UpdateProductLogInput = {
@@ -219,7 +231,10 @@ export async function updateProductDetails(data: UpdateProductInput) {
     supplier: data.supplier?.trim() || undefined,
     expiry: data.expiry || undefined,
     sku: data.sku?.trim() || undefined,
+    hsnCode: data.hsnCode?.trim() || undefined,
     note: data.note?.trim() || undefined,
+    lowStockThreshold: data.lowStockThreshold,
+    criticalStockThreshold: data.criticalStockThreshold,
   })
 
   await ensureCloudSync("Product update")

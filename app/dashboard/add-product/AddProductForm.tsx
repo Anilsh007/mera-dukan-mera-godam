@@ -1,23 +1,25 @@
 "use client"
 
-import { useState } from "react"
-import { addProduct } from "./product.service"
-import useProducts from "../all-stock/useProducts"
-import Button from "@/app/components/utility/Button"
+import { useEffect, useState } from "react"
+import useProducts from "@/app/hooks/useProducts"
+import Button from "@/app/components/ui/Button"
 import { MdOutlineAddchart, MdAdd, MdDeleteOutline } from "react-icons/md"
-import Input from "@/app/components/utility/CommonInput"
+import Input from "@/app/components/ui/Input"
 import { CiWarning } from "react-icons/ci"
 import { toast } from "sonner"
-import Suggestions from "./Suggestions"
-import SuccessReceipt from "@/app/components/utility/SuccessReceipt"
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
+import Suggestions from "@/app/components/inventory/ProductDatalists"
+import SuccessReceipt from "@/app/components/ui/SuccessReceipt"
 import { DEFAULT_QUANTITY_UNIT, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import { saveQuickPurchase } from "@/app/dashboard/purchases/purchase.service"
+import { DEFAULT_PAYMENT_MODE, PAYMENT_MODES, PAYMENT_STATUSES } from "@/app/dashboard/purchases/purchase.constants"
+import { calculatePaymentAmounts, formatCurrency } from "@/app/dashboard/purchases/purchase.utils"
+import type { PurchasePaymentStatus } from "@/app/lib/db"
 
 type ProductRow = {
     id: string; name: string; price: string; quantity: string; quantityUnit: string
-    category: string; supplier: string; expiry: string; note: string; sku: string
+    category: string; supplier: string; expiry: string; note: string; sku: string; hsnCode: string
 }
 
 import { v4 as uuidv4 } from "uuid";
@@ -32,7 +34,8 @@ const createEmptyRow = (): ProductRow => ({
     supplier: "",
     expiry: "",
     note: "",
-    sku: ""
+    sku: "",
+    hsnCode: ""
 });
 
 const FIELDS = [
@@ -40,17 +43,42 @@ const FIELDS = [
     { key: "category", label: "Category", required: false, type: "text", placeholder: "Enter category", datalist: "categories", cols: "col-span-2 sm:col-span-1" },
     { key: "expiry", label: <>Expiry Date <span className="text-red-500">*</span></>, required: true, type: "date", placeholder: "", datalist: undefined, cols: "col-span-2 sm:col-span-1" },
     { key: "sku", label: "SKU", required: false, type: "text", placeholder: "Enter SKU", datalist: undefined, cols: "col-span-1 sm:col-span-1" },
-    { key: "price", label: <>Price/unit <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Enter price", datalist: undefined, cols: "col-span-1" },
-    { key: "quantity", label: <>Quantity <span className="text-red-500">*</span></>, required: true, type: "quantity", placeholder: "Quantity", datalist: undefined, cols: "col-span-1" },
+    { key: "hsnCode", label: "HSN Code", required: false, type: "text", placeholder: "GST HSN code", datalist: undefined, cols: "col-span-1 sm:col-span-1" },
+    { key: "price", label: <>Purchase Price/unit <span className="text-red-500">*</span></>, required: true, type: "number", placeholder: "Enter purchase price", datalist: undefined, cols: "col-span-1" },
+    { key: "quantity", label: <>Purchased Qty <span className="text-red-500">*</span></>, required: true, type: "quantity", placeholder: "Quantity", datalist: undefined, cols: "col-span-1" },
     { key: "supplier", label: <>Supplier <span className="text-red-500">*</span></>, required: true, type: "text", placeholder: "Enter supplier", datalist: "suppliers", cols: "col-span-2 sm:col-span-1" },
     { key: "note", label: "Note", required: false, type: "text", placeholder: "Add note (optional)", datalist: undefined, cols: "col-span-2 sm:col-span-2 lg:col-span-1" },
 ]
+
+function getCurrentDateTime() {
+    return new Date()
+}
+
+function formatCurrentDateTime(value: Date) {
+    return value.toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+    })
+}
 
 export default function AddProductForm() {
     const { products } = useProducts()
     const [rows, setRows] = useState<ProductRow[]>([createEmptyRow()])
     const [loading, setLoading] = useState(false)
     const [submittedData, setSubmittedData] = useState<ProductRow[] | null>(null)
+    const [quickRef, setQuickRef] = useState("")
+    const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus>("paid")
+    const [paymentMode, setPaymentMode] = useState(DEFAULT_PAYMENT_MODE)
+    const [amountPaid, setAmountPaid] = useState("")
+    const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime)
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            setCurrentDateTime(getCurrentDateTime())
+        }, 30_000)
+
+        return () => window.clearInterval(interval)
+    }, [])
 
     const addRow = () => setRows(r => [...r, createEmptyRow()])
     const removeRow = (id: string) => rows.length > 1 && setRows(r => r.filter(x => x.id !== id))
@@ -59,6 +87,7 @@ export default function AddProductForm() {
         setRows(prev => prev.map(row => row.id === id ? { ...row, [key]: value } : row))
 
     const grandTotal = rows.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.quantity) || 0), 0)
+    const { paidAmount, dueAmount } = calculatePaymentAmounts(grandTotal, paymentStatus, amountPaid)
 
     const isFormValid = rows.every(row =>
         FIELDS.every(f => !f.required || String(row[f.key as keyof ProductRow]).trim() !== "") &&
@@ -79,8 +108,17 @@ export default function AddProductForm() {
             setLoading(true)
             const userId = requireUserIdentityFromAuthUser(auth.currentUser)
             const dataToSubmit = [...rows]
-            for (const row of rows) {
-                await addProduct({
+            const submittedAt = getCurrentDateTime()
+            await saveQuickPurchase({
+                userId,
+                ref: quickRef,
+                purchaseDate: submittedAt.toISOString().slice(0, 10),
+                purchaseDateTime: submittedAt.toISOString(),
+                paymentStatus,
+                paymentMode,
+                amountPaid: paidAmount,
+                dueAmount,
+                items: rows.map((row) => ({
                     name: row.name.trim(),
                     price: Number(row.price),
                     quantity: Number(row.quantity),
@@ -90,12 +128,16 @@ export default function AddProductForm() {
                     expiry: row.expiry,
                     note: row.note,
                     sku: row.sku,
-                    userId,
-                }, { skipImmediateSync: true })
-            }
-            await autoSyncToSupabase()
-            toast.success(`✅ ${rows.length} product${rows.length > 1 ? "s" : ""} It will be added to your stock list.`)
+                    hsnCode: row.hsnCode,
+                })),
+            })
+            toast.success(`${rows.length} quick purchase item${rows.length > 1 ? "s" : ""} stock me add ho gaye`)
             setRows([createEmptyRow()])
+            setQuickRef("")
+            setPaymentStatus("paid")
+            setPaymentMode(DEFAULT_PAYMENT_MODE)
+            setAmountPaid("")
+            setCurrentDateTime(getCurrentDateTime())
             setSubmittedData(dataToSubmit)
         } catch (err) {
             console.error(err)
@@ -108,6 +150,11 @@ export default function AddProductForm() {
     const handleCloseReceipt = () => {
         setSubmittedData(null)
         setRows([createEmptyRow()])
+        setQuickRef("")
+        setPaymentStatus("paid")
+        setPaymentMode(DEFAULT_PAYMENT_MODE)
+        setAmountPaid("")
+        setCurrentDateTime(getCurrentDateTime())
     }
 
     const handleAddMore = () => {
@@ -127,8 +174,69 @@ export default function AddProductForm() {
                         <option key={unit.value} value={unit.value}>{unit.label}</option>
                     ))}
                 </datalist>
+                <datalist id="paymentModes">
+                    {PAYMENT_MODES.map((mode) => (
+                        <option key={mode} value={mode} />
+                    ))}
+                </datalist>
 
-                <p className="flex justify-end text-xs text-rose-400 font-medium mb-4">* Required fields are necessary to submit the form</p>
+                <div className="mb-5 flex flex-col gap-3 p-4 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-xl shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm font-semibold">Quick purchase entry</p>
+                        <p className="mt-1 text-xs">Date and time will be automatically saved</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 px-3 py-2 text-left shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Entry Time</p>
+                        <p className="mt-0.5 text-sm font-semibold text-[var(--text-primary)]">{formatCurrentDateTime(currentDateTime)}</p>
+                    </div>
+                </div>
+
+                <div className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] p-4 md:grid-cols-4">
+                    <Input
+                        label="Quick Bill/Ref No"
+                        placeholder="Optional bill no"
+                        value={quickRef}
+                        onChange={(event) => setQuickRef(event.target.value)}
+                    />
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">Payment Status</label>
+                        <select
+                            value={paymentStatus}
+                            onChange={(event) => setPaymentStatus(event.target.value as PurchasePaymentStatus)}
+                            className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
+                        >
+                            {PAYMENT_STATUSES.map((status) => (
+                                <option key={status.value} value={status.value}>{status.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <Input
+                        label="Payment Mode"
+                        value={paymentMode}
+                        onChange={(event) => setPaymentMode(event.target.value)}
+                        datalist="paymentModes"
+                    />
+                    <Input
+                        type="number"
+                        label="Amount Paid"
+                        value={paymentStatus === "paid" ? String(grandTotal || "") : paymentStatus === "unpaid" ? "0" : amountPaid}
+                        onChange={(event) => setAmountPaid(event.target.value)}
+                        disabled={paymentStatus !== "partial"}
+                    />
+                    <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-3 py-2 md:col-span-4">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs font-medium text-[var(--text-secondary)]">
+                                Quick purchase added direct to inventory Bill/Ref no. <span className="font-bold text-[var(--text-primary)]">{quickRef || "N/A"}</span>
+                            </p>
+                            <p className="text-sm font-bold text-emerald-600">
+                                Total {formatCurrency(grandTotal)}
+                                <span className="text-amber-600"> | Due {formatCurrency(dueAmount)}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <p className="flex justify-end text-xs text-rose-400 font-medium mb-4">* Required fields are necessary to submit quick purchase</p>
 
                 <div className="space-y-5">
                     {rows.map((row, index) => (
@@ -141,7 +249,7 @@ export default function AddProductForm() {
                                         {index + 1}
                                     </span>
                                     <span className="text-sm font-medium text-[var(--text-secondary)]">
-                                        {row.name ? row.name : "Naya Product"}
+                                        {row.name ? row.name : "Quick purchase item"}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -149,7 +257,7 @@ export default function AddProductForm() {
                                         <div className="text-right">
                                             <p className="text-[10px] text-[var(--text-muted)] uppercase">Subtotal</p>
                                             <p className="font-bold text-emerald-600 text-sm">
-                                                ₹{((Number(row.price)) * (Number(row.quantity))).toLocaleString("en-IN")}
+                                                {formatCurrency((Number(row.price)) * (Number(row.quantity)))}
                                             </p>
                                         </div>
                                     )}
@@ -199,20 +307,22 @@ export default function AddProductForm() {
 
                 {/* Add another */}
                 <div className="mt-4">
-                    <Button type="button" title="+ Ek aur product" onClick={addRow} variant="dotBorder" icon={<MdAdd />} />
+                    <Button type="button" title="Add another item" onClick={addRow} variant="dotBorder" icon={<MdAdd />} />
                 </div>
 
                 {/* Footer */}
                 <div className="mt-5 pt-5 border-t border-[var(--border-card)]">
                     <p className="flex items-center gap-2 text-sm text-rose-400 mb-4">
-                        <CiWarning size={18} /> Submit se pehle data check kar lo.
-                    </p>
+                        <CiWarning size={18} /> Quick purchase immediately added to inventory, for full supplier ledger use the Purchases module.</p>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <p className="text-xs text-[var(--text-muted)] uppercase font-medium">Grand Total</p>
-                            <p className="text-2xl font-black text-emerald-600">₹{grandTotal.toLocaleString("en-IN")}</p>
+                            <p className="text-xs text-[var(--text-muted)] uppercase font-medium">Purchase Total / Due</p>
+                            <p className="text-2xl font-black text-emerald-600">
+                                {formatCurrency(grandTotal)}
+                                <span className="text-base text-amber-600"> / {formatCurrency(dueAmount)}</span>
+                            </p>
                         </div>
-                        <Button type="submit" title={`Entry Complete Karo (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
+                        <Button type="submit" title={`Save Quick Purchase (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
                     </div>
                 </div>
             </form>

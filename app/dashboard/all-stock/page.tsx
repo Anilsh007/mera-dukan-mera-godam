@@ -4,7 +4,8 @@ import { useMemo, useState } from "react"
 import ProductGrid from "./ProductGrid/ProductGrid"
 import ProductDetails from "./ProductDetails/ProductDetails"
 import { Product } from "@/app/lib/db"
-import useProducts from "./useProducts"
+import useProducts from "@/app/hooks/useProducts"
+import { en } from "@/app/messages/en"
 
 export type CategoryGroup = {
   key: string
@@ -15,7 +16,7 @@ export type CategoryGroup = {
 }
 
 function normalizeCategory(category?: string) {
-  return category?.trim() || "Uncategorized"
+  return category?.trim() || "Category nahi"
 }
 
 export default function AllStockPage() {
@@ -50,12 +51,31 @@ export default function AllStockPage() {
 
   const selectedGroupLive = useMemo(() => {
     if (!selectedGroup) return null
-    return groupedProducts.find((group) => group.label === selectedGroup.label) ?? null
+    const liveGroup = groupedProducts.find((group) => group.label === selectedGroup.label)
+    if (!liveGroup) return null
+
+    const selectedIds = new Set(selectedGroup.products.map((product) => product.id))
+    const shouldKeepSubset = selectedIds.size > 0 && selectedIds.size < liveGroup.products.length
+    const liveProducts = shouldKeepSubset
+      ? liveGroup.products.filter((product) => selectedIds.has(product.id))
+      : liveGroup.products
+
+    return {
+      ...liveGroup,
+      products: liveProducts,
+      totalQty: liveProducts.reduce((sum, product) => sum + product.quantity, 0),
+      totalValue: liveProducts.reduce((sum, product) => sum + product.quantity * product.price, 0),
+    }
   }, [groupedProducts, selectedGroup])
 
   return (
-    <>
-      <h2 className="text-2xl font-bold mb-6">All Stock</h2>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{en.pages.inventoryTitle}</h1>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          {en.pages.inventoryDescription}
+        </p>
+      </div>
 
       {!selectedGroupLive ? (
         <ProductGrid groups={groupedProducts} loading={loading} onSelectGroup={handleSelectGroup} />
@@ -70,6 +90,6 @@ export default function AllStockPage() {
           }}
         />
       )}
-    </>
+    </div>
   )
 }

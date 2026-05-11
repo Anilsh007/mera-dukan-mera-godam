@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import Button from "@/app/components/utility/Button"
-import Input from "@/app/components/utility/CommonInput"
+import Button from "@/app/components/ui/Button"
+import Input from "@/app/components/ui/Input"
 import type { Product } from "@/app/lib/db"
 import { stockOutMany } from "@/app/dashboard/add-product/product.service"
 import { loadInvoicesFromDb } from "@/app/dashboard/gst-invoice/invoice.service"
@@ -78,6 +78,7 @@ export default function MultiItemSaleModal({
   const [loading, setLoading] = useState(false)
   const [printAfterSave, setPrintAfterSave] = useState(true)
   const [openGstAfterSave, setOpenGstAfterSave] = useState(true)
+  const [showMore, setShowMore] = useState(false)
   const [buyerSuggestions, setBuyerSuggestions] = useState<ReturnType<typeof buildBuyerSuggestions>>([])
 
   useEffect(() => {
@@ -149,17 +150,17 @@ export default function MultiItemSaleModal({
 
   const handleConfirm = async () => {
     if (!buyer.name.trim()) {
-      toast.error("Buyer name required hai")
+      toast.error("Buyer name is required")
       return
     }
 
     if (!sellerName) {
-      toast.error("Sale confirm karne se pehle seller profile me business ya seller name fill karo")
+      toast.error("Before making sales, set your shop name in profile.")
       return
     }
 
     if (!validLines.length) {
-      toast.error("Kam se kam ek valid item select karo")
+      toast.error("Before making sales, set your shop name in profile.")
       return
     }
 
@@ -214,7 +215,7 @@ export default function MultiItemSaleModal({
         })
       }
 
-      toast.success(`Sale saved for ${validLines.length} item${validLines.length > 1 ? "s" : ""}`)
+      toast.success(`${validLines.length} Item sale completed`)
       onSuccess()
       onClose()
 
@@ -222,7 +223,7 @@ export default function MultiItemSaleModal({
         router.push("/dashboard/gst-invoice")
       }
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Sale save failed")
+      toast.error(error instanceof Error ? error.message : "Sale unsuccessful")
     } finally {
       setLoading(false)
     }
@@ -231,11 +232,11 @@ export default function MultiItemSaleModal({
   return (
     <div className="rounded-xl bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="mb-1 flex items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold leading-tight">Create Multi-item Sale</h3>
+        <h3 className="text-lg font-semibold leading-tight">Multi-Item Sale</h3>
         <button onClick={onClose} className="cursor-pointer text-xl text-gray-400 hover:text-gray-600">x</button>
       </div>
       <p className="mb-4 text-sm text-[var(--text-secondary)]">
-        Buyer details lo, selected items ka stock out karo, aur chahe to print ya GST bill bhi banao.
+        Add buyer details and sale price for each item. Buyer name is required, GST bill and print are optional.
       </p>
 
       <datalist id="sale-buyer-name-suggestions">
@@ -260,16 +261,27 @@ export default function MultiItemSaleModal({
       </datalist>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label={<>Buyer Name <span className="text-red-400">*</span></>} value={buyer.name} onChange={(e) => applyBuyerSuggestion("name", e.target.value)} datalist="sale-buyer-name-suggestions" />
-        <Input label="Buyer GSTIN" value={buyer.gstin} onChange={(e) => applyBuyerSuggestion("gstin", e.target.value.toUpperCase())} datalist="sale-buyer-gstin-suggestions" />
+        <Input label={<>Buyer ka naam <span className="text-red-400">*</span></>} value={buyer.name} onChange={(e) => applyBuyerSuggestion("name", e.target.value)} datalist="sale-buyer-name-suggestions" />
         <Input label="Phone" value={buyer.phone} onChange={(e) => applyBuyerSuggestion("phone", e.target.value)} datalist="sale-buyer-phone-suggestions" />
-        <Input label="Email" value={buyer.email} onChange={(e) => applyBuyerSuggestion("email", e.target.value)} datalist="sale-buyer-email-suggestions" />
-        <Input label="Address" value={buyer.address} onChange={(e) => setBuyer((current) => ({ ...current, address: e.target.value }))} containerClassName="md:col-span-2" />
-        <Input label="District/City" value={buyer.city} onChange={(e) => setBuyer((current) => ({ ...current, city: e.target.value }))} />
-        <Input label="State" value={buyer.state} onChange={(e) => setBuyer((current) => ({ ...current, state: e.target.value }))} />
-        <Input label="Pincode" value={buyer.pincode} onChange={(e) => setBuyer((current) => ({ ...current, pincode: e.target.value }))} />
-        <Input label="Sale Note" value={buyer.note} onChange={(e) => setBuyer((current) => ({ ...current, note: e.target.value }))} containerClassName="md:col-span-2" />
+        {showMore && (
+          <>
+            <Input label="Buyer GSTIN" value={buyer.gstin} onChange={(e) => applyBuyerSuggestion("gstin", e.target.value.toUpperCase())} datalist="sale-buyer-gstin-suggestions" />
+            <Input label="Email" value={buyer.email} onChange={(e) => applyBuyerSuggestion("email", e.target.value)} datalist="sale-buyer-email-suggestions" />
+            <Input label="Address" value={buyer.address} onChange={(e) => setBuyer((current) => ({ ...current, address: e.target.value }))} containerClassName="md:col-span-2" />
+            <Input label="City" value={buyer.city} onChange={(e) => setBuyer((current) => ({ ...current, city: e.target.value }))} />
+            <Input label="State" value={buyer.state} onChange={(e) => setBuyer((current) => ({ ...current, state: e.target.value }))} />
+            <Input label="Pincode" value={buyer.pincode} onChange={(e) => setBuyer((current) => ({ ...current, pincode: e.target.value }))} />
+            <Input label="Sale note" value={buyer.note} onChange={(e) => setBuyer((current) => ({ ...current, note: e.target.value }))} containerClassName="md:col-span-2" />
+          </>
+        )}
       </div>
+
+      <Button
+        variant="outline"
+        title={showMore ? "Kam detail" : "Aur detail"}
+        onClick={() => setShowMore((value) => !value)}
+        className="mt-4 w-full sm:w-auto"
+      />
 
       <div className="mt-5 space-y-3 md:hidden">
         {lines.map((line) => (
@@ -277,23 +289,23 @@ export default function MultiItemSaleModal({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium capitalize text-[var(--text-primary)]">{line.name}</p>
-                <p className="text-xs text-[var(--text-secondary)]">{line.category || "Uncategorized"}{line.sku ? ` • ${line.sku}` : ""}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{line.category || "Category nahi"}{line.sku ? ` - ${line.sku}` : ""}</p>
               </div>
-              <p className="text-sm font-semibold text-[var(--text-secondary)]">Avail: {formatQuantity(line.availableQty, line.quantityUnit)}</p>
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">Bacha: {formatQuantity(line.availableQty, line.quantityUnit)}</p>
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <QuantityWithUnitInput
-                label="Qty to Sell"
+                label="Kitna bechna hai"
                 value={line.quantity}
                 unit={line.quantityUnit}
                 max={line.availableQty}
                 onChange={(value) => updateLine(line.productId, "quantity", value)}
               />
-              <Input type="number" min={0} label="Sale Price" value={line.salePrice} onChange={(e) => updateLine(line.productId, "salePrice", e.target.value)} />
+              <Input type="number" min={0} label="Sale rate" value={line.salePrice} onChange={(e) => updateLine(line.productId, "salePrice", e.target.value)} />
               <Input type="number" min={0} label="GST %" value={line.gstRate} onChange={(e) => updateLine(line.productId, "gstRate", e.target.value)} />
               <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-3 py-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Line Total</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Total</p>
                 <p className="mt-1 font-semibold text-emerald-600">Rs {(Number(line.quantity) * Number(line.salePrice)).toLocaleString("en-IN")}</p>
               </div>
             </div>
@@ -305,12 +317,12 @@ export default function MultiItemSaleModal({
         <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="bg-black/5 dark:bg-white/5">
             <tr className="border-b border-[var(--border-card)]">
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Product</th>
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Available</th>
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Qty to Sell</th>
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Sale Price</th>
+              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Item</th>
+              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Left Item</th>
+              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Quantity</th>
+              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Sale rate</th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">GST %</th>
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Line Total</th>
+              <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-card)]">
@@ -318,7 +330,7 @@ export default function MultiItemSaleModal({
               <tr key={line.productId}>
                 <td className="px-4 py-3">
                   <p className="font-medium capitalize text-[var(--text-primary)]">{line.name}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">{line.category || "Uncategorized"}{line.sku ? ` • ${line.sku}` : ""}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{line.category || "Category nahi"}{line.sku ? ` - ${line.sku}` : ""}</p>
                 </td>
                 <td className="px-4 py-3">{formatQuantity(line.availableQty, line.quantityUnit)}</td>
                 <td className="px-4 py-3">
@@ -344,28 +356,30 @@ export default function MultiItemSaleModal({
         </table>
       </div>
 
+      {showMore && (
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <label className="flex items-start gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] px-3 py-3 text-sm text-[var(--text-primary)]">
           <input type="checkbox" checked={printAfterSave} onChange={(e) => setPrintAfterSave(e.target.checked)} className="mt-1 h-4 w-4 cursor-pointer" />
-          <span>Confirm ke baad sale slip print karo</span>
+          <span>Print after save</span>
         </label>
         <label className="flex items-start gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] px-3 py-3 text-sm text-[var(--text-primary)]">
           <input type="checkbox" checked={openGstAfterSave} onChange={(e) => setOpenGstAfterSave(e.target.checked)} className="mt-1 h-4 w-4 cursor-pointer" />
-          <span>Confirm ke baad GST invoice draft kholo</span>
+          <span>Open GST after save</span>
         </label>
       </div>
+      )}
 
       <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/30 dark:bg-emerald-950/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{validLines.length} valid items selected</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">Buyer name aur seller profile name required hai. GST bill aur print dono optional hain.</p>
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{validLines.length} items selected</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">Buyer name is required for sales entries.</p>
         </div>
         <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">Rs {grandTotal.toLocaleString("en-IN")}</p>
       </div>
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <Button variant="ghost" title="Cancel" onClick={onClose} className="flex-1" />
-        <Button variant="primary" title="Confirm Sale" loading={loading} onClick={handleConfirm} className="flex-1" />
+        <Button variant="primary" title="Sale save karo" loading={loading} onClick={handleConfirm} className="flex-1" />
       </div>
     </div>
   )

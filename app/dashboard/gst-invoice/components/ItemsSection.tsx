@@ -1,4 +1,4 @@
-import Button from "@/app/components/utility/Button";
+import Button from "@/app/components/ui/Button";
 import { MdAdd } from "react-icons/md";
 import ItemCard from "./ItemCard";
 import { ItemsSectionProps } from "../types/ui.types";

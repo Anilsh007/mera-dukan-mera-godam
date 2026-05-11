@@ -1,5 +1,5 @@
 import { MdEdit, MdDownload } from "react-icons/md"
-import Button from "@/app/components/utility/Button"
+import Button from "@/app/components/ui/Button"
 
 interface Props {
   data: {

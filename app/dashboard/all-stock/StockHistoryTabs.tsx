@@ -2,94 +2,46 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { MdPrint } from "react-icons/md"
-import { Pencil, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { Product } from "@/app/lib/db"
-import Button from "@/app/components/utility/Button"
-import Input from "@/app/components/utility/CommonInput"
-import CommonTable, { TableItem } from "@/app/components/utility/CommonTable"
+import Button from "@/app/components/ui/Button"
+import Input from "@/app/components/ui/Input"
+import CommonTable, { TableItem } from "@/app/components/ui/Table"
+import SummaryCard from "@/app/components/ui/SummaryCard"
 import { parseSaleLogNote } from "@/app/lib/saleMetadata"
 import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import InventoryLogCorrectionModal from "./InventoryLogCorrectionModal"
-import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
-
-type Log = {
-  id: string
-  date: string
-  quantityAdded: number
-  quantityUnit?: string
-  type?: "in" | "out"
-  reason?: string
-  price: number
-  expiry?: string
-  note?: string
-  productId?: string
-  correctedAt?: string
-  correctionLabel?: string
-}
-
-type HistoryRow = {
-  id: string
-  productId?: string
-  productName: string
-  category: string
-  supplier: string
-  sku: string
-  logType: "in" | "out"
-  reason: string
-  quantity: number
-  quantityUnit: string
-  price: number
-  date: string
-  expiry: string
-  buyerName: string
-  buyerPhone: string
-  buyerGstin: string
-  note: string
-  correctedAt?: string
-  correctionLabel?: string
-}
-
-const pageSizes = [5, 10, 20, 50]
-
-function formatDateTime(iso: string) {
-  if (!iso) return "-"
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
-
-function formatDateInput(value: string) {
-  if (!value) return ""
-  return new Date(value).toISOString().slice(0, 10)
-}
+import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
+import StockHistoryMobileCards from "./StockHistoryMobileCards"
+import StockHistoryPagination from "./StockHistoryPagination"
+import StockHistorySelectionBar from "./StockHistorySelectionBar"
+import type { HistoryRow, HistoryTab, StockHistoryLog } from "./stock-history.types"
+import { formatDateInput, formatReason, printRows, toTitleCase } from "./stock-history.utils"
+import { en } from "@/app/messages/en"
 
 export default function StockHistoryTabs({
   logs,
   products,
   onDataChange,
 }: {
-  logs: Log[]
+  logs: StockHistoryLog[]
   products: Product[]
   onDataChange?: (message?: string) => void
 }) {
   const router = useRouter()
-  const [tab, setTab] = useState<"all" | "in" | "sale">("all")
+  const [tab, setTab] = useState<HistoryTab>("all")
   const [search, setSearch] = useState("")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [buyerFilter, setBuyerFilter] = useState("all")
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
+  const [actionMessage, setActionMessage] = useState("")
 
   const productMap = useMemo(() => {
     const map = new Map<string, Product>()
@@ -98,7 +50,7 @@ export default function StockHistoryTabs({
   }, [products])
 
   const categories = useMemo(
-    () => Array.from(new Set(products.map((product) => product.category?.trim() || "Uncategorized"))).sort(),
+    () => Array.from(new Set(products.map((product) => product.category?.trim() || en.expiry.categoryUnavailable))).sort(),
     [products]
   )
 
@@ -110,12 +62,13 @@ export default function StockHistoryTabs({
       return {
         id: String(log.id),
         productId: log.productId,
-        productName: product?.name || "Deleted product",
-        category: product?.category || "Uncategorized",
+        productName: product?.name || "Deleted item",
+        category: product?.category || en.expiry.categoryUnavailable,
         supplier: product?.supplier || "",
         sku: product?.sku || "",
+        hsnCode: product?.hsnCode || "",
         logType: log.quantityAdded > 0 ? "in" : "out",
-        reason: log.reason || (log.quantityAdded > 0 ? "Stock In" : "Stock Out"),
+        reason: log.reason || (log.quantityAdded > 0 ? en.stockHistory.reasonLabels.stockIn : en.stockHistory.reasonLabels.stockOut),
         quantity: Math.abs(log.quantityAdded),
         quantityUnit: normalizeQuantityUnit(log.quantityUnit || product?.quantityUnit),
         price: Number(log.price || 0),
@@ -139,7 +92,8 @@ export default function StockHistoryTabs({
   const filteredRows = useMemo(() => {
     return allRows.filter((row) => {
       const isSaleRow = row.logType === "out" && row.reason.toLowerCase() === "sold"
-      const matchesTab = tab === "all" ? true : tab === "in" ? row.logType === "in" : isSaleRow
+      const isOtherOutRow = row.logType === "out" && !isSaleRow
+      const matchesTab = tab === "all" ? true : tab === "in" ? row.logType === "in" : tab === "sale" ? isSaleRow : isOtherOutRow
 
       const matchesSearch =
         !search ||
@@ -171,24 +125,51 @@ export default function StockHistoryTabs({
     [filteredRows, selectedIds]
   )
 
+  const selectedSaleRows = useMemo(
+    () => selectedRows.filter((row) => row.logType === "out" && row.reason.toLowerCase() === "sold"),
+    [selectedRows]
+  )
+
+  const selectedBuyerCount = useMemo(
+    () => new Set(selectedSaleRows.map((row) => `${row.buyerName}|${row.buyerPhone}|${row.buyerGstin}`)).size,
+    [selectedSaleRows]
+  )
+
+  const canCreateGstBill =
+    selectedRows.length > 0 &&
+    selectedSaleRows.length === selectedRows.length &&
+    selectedBuyerCount === 1 &&
+    Boolean(selectedSaleRows[0]?.buyerName)
+
+  const selectedActionHint = canCreateGstBill
+    ? en.stockHistory.actionMessages.gstReady
+    : selectedRows.length === 0
+      ? ""
+      : selectedSaleRows.length !== selectedRows.length
+        ? en.stockHistory.actionMessages.onlySalesForBill
+        : selectedBuyerCount > 1
+          ? en.stockHistory.actionMessages.singleBuyerForBill
+          : !selectedSaleRows[0]?.buyerName
+            ? en.stockHistory.actionMessages.buyerRequiredForBill
+            : ""
+
   const tableRows = useMemo<TableItem[]>(
     () =>
       paginatedRows.map((row) => ({
         id: row.id,
-        name: row.productName,
-        category: row.logType === "in" ? "in" : "out",
+        name: `${row.productName}${row.category ? ` (${row.category})` : ""}`,
         supplier:
           row.logType === "in"
-            ? row.supplier || row.reason
+            ? row.supplier || formatReason(row.reason)
             : row.buyerName
-              ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}`
-              : row.reason,
+              ? `${row.buyerName}${row.buyerPhone ? ` - ${row.buyerPhone}` : ""}`
+              : formatReason(row.reason),
         expiry: row.expiry || "-",
         price: row.price,
         quantity: row.quantity,
         quantityUnit: row.quantityUnit,
         createdAt: row.date,
-        note: [row.note, row.correctedAt ? "Corrected" : ""].filter(Boolean).join(" • ") || "-",
+        note: [row.note, row.correctedAt ? "Corrected" : ""].filter(Boolean).join(" - ") || "-",
       })),
     [paginatedRows]
   )
@@ -208,13 +189,39 @@ export default function StockHistoryTabs({
       total: allRows.length,
       stockIn: allRows.filter((row) => row.logType === "in").length,
       saleOut: allRows.filter((row) => row.logType === "out" && row.reason.toLowerCase() === "sold").length,
+      otherOut: allRows.filter((row) => row.logType === "out" && row.reason.toLowerCase() !== "sold").length,
     }),
     [allRows]
   )
 
   const resetPage = () => setPage(1)
 
+  const setDateRange = (from: string, to: string) => {
+    setFromDate(from)
+    setToDate(to)
+    resetPage()
+  }
+
+  const setRelativeDateRange = (days: number) => {
+    const now = new Date()
+    const from = new Date(now)
+    from.setDate(now.getDate() - (days - 1))
+    setDateRange(from.toISOString().slice(0, 10), now.toISOString().slice(0, 10))
+  }
+
+  const clearFilters = () => {
+    setTab("all")
+    setSearch("")
+    setFromDate("")
+    setToDate("")
+    setCategoryFilter("all")
+    setBuyerFilter("all")
+    setSelectedIds(new Set())
+    setPage(1)
+  }
+
   const toggleSelection = (id: string) => {
+    setActionMessage("")
     setSelectedIds((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
@@ -224,6 +231,7 @@ export default function StockHistoryTabs({
   }
 
   const toggleSelectPage = () => {
+    setActionMessage("")
     const pageIds = paginatedRows.map((row) => row.id)
     const areAllSelected = pageIds.every((id) => selectedIds.has(id))
 
@@ -239,19 +247,26 @@ export default function StockHistoryTabs({
   }
 
   const handlePrintSelected = () => {
-    if (!selectedRows.length) return
+    if (!selectedRows.length) {
+      setActionMessage(en.stockHistory.actionMessages.selectEntriesToPrint)
+      return
+    }
+    setActionMessage("")
     printRows(selectedRows)
   }
 
   const handleCreateGstBill = () => {
-    if (!selectedRows.length) return
+    if (!selectedRows.length) {
+      setActionMessage(en.stockHistory.actionMessages.selectSalesForBill)
+      return
+    }
 
     const saleRows = selectedRows.filter(
       (row) => row.logType === "out" && row.reason.toLowerCase() === "sold"
     )
 
     if (saleRows.length !== selectedRows.length) {
-      alert("GST bill sirf sale out rows ke liye banega. Please only sold items select karo.")
+      setActionMessage(en.stockHistory.actionMessages.onlySalesForBill)
       return
     }
 
@@ -260,7 +275,12 @@ export default function StockHistoryTabs({
     )
 
     if (buyerKeySet.size !== 1) {
-      alert("GST bill banane ke liye selected rows same buyer ki honi chahiye.")
+      setActionMessage(en.stockHistory.actionMessages.singleBuyerForBill)
+      return
+    }
+
+    if (!saleRows[0]?.buyerName) {
+      setActionMessage(en.stockHistory.actionMessages.buyerRequiredForBill)
       return
     }
 
@@ -275,7 +295,7 @@ export default function StockHistoryTabs({
       items: saleRows.map((row) => {
         const item = createEmptyInvoiceItem()
         item.description = toTitleCase(row.productName)
-        item.hsnCode = row.sku
+        item.hsnCode = row.hsnCode
         item.quantity = row.quantity
         item.rate = row.price
         item.gstRate = 18
@@ -292,27 +312,26 @@ export default function StockHistoryTabs({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard label="Total Entries" value={summary.total} />
-        <SummaryCard label="Stock In" value={summary.stockIn} tone="emerald" />
-        <div className="min-[420px]:col-span-2 xl:col-span-1">
-          <SummaryCard label="Sale Out" value={summary.saleOut} tone="rose" />
-        </div>
+        <SummaryCard label={en.stockHistory.totalEntries} value={String(summary.total)} />
+        <SummaryCard label={en.stockHistory.stockIn} value={String(summary.stockIn)} tone="emerald" />
+        <SummaryCard label={en.stockHistory.sales} value={String(summary.saleOut)} tone="rose" />
       </div>
 
       <div className="space-y-4 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)]">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <Button title={`All (${summary.total})`} variant={tab === "all" ? "success" : "outline"} onClick={() => { setTab("all"); resetPage() }} />
-          <Button title={`Stock In (${summary.stockIn})`} variant={tab === "in" ? "success" : "outline"} onClick={() => { setTab("in"); resetPage() }} />
-          <Button title={`Sale Out (${summary.saleOut})`} variant={tab === "sale" ? "success" : "outline"} onClick={() => { setTab("sale"); resetPage() }} />
+          <Button title={`${en.suppliers.all} (${summary.total})`} variant={tab === "all" ? "success" : "outline"} onClick={() => { setTab("all"); resetPage() }} />
+          <Button title={`${en.stockHistory.stockIn} (${summary.stockIn})`} variant={tab === "in" ? "success" : "outline"} onClick={() => { setTab("in"); resetPage() }} />
+          <Button title={`${en.stockHistory.sales} (${summary.saleOut})`} variant={tab === "sale" ? "success" : "outline"} onClick={() => { setTab("sale"); resetPage() }} />
+          <Button title={`${en.stockHistory.otherOut} (${summary.otherOut})`} variant={tab === "out" ? "success" : "outline"} onClick={() => { setTab("out"); resetPage() }} />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <div className="relative md:col-span-2 xl:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">Search</label>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="relative">
+            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.stockHistory.search}</label>
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
             <Input
               type="text"
-              placeholder="Product, SKU, buyer ya reason search karo"
+              placeholder={en.stockHistory.searchPlaceholder}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -321,18 +340,37 @@ export default function StockHistoryTabs({
               className="pl-9"
             />
           </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <Button title={en.stockHistory.today} variant="outline" onClick={() => setRelativeDateRange(1)} />
+            <Button title={en.stockHistory.days7} variant="outline" onClick={() => setRelativeDateRange(7)} />
+            <Button title={en.stockHistory.days30} variant="outline" onClick={() => setRelativeDateRange(30)} />
+            <Button title={en.stockHistory.clear} variant="ghost" onClick={clearFilters} />
+          </div>
+        </div>
 
-          <Input type="date" label="From" value={fromDate} onChange={(e) => { setFromDate(e.target.value); resetPage() }} />
-          <Input type="date" label="To" value={toDate} onChange={(e) => { setToDate(e.target.value); resetPage() }} />
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-input)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+          <span>{filteredRows.length} {en.stockHistory.entriesVisible}</span>
+          <Button
+            title={showAdvancedFilters ? en.stockHistory.hideFilters : en.stockHistory.moreFilters}
+            variant="outline"
+            onClick={() => setShowAdvancedFilters((value) => !value)}
+          />
+        </div>
+
+        {showAdvancedFilters && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+          <Input type="date" label={en.stockHistory.from} value={fromDate} onChange={(e) => { setFromDate(e.target.value); resetPage() }} />
+          <Input type="date" label={en.stockHistory.to} value={toDate} onChange={(e) => { setToDate(e.target.value); resetPage() }} />
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">Category</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.stockHistory.category}</label>
             <select
               value={categoryFilter}
               onChange={(e) => { setCategoryFilter(e.target.value); resetPage() }}
               className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)]"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{en.stockHistory.allCategories}</option>
               {categories.map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
@@ -340,92 +378,29 @@ export default function StockHistoryTabs({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">Buyer</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.stockHistory.buyer}</label>
             <select
               value={buyerFilter}
               onChange={(e) => { setBuyerFilter(e.target.value); resetPage() }}
               className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)]"
             >
-              <option value="all">All Buyers</option>
+              <option value="all">{en.stockHistory.allBuyers}</option>
               {buyers.map((buyer) => (
                 <option key={buyer} value={buyer}>{buyer}</option>
               ))}
             </select>
           </div>
         </div>
+        )}
       </div>
 
       <div className="space-y-3 md:hidden">
-        {paginatedRows.length === 0 ? (
-          <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-4 py-10 text-center text-[var(--text-muted)] shadow-[var(--shadow-card)]">In this filter combination, no history rows were found.</div>
-        ) : (
-          paginatedRows.map((row) => (
-            <div
-              key={row.id}
-              className={`rounded-2xl border p-4 shadow-[var(--shadow-card)] ${
-                selectedIds.has(row.id)
-                  ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
-                  : "border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(row.id)}
-                  onChange={() => toggleSelection(row.id)}
-                  className="mt-1 h-4 w-4 cursor-pointer"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium capitalize text-[var(--text-primary)]">{row.productName}</p>
-                      <p className="text-xs text-[var(--text-secondary)]">{formatDateTime(row.date)}</p>
-                    </div>
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.logType === "in" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400"}`}>
-                      {row.logType === "in" ? "Stock In" : row.reason.toLowerCase() === "sold" ? "Sale Out" : "Stock Out"}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
-                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Category: {row.category}</span>
-                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {formatQuantity(row.quantity, row.quantityUnit)}</span>
-                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Price: Rs {row.price.toLocaleString("en-IN")}</span>
-                    <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">SKU: {row.sku || "-"}</span>
-                  </div>
-
-                  <div className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
-                    <p>
-                      <span className="font-medium text-[var(--text-primary)]">
-                        {row.logType === "in" ? "Supplier/Reason:" : "Buyer/Reason:"}
-                      </span>{" "}
-                      {row.logType === "in"
-                        ? row.supplier || row.reason
-                        : row.buyerName
-                          ? `${row.buyerName}${row.buyerPhone ? ` • ${row.buyerPhone}` : ""}`
-                          : row.reason}
-                    </p>
-                    {row.note ? <p><span className="font-medium text-[var(--text-primary)]">Note:</span> {row.note}</p> : null}
-                  </div>
-
-                  {row.correctedAt && (
-                    <div className="mt-3 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300">
-                      Corrected on {formatDateTime(row.correctedAt)}
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                      title="Correct Entry"
-                      variant="outline"
-                      icon={<Pencil size={15} />}
-                      onClick={() => setEditingRowId(row.id)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+        <StockHistoryMobileCards
+          rows={paginatedRows}
+          selectedIds={selectedIds}
+          onToggleSelection={toggleSelection}
+          onEdit={setEditingRowId}
+        />
       </div>
 
       <div className="hidden md:block">
@@ -436,48 +411,34 @@ export default function StockHistoryTabs({
           onToggleSelect={(id) => toggleSelection(String(id))}
           onSelectAll={toggleSelectPage}
           showActions
-          actionLabel="Correct"
+          actionLabel={en.stockHistory.edit}
           minWidth={980}
           onEdit={(item) => item.id && setEditingRowId(String(item.id))}
         />
       </div>
-      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)] lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[var(--text-secondary)]">Rows per page</span>
-          {pageSizes.map((size) => (
-            <Button
-              key={size}
-              title={String(size)}
-              variant={pageSize === size ? "success" : "outline"}
-              onClick={() => {
-                setPageSize(size)
-                setPage(1)
-              }}
-            />
-          ))}
-        </div>
+      <StockHistoryPagination
+        pageSize={pageSize}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+        onPageChange={setPage}
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button title="Prev" variant="outline" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage <= 1} />
-          <span className="text-sm text-[var(--text-secondary)]">Page {currentPage} of {totalPages}</span>
-          <Button title="Next" variant="outline" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={currentPage >= totalPages} />
-        </div>
-      </div>
-
-      {selectedRows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)]">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">{selectedRows.length} row selected</p>
-            <p className="text-xs text-[var(--text-secondary)]">You can select multiple rows at once. for example, to create a consolidated GST bill.</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" icon={<MdPrint />} title="Print Selected" onClick={handlePrintSelected} />
-            <Button variant="primary" title="Create GST Bill" onClick={handleCreateGstBill} />
-            <Button variant="outline" title="Clear Selection" onClick={() => setSelectedIds(new Set())} />
-          </div>
-        </div>
-      )}
+      <StockHistorySelectionBar
+        selectedCount={selectedRows.length}
+        selectedActionHint={selectedActionHint}
+        actionMessage={actionMessage}
+        canCreateGstBill={canCreateGstBill}
+        onPrint={handlePrintSelected}
+        onCreateGstBill={handleCreateGstBill}
+        onClearSelection={() => {
+          setSelectedIds(new Set())
+          setActionMessage("")
+        }}
+      />
 
       <InventoryLogCorrectionModal
         open={Boolean(editingRow)}
@@ -490,86 +451,4 @@ export default function StockHistoryTabs({
       />
     </div>
   )
-}
-
-function SummaryCard({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string
-  value: number
-  tone?: "default" | "emerald" | "rose"
-}) {
-  const valueClass =
-    tone === "emerald" ? "text-emerald-600" : tone === "rose" ? "text-rose-600" : "text-[var(--text-primary)]"
-
-  return (
-    <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 shadow-[var(--shadow-card)]">
-      <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className={`mt-2 text-2xl font-bold ${valueClass}`}>{value}</p>
-    </div>
-  )
-}
-
-function printRows(rows: HistoryRow[]) {
-  const printWindow = window.open("", "_blank", "width=900,height=700")
-  if (!printWindow) return
-
-  const total = rows.reduce((sum, row) => sum + row.price * row.quantity, 0)
-  const uniqueBuyers = Array.from(new Set(rows.map((row) => row.buyerName).filter(Boolean)))
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Sale History Print</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 24px; color: #111827; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
-          th { background: #f3f4f6; }
-          .meta { margin-top: 6px; color: #4b5563; font-size: 14px; }
-          .total { margin-top: 18px; text-align: right; font-weight: bold; font-size: 18px; }
-        </style>
-      </head>
-      <body>
-        <h2>Selected Stock History</h2>
-        <div class="meta">Printed on: ${new Date().toLocaleString("en-IN")}</div>
-        <div class="meta">Buyer: ${uniqueBuyers.length === 1 ? uniqueBuyers[0] : uniqueBuyers.length ? "Multiple Buyers" : "N/A"}</div>
-        <table>
-          <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Category</th>
-            <th>Buyer / Reason</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Total</th>
-          </tr>
-          ${rows
-            .map(
-              (row) => `
-            <tr>
-              <td>${formatDateTime(row.date)}</td>
-              <td>${toTitleCase(row.productName)}</td>
-              <td>${row.category}</td>
-              <td>${row.buyerName || row.reason}</td>
-              <td>${formatQuantity(row.quantity, row.quantityUnit)}</td>
-              <td>Rs ${row.price.toFixed(2)}</td>
-              <td>Rs ${(row.price * row.quantity).toFixed(2)}</td>
-            </tr>`
-            )
-            .join("")}
-        </table>
-        <div class="total">Grand Total: Rs ${total.toFixed(2)}</div>
-        <script>window.print();</script>
-      </body>
-    </html>
-  `)
-
-  printWindow.document.close()
-}
-
-function toTitleCase(value: string) {
-  return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1))
 }

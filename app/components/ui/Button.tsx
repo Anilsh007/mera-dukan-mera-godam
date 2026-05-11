@@ -104,23 +104,6 @@ export default function Button({
 
     return (
         <>
-            <style>{`
-                @keyframes btn-ripple {
-                    to { transform: scale(2.5); opacity: 0; }
-                }
-                @keyframes btn-spin {
-                    to { transform: rotate(360deg); }
-                }
-                .btn-spinner {
-                    width: 16px; height: 16px;
-                    border: 2px solid currentColor;
-                    border-top-color: transparent;
-                    border-radius: 50%;
-                    animation: btn-spin 0.6s linear infinite;
-                    flex-shrink: 0;
-                }
-            `}</style>
-
             <button
                 ref={btnRef}
                 type={type}

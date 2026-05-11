@@ -1,4 +1,4 @@
-import Input from "@/app/components/utility/CommonInput";
+import Input from "@/app/components/ui/Input";
 import type { BuyerSectionProps } from "../types/ui.types";
 
 export default function BuyerSection({

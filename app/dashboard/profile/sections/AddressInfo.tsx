@@ -1,4 +1,4 @@
-import Input from "@/app/components/utility/CommonInput"
+import Input from "@/app/components/ui/Input"
 import { MdLocationOn } from "react-icons/md"
 import SectionCard from "../components/SectionCard"
 

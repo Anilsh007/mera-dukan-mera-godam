@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import Button from "@/app/components/utility/Button"
+import Button from "@/app/components/ui/Button"
 import { MdSave, MdClose } from "react-icons/md"
 import PersonalInfo from "./sections/PersonalInfo"
 import BusinessInfo from "./sections/BusinessInfo"

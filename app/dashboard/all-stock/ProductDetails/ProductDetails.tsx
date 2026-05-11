@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, LayoutGrid, PackageSearch } from "lucide-react"
 import { Product } from "@/app/lib/db"
 import { getProductLogs } from "@/app/dashboard/add-product/product.service"
-import Button from "@/app/components/utility/Button"
+import Button from "@/app/components/ui/Button"
 import StockHistoryTabs from "../StockHistoryTabs"
 import StockInModal from "../StockInModal"
 import StockOutModal from "../StockOutModal"
@@ -12,6 +12,9 @@ import ProductStats from "./ProductStats"
 import MultiItemSaleModal from "../MultiItemSaleModal"
 import ProductManagementModal from "../ProductManagementModal"
 import { formatQuantity } from "@/app/lib/quantityUnit"
+import { formatQuantityBreakdown, getProductStockLevel } from "@/app/lib/inventory.utils"
+import type { StockHistoryLog } from "../stock-history.types"
+import { en } from "@/app/messages/en"
 
 type CategoryGroup = {
   key: string
@@ -21,18 +24,11 @@ type CategoryGroup = {
   totalValue: number
 }
 
-type Log = {
-  id: string
-  date: string
-  quantityAdded: number
-  type?: "in" | "out"
-  reason?: string
-  price: number
-  expiry?: string
-  note?: string
-  productId?: string
-  correctedAt?: string
-  correctionLabel?: string
+function simpleStockText(level: ReturnType<typeof getProductStockLevel>) {
+  if (level === "out") return "out of stock"
+  if (level === "critical") return "critical"
+  if (level === "low") return "low"
+  return ""
 }
 
 export default function ProductDetails({
@@ -46,10 +42,11 @@ export default function ProductDetails({
   onChangeProduct: (productId: string | null) => void
   onBack?: () => void
 }) {
-  const [logs, setLogs] = useState<Log[]>([])
+  const [logs, setLogs] = useState<StockHistoryLog[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<"in" | "out" | null>(null)
   const [saleModalOpen, setSaleModalOpen] = useState(false)
+  const [showBulkSale, setShowBulkSale] = useState(false)
   const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set())
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [productModal, setProductModal] = useState<"edit" | "delete" | null>(null)
@@ -63,6 +60,25 @@ export default function ProductDetails({
   const selectedSaleProducts = useMemo(
     () => group.products.filter((product) => selectedSaleIds.has(product.id)),
     [group.products, selectedSaleIds]
+  )
+
+  const [productSearch, setProductSearch] = useState("")
+
+  const visibleProducts = useMemo(() => {
+    const search = productSearch.trim().toLowerCase()
+    if (!search) return group.products
+
+    return group.products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(search) ||
+        (product.sku || "").toLowerCase().includes(search) ||
+        (product.supplier || "").toLowerCase().includes(search)
+    )
+  }, [group.products, productSearch])
+
+  const availableProducts = useMemo(
+    () => group.products.filter((product) => product.quantity > 0),
+    [group.products]
   )
 
   useEffect(() => {
@@ -92,9 +108,9 @@ export default function ProductDetails({
         <div className="mx-auto mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[var(--surface-secondary)] text-[var(--text-secondary)]">
           <PackageSearch size={22} />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">No product found</h3>
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">{en.inventory.notFoundTitle}</h3>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Is category me abhi koi valid product available nahi hai.
+          {en.inventory.notFoundDescription}
         </p>
       </div>
     )
@@ -117,13 +133,13 @@ export default function ProductDetails({
 
                 <div className="mt-2 flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm text-[var(--text-secondary)]">
                   <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
-                    {group.products.length} products
+                    {group.products.length} {en.inventory.itemsSuffix}
                   </span>
                   <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
-                    Qty {group.totalQty}
+                    {en.inventory.remainingPrefix} {formatQuantityBreakdown(group.products)}
                   </span>
                   <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
-                    Rs {group.totalValue.toLocaleString("en-IN")}
+                    {en.inventory.valuePrefix} Rs {group.totalValue.toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
@@ -131,17 +147,36 @@ export default function ProductDetails({
 
             {onBack && (
               <div className="flex justify-start lg:justify-end">
-                <Button onClick={onBack} title="Back" variant="black" icon={<ArrowLeft size={16} />} />
+                <Button onClick={onBack} title={en.common.back} variant="black" icon={<ArrowLeft size={16} />} />
               </div>
             )}
           </div>
 
           <div className="border-t border-zinc-400/40 bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:p-5">
-            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Select product</h3>
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{en.inventory.chooseItem}</h3>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                  {visibleProducts.length} / {group.products.length} {en.inventory.visibleItems}
+                </p>
+              </div>
+              <input
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+                placeholder={en.inventory.searchInCategory}
+                className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400 sm:max-w-xs"
+              />
+            </div>
 
             <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1">
-              {group.products.map((product) => {
+              {visibleProducts.length === 0 ? (
+                <div className="w-full rounded-2xl border border-dashed border-[var(--border-card)] bg-[var(--surface-primary)] px-4 py-5 text-sm text-[var(--text-secondary)]">
+                  {en.inventory.searchNoResults}
+                </div>
+              ) : visibleProducts.map((product) => {
                 const isActive = product.id === activeProduct.id
+                const stockLevel = getProductStockLevel(product)
+                const stockText = simpleStockText(stockLevel)
 
                 return (
                   <Button
@@ -152,7 +187,7 @@ export default function ProductDetails({
                     }}
                     variant={isActive ? "success" : "outline"}
                     className="min-w-[140px] sm:min-w-[180px] !px-3 sm:!px-4 !py-2.5 sm:!py-3 text-xs sm:text-sm"
-                    title={product.name}
+                    title={`${product.name} (${formatQuantity(product.quantity, product.quantityUnit)}${stockText ? `, ${stockText}` : ""})`}
                   />
                 )
               })}
@@ -162,34 +197,62 @@ export default function ProductDetails({
           <div className="border-t border-zinc-400/40 bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Quick Sale Selection</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{en.inventory.multiItemSale}</h3>
                 <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                  Multiple items select karo, buyer add karo, phir ek hi baar stock out + print + GST draft banao.
+                  {en.inventory.multiItemSaleHint}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button
-                  title={selectedSaleIds.size === group.products.filter((product) => product.quantity > 0).length ? "Unselect All" : "Select All"}
+                  title={showBulkSale ? en.common.close : en.inventory.open}
+                  variant={showBulkSale ? "outline" : "secondary"}
+                  onClick={() => setShowBulkSale((value) => !value)}
+                />
+                {showBulkSale && (
+                  <>
+                <Button
+                  title={selectedSaleIds.size === availableProducts.length ? en.stockHistory.clearSelection : en.inventory.selectAll}
                   variant="outline"
                   onClick={() =>
                     setSelectedSaleIds((current) =>
-                      current.size === group.products.filter((product) => product.quantity > 0).length
+                      current.size === availableProducts.length
                         ? new Set()
-                        : new Set(group.products.filter((product) => product.quantity > 0).map((product) => product.id))
+                        : new Set(availableProducts.map((product) => product.id))
                     )
                   }
                 />
                 <Button
-                  title={`Create Sale (${selectedSaleIds.size})`}
+                  title={en.inventory.selectLowStock}
+                  variant="outline"
+                  onClick={() =>
+                    setSelectedSaleIds(
+                      new Set(
+                        group.products
+                          .filter((product) => product.quantity > 0)
+                          .filter((product) => {
+                            const level = getProductStockLevel(product)
+                            return level === "low" || level === "critical"
+                          })
+                          .map((product) => product.id)
+                      )
+                    )
+                  }
+                />
+                <Button
+                  title={`${en.inventory.createSale} (${selectedSaleIds.size})`}
                   variant="primary"
                   onClick={() => setSaleModalOpen(true)}
                   disabled={selectedSaleProducts.length === 0}
                 />
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="space-y-3 md:hidden">
+            {showBulkSale && (
+            <>
+            <div className="mt-4 space-y-3 md:hidden">
               {group.products.map((product) => {
                 const checked = selectedSaleIds.has(product.id)
                 const disabled = product.quantity <= 0
@@ -221,13 +284,13 @@ export default function ProductDetails({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate font-medium capitalize text-[var(--text-primary)]">{product.name}</p>
-                          <p className="text-xs text-[var(--text-secondary)]">{product.supplier || "No supplier"}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">{product.supplier || en.inventory.supplierNotAvailable}</p>
                         </div>
                         <p className="text-sm font-semibold text-emerald-600">Rs {product.price.toLocaleString("en-IN")}</p>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
-                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">SKU: {product.sku || "-"}</span>
-                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">Qty: {formatQuantity(product.quantity, product.quantityUnit)}</span>
+                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">{en.inventory.code}: {product.sku || "-"}</span>
+                        <span className="rounded-lg border border-[var(--border-card)] px-2 py-1">{en.inventory.remainingLabel}: {formatQuantity(product.quantity, product.quantityUnit)}</span>
                       </div>
                     </div>
                   </label>
@@ -235,16 +298,16 @@ export default function ProductDetails({
               })}
             </div>
 
-            <div className="hidden overflow-x-auto md:block">
+            <div className="mt-4 hidden overflow-x-auto md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="bg-black/5 dark:bg-white/5">
                   <tr className="border-b border-[var(--border-card)]">
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Select</th>
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Product</th>
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Supplier</th>
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">SKU</th>
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Available Qty</th>
-                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Rate</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.select}</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.item}</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.supplier}</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.code}</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.remainingLabel}</th>
+                    <th className="px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">{en.inventory.rate}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-card)]">
@@ -281,6 +344,8 @@ export default function ProductDetails({
                 </tbody>
               </table>
             </div>
+            </>
+            )}
           </div>
         </div>
 
@@ -294,25 +359,25 @@ export default function ProductDetails({
 
         <div className="rounded-[24px] sm:rounded-[28px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-card)]">
           <div className="mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">Stock history</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{en.inventory.historyTitle}</h3>
             <p className="mt-1 text-xs sm:text-sm text-[var(--text-secondary)]">
-              Activity of <b>{activeProduct.name}</b>.
+              {en.inventory.historyDescription} <b>{activeProduct.name}</b>.
             </p>
           </div>
 
           {recentActionMessage && (
             <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-semibold">Recent update applied</p>
+                <p className="font-semibold">{en.inventory.updated}</p>
                 <p className="mt-1 text-xs sm:text-sm">{recentActionMessage}</p>
               </div>
-              <Button title="Dismiss" variant="soft-primary" onClick={() => setRecentActionMessage("")} />
+              <Button title={en.inventory.dismiss} variant="soft-primary" onClick={() => setRecentActionMessage("")} />
             </div>
           )}
 
           {loading ? (
             <div className="rounded-2xl border border-dashed border-[var(--border-card)] bg-[var(--surface-secondary)] px-4 py-6 sm:py-8 text-center text-sm text-[var(--text-secondary)]">
-              History is loading...
+              {en.inventory.historyLoading}
             </div>
           ) : (
             <StockHistoryTabs

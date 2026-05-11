@@ -29,6 +29,9 @@ type SyncPayload = {
     note?: string
     expiry?: string
     sku?: string
+    hsnCode?: string
+    lowStockThreshold?: number
+    criticalStockThreshold?: number
     userId: string
     createdAt: string
   }>
@@ -151,6 +154,9 @@ export async function POST(request: NextRequest) {
         note: product.note,
         expiry: product.expiry,
         sku: product.sku,
+        hsn_code: product.hsnCode,
+        low_stock_threshold: product.lowStockThreshold,
+        critical_stock_threshold: product.criticalStockThreshold,
         created_at: product.createdAt,
       }))
     )
@@ -247,6 +253,15 @@ function validateSyncPayload(payload: SyncPayload) {
     note: sanitizeOptionalText(product.note, 1000),
     expiry: product.expiry ? assertIsoDate(product.expiry, "Product expiry") : undefined,
     sku: sanitizeOptionalText(product.sku, 80),
+    hsnCode: sanitizeOptionalText(product.hsnCode, 40),
+    lowStockThreshold: assertOptionalFiniteNumber(product.lowStockThreshold, "Product low stock threshold", {
+      min: 0,
+      max: 1_000_000,
+    }),
+    criticalStockThreshold: assertOptionalFiniteNumber(product.criticalStockThreshold, "Product critical stock threshold", {
+      min: 0,
+      max: 1_000_000,
+    }),
     userId: sanitizeRequiredText(product.userId, 160, "Product userId"),
     createdAt: assertIsoDate(product.createdAt, "Product createdAt"),
   }))
@@ -267,4 +282,13 @@ function validateSyncPayload(payload: SyncPayload) {
   }))
 
   return { products, logs }
+}
+
+function assertOptionalFiniteNumber(
+  value: unknown,
+  fieldName: string,
+  options?: { min?: number; max?: number }
+) {
+  if (value === null || value === undefined || value === "") return undefined
+  return assertFiniteNumber(value, fieldName, options)
 }

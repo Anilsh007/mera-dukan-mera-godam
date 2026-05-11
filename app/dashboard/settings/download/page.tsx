@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import DownloadSection from "./DownloadSection"
 import { downloadAllData, downloadByDateRange } from "./download.helpers"
+import { en } from "@/app/messages/en"
 
 export default function DownloadPage() {
   const [fromDate, setFromDate] = useState("")
@@ -15,7 +16,7 @@ export default function DownloadPage() {
     try {
       await downloadAllData()
     } catch {
-      toast.error("Download failed ❌")
+      toast.error(en.download.failed)
     } finally {
       setDownloading(false)
     }
@@ -26,7 +27,7 @@ export default function DownloadPage() {
     try {
       await downloadByDateRange(fromDate, toDate)
     } catch {
-      toast.error("Download failed ❌")
+      toast.error(en.download.failed)
     } finally {
       setDownloading(false)
     }

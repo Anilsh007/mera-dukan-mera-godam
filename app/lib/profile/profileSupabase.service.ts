@@ -1,6 +1,6 @@
 "use client";
 
-import { auth } from "../firebase";
+import { authHeaders, getFirebaseIdToken, readApiError } from "../apiClient";
 import type { ProfileData } from "./profile.service";
 
 export async function loadProfileFromSupabase(): Promise<ProfileData | null> {
@@ -9,9 +9,7 @@ export async function loadProfileFromSupabase(): Promise<ProfileData | null> {
 
   const response = await fetch("/api/profile", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token),
   });
 
   if (response.status === 404) {
@@ -19,7 +17,7 @@ export async function loadProfileFromSupabase(): Promise<ProfileData | null> {
   }
 
   if (!response.ok) {
-    const error = await readApiError(response);
+    const error = await readApiError(response, "Profile load request");
     console.error("Profile load error:", error);
     return null;
   }
@@ -35,35 +33,15 @@ export async function saveProfileToSupabase(
 
   const response = await fetch("/api/profile", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token, true),
     body: JSON.stringify(profile),
   });
 
   if (!response.ok) {
-    const error = await readApiError(response);
+    const error = await readApiError(response, "Profile save request");
     console.error("Profile save error:", error);
     throw error;
   }
 
   return (await response.json()) as ProfileData;
-}
-
-async function getFirebaseIdToken() {
-  const user = auth.currentUser;
-  if (!user) return null;
-
-  return user.getIdToken();
-}
-
-async function readApiError(response: Response) {
-  try {
-    return await response.json();
-  } catch {
-    return {
-      message: `Profile API request failed with status ${response.status}`,
-    };
-  }
 }

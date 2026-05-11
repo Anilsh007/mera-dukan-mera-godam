@@ -1,7 +1,9 @@
 "use client"
 
-import useInventoryData from "../hooks/useInventoryData"
+import useInventoryData from "@/app/hooks/useInventoryData"
+import { getProductStockLevel } from "@/app/lib/inventory.utils"
 import { formatQuantity } from "@/app/lib/quantityUnit"
+import { en } from "@/app/messages/en"
 
 function getTodayRange() {
   const start = new Date()
@@ -33,16 +35,19 @@ export default function ReportsPage() {
     .slice(0, 5)
 
   const lowStockProducts = products
-    .filter((product) => product.quantity > 0 && product.quantity <= 10)
+    .filter((product) => {
+      const stockLevel = getProductStockLevel(product)
+      return stockLevel === "low" || stockLevel === "critical"
+    })
     .sort((left, right) => left.quantity - right.quantity)
     .slice(0, 5)
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Reports</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{en.pages.reportsTitle}</h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Inventory health, sales snapshot aur category trends ka quick summary.
+          {en.pages.reportsDescription}
         </p>
       </div>
 

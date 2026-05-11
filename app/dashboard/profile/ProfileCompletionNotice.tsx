@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { AlertCircle, ArrowRight } from "lucide-react"
-import Button from "@/app/components/utility/Button"
+import Button from "@/app/components/ui/Button"
 import useProfile from "./useProfile"
 
 function isBlank(value?: string) {

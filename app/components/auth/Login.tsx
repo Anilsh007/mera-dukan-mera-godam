@@ -8,8 +8,9 @@ import { Float, MeshDistortMaterial, Sphere } from "@react-three/drei";
 import { FcGoogle } from "react-icons/fc";
 import { useEffect, useRef, useState, type ElementRef } from "react";
 import logo from "../../../assets/logo.svg";
-import Button from "../utility/Button";
+import Button from "@/app/components/ui/Button";
 import { toast } from "sonner";
+import { en } from "@/app/messages/en";
 
 const AnimatedBackground = () => {
   const meshRef = useRef<ElementRef<typeof MeshDistortMaterial> | null>(null);
@@ -69,7 +70,7 @@ export default function Login() {
         code === "auth/popup-closed-by-user" ||
         code === "auth/cancelled-popup-request"
       ) {
-        toast.message("Popup issue detect hua, redirect login try ho raha hai...");
+        toast.message(en.auth.popupFallback);
 
         try {
           await signInWithRedirect(auth, provider);
@@ -80,9 +81,9 @@ export default function Login() {
       }
 
       if (code === "auth/unauthorized-domain") {
-        toast.error("Ye domain Firebase auth me authorized nahi hai");
+        toast.error(en.auth.unauthorizedDomain);
       } else {
-        toast.error("Login complete nahi ho paya. Please try again.");
+        toast.error(en.auth.loginFailed);
       }
 
       console.error("Login failed:", error);
@@ -105,26 +106,25 @@ export default function Login() {
         <img src={logo.src} alt="Logo" className="h-14 w-14 sm:h-16 sm:w-16" />
 
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">Inventory Management & GST Billing for Indian Shops</h1>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-emerald-400 sm:text-xs">Secure Access</p>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">{en.auth.title}</h1>
+          <p className="text-[11px] uppercase tracking-[0.3em] text-emerald-400 sm:text-xs">{en.auth.eyebrow}</p>
           <p className="mt-3 text-sm leading-6 text-white/75">
-            Track stock, manage products, monitor sales, handle expiry alerts and create GST invoices from one inventory dashboard.
+            {en.auth.description}
           </p>
         </div>
 
         <div className="w-full">
-          <Button onClick={handleLogin} loading={loading} variant="login" icon={<FcGoogle />} title="Continue with Google" className="w-full justify-center" />
+          <Button onClick={handleLogin} loading={loading} variant="login" icon={<FcGoogle />} title={en.auth.continueWithGoogle} className="w-full justify-center" />
         </div>
 
         <div className="grid w-full grid-cols-1 gap-2 text-center text-xs text-white/65">
-          <p>Inventory management app</p>
-          <p>Stock tracking software</p>
-          <p>GST invoice and billing support</p>
-          <p>Retail, wholesale and warehouse ready</p>
+          {en.auth.keywords.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
         </div>
 
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-white/40">
-          Powered by Firebase
+          {en.auth.footer}
         </p>
       </div>
     </div>

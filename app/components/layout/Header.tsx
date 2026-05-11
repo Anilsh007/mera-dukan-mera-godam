@@ -8,6 +8,7 @@ import ThemeToggle from "@/app/components/theme/ThemeToggle";
 import Link from "next/link";
 import { LogOut, Menu, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.svg";
+import { en } from "@/app/messages/en";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const router = useRouter();
@@ -37,14 +38,14 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
       <div className="flex min-w-0 items-center justify-center">
         <button onClick={onMenuClick} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--bg-elevated)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] lg:hidden"
-          aria-label="Open menu" >
+          aria-label={en.common.openMenu} >
           <Menu size={22} />
         </button>
         <div className="flex min-w-0 items-center justify-center lg:hidden">
-          <img src={logo.src} className="h-7 w-7 object-contain" alt="Logo" />
+          <img src={logo.src} className="h-7 w-7 object-contain" alt={en.common.appName} />
           <div className="ml-2 hidden min-w-0 flex-col items-start sm:flex">
-            <p className="truncate text-sm font-semibold text-[var(--text-primary)]">Mera Dukan Mera Godam</p>
-            <p className="hidden text-xs text-[var(--text-muted)] md:block">Inventory and billing workspace</p>
+            <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
+            <p className="hidden text-xs text-[var(--text-muted)] md:block">{en.nav.workspaceTagline}</p>
           </div>
         </div>
       </div>
@@ -77,7 +78,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
             <div className="hidden min-w-0 sm:block">
               <p className="max-w-[110px] truncate text-xs font-semibold text-[var(--text-primary)]">
-                {user?.displayName?.split(" ")[0] || "User"}
+                {user?.displayName?.split(" ")[0] || en.common.user}
               </p>
             </div>
           </button>
@@ -85,16 +86,16 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           {open && (
             <div className="absolute right-0 z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] shadow-[var(--shadow-card)] backdrop-blur-xl">
               <div className="border-b border-[var(--border-color)] px-4 py-3">
-                <p className="text-xs text-[var(--text-muted)]">Signed in as</p>
+                <p className="text-xs text-[var(--text-muted)]">{en.nav.signedInAs}</p>
                 <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{user?.displayName || user?.email}</p>
                 {user?.displayName && <p className="truncate text-xs text-[var(--text-muted)]">{user?.email}</p>}
               </div>
 
               <Link href="/dashboard/profile" className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-soft)]">
-                <UserIcon size={15} /> Profile
+                <UserIcon size={15} /> {en.common.profile}
               </Link>
               <button onClick={handleLogout} className="w-full cursor-pointer flex items-center gap-3 px-4 py-3 text-sm text-red-500 transition-colors hover:bg-red-500/10">
-                <LogOut size={15} /> Logout
+                <LogOut size={15} /> {en.common.logout}
               </button>
             </div>
           )}
