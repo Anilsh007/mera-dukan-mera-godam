@@ -6,7 +6,7 @@ import { authHeaders, isMissingTableError, readApiError } from "./apiClient"
 import { getUserIdentityFromAuthUser } from "./userIdentity"
 
 export async function syncDexieToSupabase() {
-  const user = auth.currentUser
+  const user = auth?.currentUser
   if (!user) throw new Error("User not logged in")
 
   const token = await user.getIdToken()
@@ -34,8 +34,8 @@ export async function syncDexieToSupabase() {
 
     if (!response.ok) {
       const error = await readApiError(response, "Products sync request")
-      console.error("Product sync error:", error)
-      throw error
+      console.error("Product sync error:", error.message || error)
+      throw new Error(error.message || "Product sync failed")
     }
 
     console.log(`Synced ${products.length} products & ${logs.length} logs to Supabase`)
@@ -54,8 +54,8 @@ export async function syncDexieToSupabase() {
         console.warn("Purchase sync skipped because Supabase purchases table is not created yet.")
         return
       }
-      console.error("Purchase sync error:", error)
-      throw error
+      console.error("Purchase sync error:", error.message || error)
+      throw new Error(error.message || "Purchase sync failed")
     }
 
     console.log(`Synced ${purchases.length} purchases to Supabase`)

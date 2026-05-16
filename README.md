@@ -1,3 +1,11 @@
+# Mera Dukan Mera Godam
+
+Next.js / React / TypeScript stock inventory management, GST billing, purchase/sale, reports, print/receipt web app for Indian small shopkeepers and low-technical users.
+
+## Project Instructions
+
+Durable project rules for all current and future phases are maintained in [`AGENTS.md`](./AGENTS.md). Before making changes, inspect existing code, preserve working features, keep all user-facing text in the language constants system, reuse shared UI/business utilities, and run the closest available lint/typecheck/build checks after meaningful code changes.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

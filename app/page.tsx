@@ -1,46 +1,30 @@
-import type { Metadata } from "next";
-import Login from "@/app/components/auth/Login";
+import type { Metadata } from "next"
+import Login from "@/app/components/auth/Login"
+import PublicPageShell from "@/app/components/layout/PublicPageShell"
+import HomeMarketingContent from "@/app/components/marketing/HomeMarketingContent"
+import JsonLd from "@/app/components/seo/JsonLd"
+import { createPageMetadata, getSeoPage, resolveSeoLanguage, type SeoSearchParams } from "@/app/lib/seo/site"
+import { createPageSchema } from "@/app/lib/seo/schema"
 
-export const metadata: Metadata = {
-  title: "Inventory Management & GST Billing App for Shops in India",
-  description:
-    "Use Mera Dukan Mera Godam to manage inventory, track stock, monitor sales, handle expiry alerts and create GST invoices for your shop or warehouse.",
-};
+type PageProps = { searchParams?: SeoSearchParams }
 
-export default function HomePage() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "Mera Dukan Mera Godam",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    description:
-      "Inventory management, stock control, sales tracking and GST billing software for shops and small businesses in India.",
-    areaServed: "IN",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "INR",
-    },
-    featureList: [
-      "Inventory management",
-      "Stock tracking",
-      "GST invoice generation",
-      "Expiry alerts",
-      "Sales history",
-      "Shop profile management",
-      "Product database",
-      "Business reporting",
-    ],
-  };
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const language = await resolveSeoLanguage(searchParams)
+  return createPageMetadata(getSeoPage("/", language), language)
+}
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const language = await resolveSeoLanguage(searchParams)
 
   return (
-    <main>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <Login />
-    </main>
-  );
+    <>
+      <JsonLd id="home-page-schema" data={createPageSchema("/", language)} />
+      <PublicPageShell path="/" language={language}>
+        <>
+          <Login />
+          <HomeMarketingContent />
+        </>
+      </PublicPageShell>
+    </>
+  )
 }

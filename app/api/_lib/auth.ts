@@ -64,7 +64,8 @@ export function toApiErrorResponse(error: unknown, fallbackMessage: string) {
     return NextResponse.json({ message: error.message }, { status: error.status })
   }
 
-  const message = error instanceof Error ? error.message : fallbackMessage
+  const isDevelopment = process.env.NODE_ENV !== "production"
+  const message = isDevelopment && error instanceof Error ? error.message : fallbackMessage
   return NextResponse.json({ message }, { status: 500 })
 }
 
@@ -79,8 +80,8 @@ export async function verifyFirebaseToken(token: string): Promise<FirebaseTokenP
     throw new ApiError("Invalid Firebase token format", 401)
   }
 
-  const header = JSON.parse(base64UrlDecode(encodedHeader)) as { alg?: string; kid?: string }
-  const payload = JSON.parse(base64UrlDecode(encodedPayload)) as FirebaseTokenPayload
+  const header = parseFirebaseTokenPart<{ alg?: string; kid?: string }>(encodedHeader)
+  const payload = parseFirebaseTokenPart<FirebaseTokenPayload>(encodedPayload)
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 
   if (!projectId) {
@@ -141,6 +142,15 @@ async function fetchFirebaseCertificates(): Promise<Record<string, string>> {
   }
 
   return (await response.json()) as Record<string, string>
+}
+
+
+function parseFirebaseTokenPart<T>(value: string): T {
+  try {
+    return JSON.parse(base64UrlDecode(value)) as T
+  } catch {
+    throw new ApiError("Invalid Firebase token payload", 401)
+  }
 }
 
 /**

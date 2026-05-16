@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Mera Dukan Mera Godam inventory and GST billing app">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f6faf8"/>
+      <stop offset="1" stop-color="#dff6ef"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#064e45" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1050" cy="120" r="180" fill="#0f9f7f" opacity=".12"/>
+  <circle cx="120" cy="560" r="220" fill="#0b6f63" opacity=".10"/>
+  <g filter="url(#shadow)">
+    <rect x="90" y="90" width="1020" height="450" rx="42" fill="#ffffff"/>
+    <rect x="130" y="132" width="92" height="92" rx="24" fill="#0f9f7f"/>
+    <path d="M151 169 176 154l25 15v32c0 5-4 9-9 9h-32c-5 0-9-4-9-9v-32Z" fill="#ffffff"/>
+    <text x="250" y="178" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#123c35">Mera Dukan Mera Godam</text>
+    <text x="250" y="230" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#3f5f59">Inventory, stock control and GST billing for Indian businesses</text>
+    <rect x="130" y="290" width="260" height="120" rx="28" fill="#ecfdf7"/>
+    <rect x="470" y="290" width="260" height="120" rx="28" fill="#ecfdf7"/>
+    <rect x="810" y="290" width="260" height="120" rx="28" fill="#ecfdf7"/>
+    <text x="164" y="345" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0b6f63">Stock</text>
+    <text x="164" y="382" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#52716b">Track inventory</text>
+    <text x="504" y="345" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0b6f63">GST</text>
+    <text x="504" y="382" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#52716b">Create invoices</text>
+    <text x="844" y="345" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0b6f63">Reports</text>
+    <text x="844" y="382" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#52716b">Monitor business</text>
+  </g>
+</svg>

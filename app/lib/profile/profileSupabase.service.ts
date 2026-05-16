@@ -2,6 +2,7 @@
 
 import { authHeaders, getFirebaseIdToken, readApiError } from "../apiClient";
 import type { ProfileData } from "./profile.service";
+import { en } from "@/app/messages/en";
 
 export async function loadProfileFromSupabase(): Promise<ProfileData | null> {
   const token = await getFirebaseIdToken();
@@ -18,8 +19,7 @@ export async function loadProfileFromSupabase(): Promise<ProfileData | null> {
 
   if (!response.ok) {
     const error = await readApiError(response, "Profile load request");
-    console.error("Profile load error:", error);
-    return null;
+    throw error;
   }
 
   return (await response.json()) as ProfileData;
@@ -29,7 +29,7 @@ export async function saveProfileToSupabase(
   profile: Omit<ProfileData, "userId" | "updatedAt">
 ): Promise<ProfileData> {
   const token = await getFirebaseIdToken();
-  if (!token) throw new Error("User not logged in");
+  if (!token) throw new Error(en.profile.signInRequired);
 
   const response = await fetch("/api/profile", {
     method: "POST",
@@ -39,7 +39,6 @@ export async function saveProfileToSupabase(
 
   if (!response.ok) {
     const error = await readApiError(response, "Profile save request");
-    console.error("Profile save error:", error);
     throw error;
   }
 

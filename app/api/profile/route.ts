@@ -6,6 +6,7 @@ import {
 } from "@/app/api/_lib/auth";
 import {
   assertContentLength,
+  readJsonBody,
   enforceRateLimit,
   sanitizeOptionalText,
   sanitizeRequiredText,
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     enforceRateLimit(request, { key: "profile:post", limit: 30, windowMs: 60_000 });
     assertContentLength(request, 256 * 1024);
     const userId = await getUserIdentityFromRequest(request);
-    const profile = validateProfilePayload((await request.json()) as ProfilePayload);
+    const profile = validateProfilePayload(await readJsonBody<ProfilePayload>(request));
     const payload = mapProfileToDb(profile, userId);
     const supabase = createSupabaseAdminClient();
 

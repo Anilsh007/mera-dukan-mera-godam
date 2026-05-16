@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mera Dukan Mera Godam maskable app icon">
+  <rect width="512" height="512" fill="#0f9f7f"/>
+  <circle cx="256" cy="256" r="202" fill="#ffffff" opacity=".14"/>
+  <path d="M118 194 256 116l138 78v168c0 23-19 42-42 42H160c-23 0-42-19-42-42V194Z" fill="#ffffff"/>
+  <path d="M156 220h200v44H156zM176 292h160v72H176z" fill="#0b6f63"/>
+  <path d="M208 328h96" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+</svg>

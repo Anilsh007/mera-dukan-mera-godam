@@ -9,6 +9,10 @@ const ThemeContext = createContext({
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
+    if (typeof document !== "undefined") {
+      const domTheme = document.documentElement.getAttribute("data-theme");
+      if (domTheme) return domTheme;
+    }
     if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("mdmg-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -29,7 +33,7 @@ export function ThemeProvider({ children }) {
     setTheme(next);
   };
 
-  // ✅ HAMESHA Provider ke andar render karo — mounted guard hata diya
+  // ✅ HAMESHA Provider ke andar render Add at least one purchase item. — mounted guard hata diya
   // Pehle mounted check ki wajah se context nahi milta tha useTheme() ko
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

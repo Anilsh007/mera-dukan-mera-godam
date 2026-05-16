@@ -17,10 +17,10 @@ This app keeps reusable code outside feature routes and feature-specific code cl
 
 Feature route folders stay under `dashboard`:
 
-- `add-product`: Quick Purchase route and form.
+- `Quick-purchase`: Quick Purchase route and form.
 - `purchases`: purchase ledger services, constants, utilities, and page.
 - `suppliers`: supplier ledger page and supplier payment UI.
-- `all-stock`: stock list, details, stock in/out, sales, and stock history components.
+- `all-inventory`: stock list, details, stock in/out, sales, and stock history components.
 - `gst-invoice`: GST invoice builder and invoice-specific helpers.
 - `profile`: profile editor/showcase.
 - `reports`, `expiry-alerts`, `stock-history`, `settings`: route-specific pages and helpers.

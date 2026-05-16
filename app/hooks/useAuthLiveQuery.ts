@@ -35,6 +35,11 @@ export default function useAuthLiveQuery<T>(
       setLoading(false)
     }
 
+    if (!auth) {
+      reset()
+      return
+    }
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
       liveSubscription?.unsubscribe()
       liveSubscription = null

@@ -1,55 +1,66 @@
-import { Landmark, Gavel, StickyNote } from "lucide-react";
-import type { BankNotesProps } from "../types/ui.types";
+import { Landmark, Gavel, StickyNote } from "lucide-react"
+import type { BankNotesProps } from "../types/ui.types"
+import { en } from "@/app/messages/en"
 
 export default function BankNotesSection({ invoice, onChange }: BankNotesProps) {
-  const bank = invoice.bankDetails;
+  const bank = invoice.bankDetails
 
   return (
-    <section className="p-4 sm:p-6 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl shadow-[var(--shadow-card)]">
-      <h3 className="text-[10px] font-bold mb-8 text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-        <Landmark size={14} /> Bank & Payment Details
+    <section className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
+      <h3 className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">
+        <Landmark size={14} /> {en.gstInvoice.bankAndPaymentDetails}
       </h3>
 
-      {/* Bank Details 2x2 Grid */}
       <div className="mb-10 grid grid-cols-1 gap-4 px-2 min-[420px]:grid-cols-2 sm:gap-x-6 sm:gap-y-8">
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Bank Name</p>
-          <p className="text-sm text-[var(--text-primary)] font-semibold tracking-tight">{bank?.bankName || "---"}</p>
+          <p className="mb-1 text-[9px] font-extrabold uppercase tracking-tighter text-[var(--text-muted)]">{en.profile.bankName}</p>
+          <p className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">{bank?.bankName || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Account Holder</p>
-          <p className="text-sm text-[var(--text-primary)] font-semibold tracking-tight">{bank?.accountName || "---"}</p>
+          <p className="mb-1 text-[9px] font-extrabold uppercase tracking-tighter text-[var(--text-muted)]">{en.profile.accountHolder}</p>
+          <p className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">{bank?.accountName || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">Account No</p>
-          <p className="text-sm font-mono text-[var(--text-primary)] tracking-[0.1em]">{bank?.accountNo || "---"}</p>
+          <p className="mb-1 text-[9px] font-extrabold uppercase tracking-tighter text-[var(--text-muted)]">{en.gstInvoice.accountNo}</p>
+          <p className="text-sm font-mono tracking-[0.1em] text-[var(--text-primary)]">{bank?.accountNo || "---"}</p>
         </div>
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] uppercase font-extrabold mb-1 tracking-tighter">IFSC Code</p>
-          <p className="text-sm font-mono text-[var(--text-primary)] uppercase tracking-widest">{bank?.ifsc || "---"}</p>
+          <p className="mb-1 text-[9px] font-extrabold uppercase tracking-tighter text-[var(--text-muted)]">{en.profile.ifscCode}</p>
+          <p className="text-sm font-mono uppercase tracking-widest text-[var(--text-primary)]">{bank?.ifsc || "---"}</p>
         </div>
       </div>
 
-      {/* Interactive Notes Section */}
-      <div className="space-y-5 pt-6 border-t border-white/5">
+      <div className="space-y-5 border-t border-white/5 pt-6">
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-500 ml-2">
-            <Gavel size={12} /> Terms & Conditions
+          <label className="ml-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500">
+            <Gavel size={12} /> {en.profile.invoiceTerms}
           </label>
           <div className="relative group">
-            <textarea value={invoice.terms || ""} onChange={(e) => onChange("terms", e.target.value)} rows={1} className="w-full p-2 rounded-xl border bg-[var(--bg-input)] border-[var(--border-input)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:ring-2 focus:ring-emerald-400 outline-none transition-all" placeholder="No terms specified..." />
+            <textarea
+              value={invoice.terms || ""}
+              onChange={(e) => onChange("terms", e.target.value)}
+              rows={3}
+              className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-all focus:ring-2 focus:ring-emerald-400"
+              placeholder={en.gstInvoice.noTermsSpecified}
+            />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-500 ml-2">
-            <StickyNote size={12} /> Additional Notes
+          <label className="ml-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500">
+            <StickyNote size={12} /> {en.gstInvoice.additionalNotes}
           </label>
           <div className="relative group">
-            <textarea value={invoice.notes || ""} onChange={(e) => onChange("notes", e.target.value)} rows={1} className="w-full p-2 rounded-xl border bg-[var(--bg-input)] border-[var(--border-input)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:ring-2 focus:ring-emerald-400 outline-none transition-all" placeholder="Add internal notes..." />
+            <textarea
+              value={invoice.notes || ""}
+              onChange={(e) => onChange("notes", e.target.value)}
+              rows={3}
+              className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-all focus:ring-2 focus:ring-emerald-400"
+              placeholder={en.gstInvoice.addInternalNotes}
+            />
           </div>
         </div>
       </div>
     </section>
-  );
+  )
 }

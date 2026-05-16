@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { toast } from "sonner"
+import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
 import { MdSave, MdClose } from "react-icons/md"
 import PersonalInfo from "./sections/PersonalInfo"
@@ -10,6 +10,7 @@ import AddressInfo from "./sections/AddressInfo"
 import BankingInfo from "./sections/BankingInfo"
 import TermsSection from "./sections/TermsSection"
 import { ProfileSaveResult, ProfileState } from "./useProfile"
+import { en } from "@/app/messages/en"
 
 
 interface ProfileFormProps {
@@ -41,18 +42,18 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
   const validate = () => {
     const { business, personal, address } = profile
     if (personal.phone && !/^[6-9]\d{9}$/.test(personal.phone)) {
-      toast.error("Phone number sahi nahi hai")
+      toast.error(en.profile.invalidPhone)
       return false
     }
     if (business.gstNumber) {
       const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
       if (!regex.test(business.gstNumber.toUpperCase())) {
-        toast.error("GST number format sahi nahi hai")
+        toast.error(en.profile.invalidGstin)
         return false
       }
     }
     if (address.pincode && !/^\d{6}$/.test(address.pincode)) {
-      toast.error("Pin code 6 digits ka hona chahiye")
+      toast.error(en.profile.invalidPincode)
       return false
     }
     return true
@@ -65,7 +66,7 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
     try {
       await onSave(profile)
     } catch {
-      toast.error("Save karne mein error aaya")
+      toast.error(en.profile.saveError)
     } finally {
       setSaving(false)
     }
@@ -84,8 +85,8 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
       <TermsSection value={profile.settings.termsAndConditions} onChange={(val) => handleChange("settings", "termsAndConditions", val)} />
 
       <div className="fixed inset-x-3 bottom-3 z-50 flex flex-col gap-2 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-3 py-3 shadow-lg backdrop-blur-xl sm:left-1/2 sm:right-auto sm:bottom-6 sm:-translate-x-1/2 sm:flex-row sm:rounded-full sm:px-6">
-        <Button variant="outline" icon={<MdClose />} title="Cancel" onClick={onCancel} />
-        <Button onClick={handleSave} variant="primary" icon={<MdSave />} title={saving ? "Saving..." : "Save Changes"} loading={saving} disabled={saving} />
+        <Button variant="outline" icon={<MdClose />} title={en.profile.cancel} onClick={onCancel} />
+        <Button onClick={handleSave} variant="primary" icon={<MdSave />} title={saving ? en.profile.saving : en.profile.saveChanges} loading={saving} disabled={saving} />
       </div>
     </div>
   )

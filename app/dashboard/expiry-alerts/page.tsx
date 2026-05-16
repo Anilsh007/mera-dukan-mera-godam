@@ -9,7 +9,7 @@ import { Product } from "@/app/lib/db"
 import { formatCurrency } from "@/app/lib/formatters"
 import { getDaysUntilExpiry } from "@/app/lib/inventory.utils"
 import { formatQuantity } from "@/app/lib/quantityUnit"
-import StockOutModal from "../all-stock/StockOutModal"
+import StockOutModal from "../all-inventory/StockOutModal"
 import { en } from "@/app/messages/en"
 
 type ExpiryAction =
@@ -91,7 +91,7 @@ export default function ExpiryAlertsPage() {
   const actionDaysLeft = actionProduct ? getDaysLeft(actionProduct.expiry) ?? 0 : 0
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-page space-y-6 pb-8">
       <div>
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">{en.pages.expiryTitle}</h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -105,10 +105,10 @@ export default function ExpiryAlertsPage() {
         <SummaryTile label={en.expiry.in30Days} value={monthCount} tone="yellow" />
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="space-y-3 premium-surface min-w-0 rounded-2xl p-4">
+        <div className="filter-scroll">
           <Button title={`${en.expiry.all} (${allExpiryProducts.length})`} variant={filter === "all" ? "success" : "outline"} onClick={() => setFilter("all")} />
-          <Button title={`Expired (${expiredCount})`} variant={filter === "expired" ? "success" : "outline"} onClick={() => setFilter("expired")} />
+          <Button title={`${en.expiry.expired} (${expiredCount})`} variant={filter === "expired" ? "success" : "outline"} onClick={() => setFilter("expired")} />
           <Button title={`${en.expiry.in7Days} (${weekCount})`} variant={filter === "week" ? "success" : "outline"} onClick={() => setFilter("week")} />
           <Button title={`${en.expiry.in30Days} (${monthCount})`} variant={filter === "month" ? "success" : "outline"} onClick={() => setFilter("month")} />
         </div>
@@ -168,7 +168,7 @@ export default function ExpiryAlertsPage() {
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 text-sm">
                   <InfoBox label={en.expiry.remaining} value={formatQuantity(product.quantity, product.quantityUnit)} />
                   <InfoBox label="Expiry" value={product.expiry || "-"} />
                   <InfoBox label={en.inventory.rate} value={formatCurrency(product.price)} />
@@ -202,7 +202,7 @@ export default function ExpiryAlertsPage() {
                   <Button
                     title={en.expiry.viewInInventory}
                     variant="outline"
-                    onClick={() => router.push("/dashboard/all-stock")}
+                    onClick={() => router.push("/dashboard/all-inventory")}
                     className="flex-1"
                   />
                 </div>
@@ -213,24 +213,14 @@ export default function ExpiryAlertsPage() {
       </div>
 
       {actionProduct && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4"
-          onClick={closeAction}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-[var(--bg-card-strong)] shadow-2xl sm:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <StockOutModal
-              product={actionProduct}
-              onClose={closeAction}
-              defaultReason={actionType === "discount" ? "Sold" : "Expired"}
-              defaultSalePrice={actionType === "discount" ? getDiscountPrice(actionProduct.price, actionDaysLeft) : 0}
-              defaultExpiry={actionProduct.expiry}
-              defaultQuantity={actionType === "expired-out" ? actionProduct.quantity : ""}
-            />
-          </div>
-        </div>
+        <StockOutModal
+          product={actionProduct}
+          onClose={closeAction}
+          defaultReason={actionType === "discount" ? "Sold" : "Expired"}
+          defaultSalePrice={actionType === "discount" ? getDiscountPrice(actionProduct.price, actionDaysLeft) : 0}
+          defaultExpiry={actionProduct.expiry}
+          defaultQuantity={actionType === "expired-out" ? actionProduct.quantity : ""}
+        />
       )}
     </div>
   )

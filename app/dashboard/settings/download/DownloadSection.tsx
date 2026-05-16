@@ -44,13 +44,13 @@ export default function DownloadSection({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <Input
             type="date"
-            label="From date"
+            label={en.download.fromDate}
             value={fromDate}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFromDate(e.target.value)}
           />
           <Input
             type="date"
-            label="To date"
+            label={en.download.toDate}
             value={toDate}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToDate(e.target.value)}
           />

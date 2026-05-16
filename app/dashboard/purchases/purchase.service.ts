@@ -1,10 +1,11 @@
 "use client"
 
 import { v4 as uuidv4 } from "uuid"
-import { addProduct } from "@/app/dashboard/add-product/product.service"
-import { db, type PurchaseItem, type PurchasePaymentStatus, type PurchaseRecord } from "@/app/lib/db"
+import { addProduct } from "@/app/dashboard/quick-purchase/product.service"
+import { db, type PurchaseDetailsStatus, type PurchaseEntryMode, type PurchaseItem, type PurchasePaymentStatus, type PurchaseRecord, type StockTransactionProduct } from "@/app/lib/db"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
+import { en } from "@/app/messages/en"
 
 export type PurchaseLineInput = {
   name: string
@@ -28,19 +29,33 @@ export type SavePurchaseInput = {
   paymentMode?: string
   amountPaid: number
   note?: string
+  entryMode?: PurchaseEntryMode
+  detailsStatus?: PurchaseDetailsStatus
+  detailsCompletedAt?: string
   items: PurchaseLineInput[]
+}
+
+export type QuickPurchaseLineInput = PurchaseLineInput & {
+  supplierName?: string
 }
 
 export type SaveQuickPurchaseInput = {
   userId: string
-  ref?: string
   purchaseDate?: string
   purchaseDateTime?: string
+  items: QuickPurchaseLineInput[]
+}
+
+export type CompletePurchaseDetailsInput = {
+  userId: string
+  purchaseId: string
+  billNo: string
+  supplierName: string
+  purchaseDate: string
   paymentStatus: PurchasePaymentStatus
   paymentMode?: string
   amountPaid: number
-  dueAmount: number
-  items: Array<PurchaseLineInput & { supplier: string }>
+  note?: string
 }
 
 export type ApplySupplierPaymentInput = {
@@ -57,12 +72,12 @@ export async function savePurchase(input: SavePurchaseInput) {
   const purchaseDate = input.purchaseDate || new Date().toISOString().slice(0, 10)
   const purchaseDateTime = input.purchaseDateTime || buildDateTimeFromDate(purchaseDate)
 
-  if (!billNo) throw new Error("Purchase bill number required hai")
-  if (!supplierName) throw new Error("Supplier name required hai")
-  if (!input.items.length) throw new Error("Kam se kam ek purchase item add karo")
+  if (!billNo) throw new Error("Purchase bill number is required.")
+  if (!supplierName) throw new Error("Supplier name is required.")
+  if (!input.items.length) throw new Error("Add at least one purchase item.")
 
   const existing = await db.purchases.where("[userId+billNo]").equals([input.userId, billNo]).first()
-  if (existing) throw new Error("Is bill number ki purchase already saved hai")
+  if (existing) throw new Error("A purchase with this bill number is already saved.")
 
   const cleanLines = input.items.map((item) => {
     const name = item.name.trim()
@@ -70,9 +85,9 @@ export async function savePurchase(input: SavePurchaseInput) {
     const quantity = Number(item.quantity)
     const quantityUnit = normalizeQuantityUnit(item.quantityUnit)
 
-    if (!name) throw new Error("Product name required hai")
-    if (!Number.isFinite(price) || price < 0) throw new Error(`${name}: price valid nahi hai`)
-    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(`${name}: quantity zero se zyada honi chahiye`)
+    if (!name) throw new Error("Product name is required.")
+    if (!Number.isFinite(price) || price < 0) throw new Error(`${name}: enter a valid price.`)
+    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(`${name}: quantity must be greater than 0.`)
 
     return {
       ...item,
@@ -95,6 +110,18 @@ export async function savePurchase(input: SavePurchaseInput) {
   const dueAmount = Math.max(totalAmount - amountPaid, 0)
   const now = new Date().toISOString()
   const purchaseId = uuidv4()
+  const transactionType = input.entryMode === "quick" ? "quick-purchase" : "purchase"
+  const transactionProducts: StockTransactionProduct[] = cleanLines.map((line) => ({
+    name: line.name.toLowerCase(),
+    category: line.category?.toLowerCase() || undefined,
+    sku: line.sku,
+    hsnCode: line.hsnCode,
+    quantity: line.quantity,
+    quantityUnit: line.quantityUnit,
+    rate: line.price,
+    amount: line.price * line.quantity,
+    gstAmount: 0,
+  }))
   const savedItems: PurchaseItem[] = []
 
   await db.transaction("rw", db.products, db.productLogs, db.purchases, async () => {
@@ -120,22 +147,44 @@ export async function savePurchase(input: SavePurchaseInput) {
           expiry: line.expiry,
           sku: line.sku,
           hsnCode: line.hsnCode,
-          note: buildPurchaseLogNote(billNo, purchaseId, line.note),
+          note: line.note,
           userId: input.userId,
         },
-        { skipImmediateSync: true }
+        {
+          skipImmediateSync: true,
+          transaction: {
+            transactionId: purchaseId,
+            transactionType,
+            products: transactionProducts,
+            date: purchaseDateTime,
+            amount: line.price * line.quantity,
+            taxableAmount: line.price * line.quantity,
+            gstAmount: 0,
+            paymentMode: input.paymentMode?.trim() || undefined,
+            paymentStatus: input.paymentStatus,
+            invoiceReceiptNo: billNo,
+            notes: buildPurchaseLogNote(billNo, purchaseId, line.note),
+          },
+        }
       )
+
+      const normalizedLineName = line.name.toLowerCase()
+      const normalizedLineCategory = (line.category || "").toLowerCase()
 
       const product =
         before ||
         (await db.products
           .where("[userId+name+category+quantityUnit]")
-          .equals([
-            input.userId,
-            line.name.toLowerCase(),
-            (line.category || "").toLowerCase(),
-            line.quantityUnit,
-          ])
+          .equals([input.userId, normalizedLineName, normalizedLineCategory, line.quantityUnit])
+          .first()) ||
+        (await db.products
+          .where("userId")
+          .equals(input.userId)
+          .filter((candidate) =>
+            candidate.name === normalizedLineName &&
+            (candidate.category || "") === normalizedLineCategory &&
+            normalizeQuantityUnit(candidate.quantityUnit) === line.quantityUnit
+          )
           .first())
 
       if (!product) throw new Error(`${line.name}: product save failed`)
@@ -169,6 +218,9 @@ export async function savePurchase(input: SavePurchaseInput) {
       totalAmount,
       dueAmount,
       note: input.note?.trim() || undefined,
+      entryMode: input.entryMode || "detailed",
+      detailsStatus: input.detailsStatus || "completed",
+      detailsCompletedAt: input.detailsCompletedAt,
       items: savedItems,
       createdAt: now,
       updatedAt: now,
@@ -182,35 +234,35 @@ export async function savePurchase(input: SavePurchaseInput) {
 }
 
 export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
-  if (!input.items.length) throw new Error("Kam se kam ek quick purchase item add karo")
+  if (!input.items.length) throw new Error("Add at least one quick purchase item.")
 
-  const totalAmount = input.items.reduce(
-    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
-    0
-  )
-  const supplierGroups = groupBySupplier(input.items)
-  const baseRef = input.ref?.trim() || `QP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Date.now()}`
+  const purchaseDate = input.purchaseDate || new Date().toISOString().slice(0, 10)
+  const baseRef = `QP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Date.now()}`
+  const groupedItems = input.items.reduce((groups, item) => {
+    const supplierName = item.supplierName?.trim() || "Details Pending"
+    const current = groups.get(supplierName) || []
+    current.push(item)
+    groups.set(supplierName, current)
+    return groups
+  }, new Map<string, QuickPurchaseLineInput[]>())
+
   const savedIds: string[] = []
+  let groupIndex = 0
 
-  for (const [index, [supplierName, items]] of supplierGroups.entries()) {
-    const supplierTotal = items.reduce(
-      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
-      0
-    )
-    const supplierPaid =
-      totalAmount > 0 ? Math.round((Number(input.amountPaid || 0) * supplierTotal) / totalAmount) : 0
-    const billNo = supplierGroups.length === 1 ? baseRef : `${baseRef}-${index + 1}`
-
+  for (const [supplierName, items] of groupedItems.entries()) {
+    groupIndex += 1
     const id = await savePurchase({
       userId: input.userId,
-      billNo,
+      billNo: groupedItems.size === 1 ? baseRef : `${baseRef}-${groupIndex}`,
       supplierName,
-      purchaseDate: input.purchaseDate || new Date().toISOString().slice(0, 10),
+      purchaseDate,
       purchaseDateTime: input.purchaseDateTime,
-      paymentStatus: input.paymentStatus,
-      paymentMode: input.paymentMode,
-      amountPaid: supplierPaid,
-      note: "Created from Quick Purchase",
+      paymentStatus: "unpaid",
+      paymentMode: undefined,
+      amountPaid: 0,
+      note: "Created from Quick Purchase. Bill and payment details pending.",
+      entryMode: "quick",
+      detailsStatus: "pending",
       items: items.map((item) => ({
         name: item.name,
         price: item.price,
@@ -223,13 +275,59 @@ export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
         note: item.note,
       })),
     })
-
     savedIds.push(id)
   }
 
   return savedIds
 }
 
+export async function completeQuickPurchaseDetails(input: CompletePurchaseDetailsInput) {
+  const purchase = await db.purchases.get(input.purchaseId)
+  if (!purchase || purchase.userId !== input.userId) throw new Error("Purchase record not found.")
+  if (purchase.entryMode !== "quick") throw new Error("Only quick purchases can be completed here.")
+
+  const billNo = input.billNo.trim()
+  const supplierName = input.supplierName.trim()
+  const purchaseDate = input.purchaseDate || purchase.purchaseDate
+
+  if (!billNo) throw new Error("Bill or invoice number is required.")
+  if (!supplierName) throw new Error("Supplier name is required.")
+
+  const duplicate = await db.purchases.where("[userId+billNo]").equals([input.userId, billNo]).first()
+  if (duplicate && duplicate.id !== purchase.id) throw new Error("A purchase with this bill number is already saved.")
+
+  const normalizedPaid =
+    input.paymentStatus === "unpaid" ? 0 : Math.min(Math.max(Number(input.amountPaid || 0), 0), purchase.totalAmount)
+  const amountPaid = input.paymentStatus === "paid" ? purchase.totalAmount : normalizedPaid
+  const dueAmount = Math.max(purchase.totalAmount - amountPaid, 0)
+  const now = new Date().toISOString()
+
+  await db.transaction("rw", db.purchases, db.productLogs, async () => {
+    await db.purchases.update(purchase.id, {
+      billNo,
+      supplierName,
+      purchaseDate,
+      paymentStatus: input.paymentStatus,
+      paymentMode: input.paymentMode?.trim() || undefined,
+      amountPaid,
+      dueAmount,
+      note: input.note?.trim() || purchase.note,
+      detailsStatus: "completed",
+      detailsCompletedAt: now,
+      updatedAt: now,
+    })
+
+    await db.productLogs.where("transactionId").equals(purchase.id).modify((log) => {
+      log.invoiceReceiptNo = billNo
+      log.paymentStatus = input.paymentStatus
+      log.paymentMode = input.paymentMode?.trim() || undefined
+      log.notes = buildPurchaseLogNote(billNo, purchase.id, input.note)
+    })
+  })
+
+  await autoSyncToSupabase()
+  return purchase.id
+}
 export async function loadPurchases(userId: string) {
   const purchases = await db.purchases.where("userId").equals(userId).toArray()
   return purchases.sort((left, right) => right.purchaseDate.localeCompare(left.purchaseDate))
@@ -239,8 +337,8 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
   const supplierName = input.supplierName.trim()
   const amount = Number(input.amount)
 
-  if (!supplierName) throw new Error("Supplier name required hai")
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Payment amount zero se zyada hona chahiye")
+  if (!supplierName) throw new Error("Supplier name is required.")
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Payment amount must be greater than 0.")
 
   const duePurchases = (await db.purchases
     .where("userId")
@@ -258,7 +356,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
     })
 
   const totalDue = duePurchases.reduce((sum, purchase) => sum + purchase.dueAmount, 0)
-  if (!duePurchases.length || totalDue <= 0) throw new Error("Is supplier ka due pending nahi hai")
+  if (!duePurchases.length || totalDue <= 0) throw new Error("No due amount is pending for this supplier.")
 
   let remaining = Math.min(amount, totalDue)
   const now = new Date().toISOString()
@@ -300,7 +398,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
 }
 
 function buildPurchaseLogNote(billNo: string, purchaseId: string, note?: string) {
-  return [`Purchase Bill: ${billNo}`, `Purchase ID: ${purchaseId}`, note].filter(Boolean).join(" | ")
+  return [`${en.purchases.purchaseBill}: ${billNo}`, `${en.purchases.purchaseId}: ${purchaseId}`, note].filter(Boolean).join(" | ")
 }
 
 function buildPaymentNote({
@@ -315,9 +413,9 @@ function buildPaymentNote({
   paidAt: string
 }) {
   return [
-    `Payment: Rs ${amount}`,
-    paymentMode?.trim() ? `Mode: ${paymentMode.trim()}` : "",
-    `Paid At: ${paidAt}`,
+    `${en.purchases.payment}: ${en.common.rupeeSymbol} ${amount}`,
+    paymentMode?.trim() ? `${en.purchases.paymentMode}: ${paymentMode.trim()}` : "",
+    `${en.stockHistory.labels.date}: ${paidAt}`,
     note?.trim(),
   ].filter(Boolean).join(" / ")
 }
@@ -326,16 +424,4 @@ function buildDateTimeFromDate(date: string) {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return new Date().toISOString()
   return parsed.toISOString()
-}
-
-function groupBySupplier(items: Array<PurchaseLineInput & { supplier: string }>) {
-  const groups = new Map<string, Array<PurchaseLineInput & { supplier: string }>>()
-
-  for (const item of items) {
-    const supplier = item.supplier.trim()
-    if (!supplier) throw new Error(`${item.name || "Item"}: supplier required hai`)
-    groups.set(supplier, [...(groups.get(supplier) || []), item])
-  }
-
-  return Array.from(groups.entries())
 }

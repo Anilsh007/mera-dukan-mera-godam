@@ -1,15 +1,16 @@
-import type { MetadataRoute } from "next";
+import type { MetadataRoute } from "next"
+import { PUBLIC_SEO_PAGES, SEO_LAST_MODIFIED, absoluteUrl, buildLanguageAlternates } from "@/app/lib/seo/site"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://meradukanmeragodam.com";
-  const lastModified = new Date();
+  const lastModified = new Date(SEO_LAST_MODIFIED)
 
-  return [
-    {
-      url: baseUrl,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 1,
+  return PUBLIC_SEO_PAGES.map((page) => ({
+    url: absoluteUrl(page.path),
+    lastModified,
+    changeFrequency: page.changeFrequency ?? "monthly",
+    priority: page.priority ?? 0.7,
+    alternates: {
+      languages: buildLanguageAlternates(page.path, true),
     },
-  ];
+  }))
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
+import { notify as toast } from "@/app/lib/notifications"
 import DownloadSection from "./DownloadSection"
 import { downloadAllData, downloadByDateRange } from "./download.helpers"
 import { en } from "@/app/messages/en"

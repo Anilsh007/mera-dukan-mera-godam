@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mera Dukan Mera Godam app icon">
+  <rect width="512" height="512" rx="112" fill="#0f9f7f"/>
+  <path d="M120 194 256 118l136 76v166c0 22-18 40-40 40H160c-22 0-40-18-40-40V194Z" fill="#ffffff" opacity=".96"/>
+  <path d="M156 218h200v42H156zM174 290h164v74H174z" fill="#0b6f63"/>
+  <path d="M206 324h100" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+</svg>

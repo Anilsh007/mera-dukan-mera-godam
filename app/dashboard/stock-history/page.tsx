@@ -1,7 +1,7 @@
 "use client"
 
 import useInventoryData from "@/app/hooks/useInventoryData"
-import StockHistoryTabs from "../all-stock/StockHistoryTabs"
+import StockHistoryTabs from "../all-inventory/StockHistoryTabs"
 import { en } from "@/app/messages/en"
 
 export default function StockHistoryPage() {
@@ -18,7 +18,7 @@ export default function StockHistoryPage() {
 
       {loading ? (
         <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-8 text-center text-[var(--text-muted)] shadow-[var(--shadow-card)]">
-          Purani entry load ho rahi hai...
+          {en.stockHistory.loadingEntries}
         </div>
       ) : (
         <StockHistoryTabs logs={logs} products={products} />

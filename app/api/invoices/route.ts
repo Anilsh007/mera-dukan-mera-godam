@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { GSTInvoiceItem, GSTInvoiceRecord } from "@/app/dashboard/gst-invoice/types/gst.types"
+import { isValidGstin, normalizeGstin } from "@/app/dashboard/gst-invoice/lib/invoiceValidation"
 import {
   createSupabaseAdminClient,
   getUserIdentityFromRequest,
@@ -7,6 +8,7 @@ import {
 } from "@/app/api/_lib/auth"
 import {
   assertContentLength,
+  readJsonBody,
   assertFiniteNumber,
   enforceRateLimit,
   sanitizeOptionalText,
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     enforceRateLimit(request, { key: "invoices:post", limit: 30, windowMs: 60_000 })
     assertContentLength(request, 512 * 1024)
     const userId = await getUserIdentityFromRequest(request)
-    const invoice = validateInvoicePayload((await request.json()) as GSTInvoiceRecord)
+    const invoice = validateInvoicePayload(await readJsonBody<GSTInvoiceRecord>(request))
     const supabase = createSupabaseAdminClient()
     const payload = mapInvoiceRecordToDb(invoice, userId)
 
@@ -103,6 +105,7 @@ function validateInvoicePayload(invoice: GSTInvoiceRecord): GSTInvoiceRecord {
     unit: sanitizeOptionalText(item.unit, 20) || "pcs",
     quantity: assertFiniteNumber(item.quantity, "Item quantity", { min: 0.01, max: 1_000_000 }),
     rate: assertFiniteNumber(item.rate, "Item rate", { min: 0, max: 10_000_000 }),
+    discount: assertFiniteNumber(item.discount || 0, "Item discount", { min: 0, max: 10_000_000 }),
     gstRate: assertFiniteNumber(item.gstRate, "Item GST rate", { min: 0, max: 100 }),
   }))
 
@@ -113,7 +116,7 @@ function validateInvoicePayload(invoice: GSTInvoiceRecord): GSTInvoiceRecord {
     buyer: {
       ...invoice.buyer,
       name: sanitizeRequiredText(invoice.buyer?.name, 160, "Buyer name"),
-      gstin: sanitizeOptionalText(invoice.buyer?.gstin, 30) || "",
+      gstin: sanitizeGstin(invoice.buyer?.gstin, "Buyer GSTIN", false),
       phone: sanitizeOptionalText(invoice.buyer?.phone, 30) || "",
       email: sanitizeOptionalText(invoice.buyer?.email, 160) || "",
       address: sanitizeOptionalText(invoice.buyer?.address, 300) || "",
@@ -124,7 +127,7 @@ function validateInvoicePayload(invoice: GSTInvoiceRecord): GSTInvoiceRecord {
     seller: {
       ...invoice.seller,
       name: sanitizeRequiredText(invoice.seller?.name, 160, "Seller name"),
-      gstin: sanitizeOptionalText(invoice.seller?.gstin, 30) || "",
+      gstin: sanitizeGstin(invoice.seller?.gstin, "Seller GSTIN", true),
       address: sanitizeRequiredText(invoice.seller?.address, 300, "Seller address"),
       city: sanitizeRequiredText(invoice.seller?.city, 120, "Seller city"),
       state: sanitizeRequiredText(invoice.seller?.state, 120, "Seller state"),
@@ -135,5 +138,14 @@ function validateInvoicePayload(invoice: GSTInvoiceRecord): GSTInvoiceRecord {
     items: validatedItems,
     notes: sanitizeOptionalText(invoice.notes, 3000) || "",
     terms: sanitizeOptionalText(invoice.terms, 3000) || "",
+    syncStatus: "synced",
   }
+}
+
+function sanitizeGstin(value: string | undefined, label: string, required: boolean) {
+  const gstin = normalizeGstin(sanitizeOptionalText(value, 30) || "")
+  if (!gstin && !required) return ""
+  if (!gstin) throw new SecurityError(`${label} is required`, 400)
+  if (!isValidGstin(gstin)) throw new SecurityError(`${label} format is invalid`, 400)
+  return gstin
 }

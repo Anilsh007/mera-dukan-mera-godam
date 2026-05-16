@@ -1,7 +1,9 @@
 "use client"
 
 import Button from "@/app/components/ui/Button"
+import StatusBadge from "@/app/components/ui/StatusBadge"
 import { getStockLevel } from "@/app/lib/inventory.utils"
+import { en } from "@/app/messages/en"
 
 export interface TableItem {
     id?: string | number
@@ -55,9 +57,9 @@ function ExpiryCell({ val }: { val?: string }) {
     const now = new Date()
     const days = Math.ceil((d.getTime() - now.getTime()) / 86400000)
     if (Number.isNaN(d.getTime())) return <span>{val}</span>
-    const cls = days < 0 ? "font-semibold text-red-500" : days <= 30 ? "font-medium text-amber-500" : "text-[var(--text-secondary)]"
-    const label = days < 0 ? `${val} (expiry nikal gayi)` : days <= 30 ? `${val} (${days} din)` : val
-    return <span className={cls}>{label}</span>
+    const tone = days < 0 ? "danger" : days <= 30 ? "warning" : "neutral"
+    const label = days < 0 ? `${val} ${en.inventory.batchExpired}` : days <= 30 ? `${val} (${days} ${en.reports.daysLeftSuffix})` : val
+    return <StatusBadge tone={tone}>{label}</StatusBadge>
 }
 
 function QtyCell({
@@ -81,20 +83,20 @@ function QtyCell({
     return (
         <span className={`inline-flex items-center gap-1.5 ${txt}`}>
             <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
-            {q} {unit || "pcs"}
+            {q} {unit || en.inventory.defaultUnitPcs}
         </span>
     )
 }
 
 const COLS = [
-    { key: "name", label: "Maal" },
-    { key: "supplier", label: "Supplier / Reason" },
-    { key: "expiry", label: "Expiry" },
-    { key: "price", label: "Rate" },
-    { key: "quantity", label: "Qty" },
-    { key: "total", label: "Total" },
-    { key: "createdAt", label: "Date" },
-    { key: "note", label: "Note" },
+    { key: "name", label: en.stockHistory.labels.product },
+    { key: "supplier", label: en.stockHistory.labels.supplierReason },
+    { key: "expiry", label: en.inventory.expiry },
+    { key: "price", label: en.inventory.rateLabel },
+    { key: "quantity", label: en.stockHistory.labels.qty },
+    { key: "total", label: en.reports.total },
+    { key: "createdAt", label: en.stockHistory.labels.date },
+    { key: "note", label: en.stockHistory.labels.note },
 ] as const
 
 export default function TableComponent({
@@ -105,22 +107,22 @@ export default function TableComponent({
     onToggleSelect,
     onSelectAll,
     showActions = false,
-    actionLabel = "Edit",
+    actionLabel = en.common.edit,
     minWidth = 780,
 }: Props) {
     if (data.length === 0) {
         return (
             <div className="py-14 text-center text-[var(--text-muted)]">
-                <p className="text-sm">Koi entry nahi mili</p>
+                <p className="text-sm">{en.emptyStates.noEntries}</p>
             </div>
         )
     }
 
     return (
-        <div className="w-full overflow-hidden rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] shadow-[var(--shadow-card)] backdrop-blur-xl">
-            <div className="overflow-x-auto">
+        <div className="premium-surface w-full overflow-hidden rounded-xl">
+            <div className="mobile-safe-table">
                 <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
-                    <thead className="bg-black/5 dark:bg-white/5">
+                    <thead className="bg-[var(--surface-subtle)]">
                         <tr className="border-b border-[var(--border-card)]">
                             {showSelection && (
                                 <th className="w-12 p-4 text-center">
@@ -133,7 +135,7 @@ export default function TableComponent({
                                 </th>
                             ))}
                             {showActions && (
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Action</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{en.gstInvoice.action}</th>
                             )}
                         </tr>
                     </thead>
@@ -143,7 +145,7 @@ export default function TableComponent({
                             const total = (item.price ?? 0) * (item.quantity ?? 0)
                             const rowId = getRowId(item, index)
                             return (
-                                <tr key={rowId} className={selectedIds?.has(rowId) ? "bg-[var(--selected-row)]" : "transition-colors hover:bg-emerald-50/40 dark:hover:bg-emerald/[0.03]"}>
+                                <tr key={rowId} className={selectedIds?.has(rowId) ? "bg-[var(--selected-row)]" : "transition-colors hover:bg-[var(--surface-subtle)]"}>
                                     {showSelection && (
                                         <td className="p-4 text-center">
                                             <input
@@ -168,7 +170,7 @@ export default function TableComponent({
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 font-medium text-[var(--text-primary)]">
-                                        Rs {Number(item.price ?? 0).toLocaleString("en-IN")}
+                                        {en.common.rupeeSymbol} {Number(item.price ?? 0).toLocaleString("en-IN")}
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3">
@@ -181,7 +183,7 @@ export default function TableComponent({
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">
-                                        Rs {total.toLocaleString("en-IN")}
+                                        {en.common.rupeeSymbol} {total.toLocaleString("en-IN")}
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--text-muted)]">

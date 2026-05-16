@@ -1,7 +1,7 @@
 import { db } from "@/app/lib/db"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
-import { toast } from "sonner"
+import { notify as toast } from "@/app/lib/notifications"
 import { en } from "@/app/messages/en"
 
 type CsvValue = string | number | boolean | null | undefined
@@ -49,7 +49,7 @@ function formatDate(iso: string) {
 }
 
 async function loadCurrentUserInventory() {
-  const userId = requireUserIdentityFromAuthUser(auth.currentUser)
+  const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
   const products = await db.products.where("userId").equals(userId).toArray()
   const productIds = products.map((product) => product.id)
   const logs = productIds.length
@@ -89,7 +89,7 @@ export async function downloadAllData() {
     category: product.category || "",
     price: product.price,
     quantity: product.quantity,
-    quantityUnit: product.quantityUnit || "pcs",
+    quantityUnit: product.quantityUnit || " ",
     criticalStockThreshold: product.criticalStockThreshold ?? "",
     lowStockThreshold: product.lowStockThreshold ?? "",
     supplier: product.supplier || "",
@@ -115,9 +115,9 @@ export async function downloadAllData() {
   const logRows = logs.map((log) => ({
     id: log.id,
     productName: nameMap[String(log.productId)] || "-",
-    type: log.quantityAdded > 0 ? "Stock In" : "Stock Out",
+    type: log.quantityAdded > 0 ? en.stockHistory.typeLabels.stockIn : en.stockHistory.typeLabels.stockOut,
     quantity: Math.abs(log.quantityAdded),
-    quantityUnit: log.quantityUnit || "pcs",
+    quantityUnit: log.quantityUnit || " ",
     price: log.price,
     expiry: log.expiry || "",
     reason: log.reason || "",
@@ -182,9 +182,9 @@ export async function downloadByDateRange(from: string, to: string) {
   const logRows = filteredLogs.map((log) => ({
     id: log.id,
     productName: nameMap[String(log.productId)] || "-",
-    type: log.quantityAdded > 0 ? "Stock In" : "Stock Out",
+    type: log.quantityAdded > 0 ? en.stockHistory.typeLabels.stockIn : en.stockHistory.typeLabels.stockOut,
     quantity: Math.abs(log.quantityAdded),
-    quantityUnit: log.quantityUnit || "pcs",
+    quantityUnit: log.quantityUnit || " ",
     price: log.price,
     expiry: log.expiry || "",
     reason: log.reason || "",

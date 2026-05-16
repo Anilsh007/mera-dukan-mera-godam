@@ -9,6 +9,7 @@ import BusinessTab from "../tabs/BusinessTab"
 import AddressTab from "../tabs/AddressTab"
 import BusinessCard from "./BusinessCard"
 import { ProfileData } from "@/app/lib/profile/profile.service"
+import { en } from "@/app/messages/en"
 
 interface Props {
   data: ProfileData
@@ -55,7 +56,7 @@ export default function ProfileShowcase({ data, onEdit }: Props) {
       </div>
 
       <div className="text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-card)]">
-        Last synced: {data.updatedAt ? new Date(data.updatedAt).toLocaleString('en-IN') : 'Never'}
+        {en.profile.lastSynced}: {data.updatedAt ? new Date(data.updatedAt).toLocaleString('en-IN') : en.profile.never}
       </div>
 
       <div className="p-4 bg-[var(--bg-card-strong)] backdrop-blur-xl border border-[var(--border-card)] rounded-2xl text-center w-fit mx-auto">

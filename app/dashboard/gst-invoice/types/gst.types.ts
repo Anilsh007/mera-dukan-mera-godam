@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------
-// All GST‑related types + helper functions.
+// All GST-related types + helper functions.
 // Export EVERYTHING that other modules need.
 // ---------------------------------------------------------------
+import { calculateGstBreakup, roundCurrency } from "@/app/lib/gst.utils";
 export interface GSTInvoiceParty {
   name: string;
   gstin?: string;
@@ -84,6 +85,7 @@ export interface GSTInvoiceRecord extends GSTInvoice {
   buyerName: string;
   createdAt: string;
   updatedAt: string;
+  syncStatus?: "pending" | "synced" | "failed";
 }
 
 export type ProductSuggestion = {
@@ -187,7 +189,7 @@ export function createEmptyTotals(): GSTInvoiceTotals {
    from this file or from a separate `utils.ts` imported by
    this file.  Keep the exports consistent.
    ----------------------------------------------------------- */
-export const roundToTwo = (value: number) => Math.round(value * 100) / 100;
+export const roundToTwo = roundCurrency;
 
 // -----------------------------------------------------------
 // Convert a numeric amount (e.g. 12345) to the Indian‑style
@@ -250,7 +252,7 @@ export const calculateGST = (
   gstRate: number,
   quantity: number,
   price: number,
-  discount: number, // ₹ amount
+  discount: number,
   isInterState: boolean,
   rates?: {
     cgstRate?: number
@@ -258,33 +260,23 @@ export const calculateGST = (
     igstRate?: number
   }
 ) => {
-  const taxableValue = roundToTwo(quantity * price)
-
-  const discountedValue = Math.max(0, roundToTwo(taxableValue - discount))
-  const cgstRate = rates?.cgstRate ?? gstRate / 2
-  const sgstRate = rates?.sgstRate ?? gstRate / 2
-  const igstRate = rates?.igstRate ?? gstRate
-
-  if (isInterState) {
-    const igst = roundToTwo((discountedValue * igstRate) / 100)
-    return {
-      taxableValue: discountedValue,
-      cgst: 0,
-      sgst: 0,
-      igst,
-      total: roundToTwo(discountedValue + igst),
-    }
-  }
-
-  const cgst = roundToTwo((discountedValue * cgstRate) / 100)
-  const sgst = roundToTwo((discountedValue * sgstRate) / 100)
+  const result = calculateGstBreakup({
+    gstRate,
+    quantity,
+    rate: price,
+    discount,
+    isInterState,
+    cgstRate: rates?.cgstRate,
+    sgstRate: rates?.sgstRate,
+    igstRate: rates?.igstRate,
+  })
 
   return {
-    taxableValue: discountedValue,
-    cgst,
-    sgst,
-    igst: 0,
-    total: roundToTwo(discountedValue + cgst + sgst),
+    taxableValue: result.taxableAmount,
+    cgst: result.cgstAmount,
+    sgst: result.sgstAmount,
+    igst: result.igstAmount,
+    total: result.grandTotal,
   }
 }
 

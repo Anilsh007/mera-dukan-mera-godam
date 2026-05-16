@@ -1,121 +1,113 @@
 "use client"
 
-import useInventoryData from "@/app/hooks/useInventoryData"
-import { getProductStockLevel } from "@/app/lib/inventory.utils"
-import { formatQuantity } from "@/app/lib/quantityUnit"
+import { useMemo, useState } from "react"
+import ReportsHeader from "./components/ReportsHeader"
+import MetricCard from "./components/MetricCard"
+import Panel from "./components/Panel"
+import EmptyState from "./components/EmptyState"
+import LineChart from "./components/LineChart"
+import HorizontalBarChart from "./components/HorizontalBarChart"
+import StockHealthSummary from "./components/StockHealthSummary"
+import BusinessComparisonChart from "./components/BusinessComparisonChart"
+import TopProductsTable from "./components/TopProductsTable"
+import LowStockList from "./components/LowStockList"
+import ExpiryRiskList from "./components/ExpiryRiskList"
+import SupplierDueList from "./components/SupplierDueList"
+import InvoiceSummaryTable from "./components/InvoiceSummaryTable"
+import SlowMovingProductsTable from "./components/SlowMovingProductsTable"
+import RecentTransactionsList from "./components/RecentTransactionsList"
+import type { DateRangeKey } from "./types"
+import { buildReport } from "./lib/reportBuilder"
+import { formatMoney, formatNumber } from "./lib/format"
+import { useReportsData } from "./lib/useReportsData"
 import { en } from "@/app/messages/en"
 
-function getTodayRange() {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  return start
-}
-
 export default function ReportsPage() {
-  const { products, logs, loading } = useInventoryData()
-
-  const todayStart = getTodayRange()
-  const todayOutLogs = logs.filter((log) => log.type === "out" && new Date(log.date) >= todayStart)
-  const totalStockValue = products.reduce((sum, product) => sum + product.quantity * product.price, 0)
-  const totalUnits = products.reduce((sum, product) => sum + product.quantity, 0)
-  const totalSalesToday = todayOutLogs.reduce(
-    (sum, log) => sum + Math.abs(log.quantityAdded) * Number(log.price || 0),
-    0
-  )
-  const unitsSoldToday = todayOutLogs.reduce((sum, log) => sum + Math.abs(log.quantityAdded), 0)
-
-  const topCategories = Object.entries(
-    products.reduce<Record<string, number>>((acc, product) => {
-      const category = product.category || "Uncategorized"
-      acc[category] = (acc[category] || 0) + product.quantity * product.price
-      return acc
-    }, {})
-  )
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 5)
-
-  const lowStockProducts = products
-    .filter((product) => {
-      const stockLevel = getProductStockLevel(product)
-      return stockLevel === "low" || stockLevel === "critical"
-    })
-    .sort((left, right) => left.quantity - right.quantity)
-    .slice(0, 5)
+  const [rangeKey, setRangeKey] = useState<DateRangeKey>("30d")
+  const { data, loading } = useReportsData()
+  const report = useMemo(() => buildReport(data, rangeKey), [data, rangeKey])
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{en.pages.reportsTitle}</h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          {en.pages.reportsDescription}
-        </p>
+    <div className="space-y-6 pb-8">
+      <ReportsHeader rangeKey={rangeKey} onRangeChange={setRangeKey} report={report} />
+
+      <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 2xl:grid-cols-4">
+        <MetricCard label={en.reports.inventoryValue} value={formatMoney(report.inventoryValue)} helper={`${report.productCount} ${en.reports.activeProductsSuffix}`} />
+        <MetricCard label={en.reports.salesInPeriod} value={formatMoney(report.periodSales)} helper={`${formatNumber(report.periodUnitsSold)} ${en.dashboard.unitsSoldSuffix}`} positive />
+        <MetricCard label={en.reports.purchaseValue} value={formatMoney(report.purchaseTotal)} helper={`${report.purchaseCount} ${en.reports.purchaseBillsSuffix}`} />
+        <MetricCard label={en.reports.supplierDue} value={formatMoney(report.supplierDue)} helper={`${report.unpaidPurchaseCount} ${en.reports.billsPendingSuffix}`} warning={report.supplierDue > 0} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Inventory Value</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">
-            Rs {totalStockValue.toLocaleString("en-IN")}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Units In Hand</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{totalUnits}</p>
-        </div>
-        <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Today Sales</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-600">Rs {totalSalesToday.toLocaleString("en-IN")}</p>
-        </div>
-        <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Units Sold Today</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{unitsSoldToday}</p>
-        </div>
+      <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 2xl:grid-cols-4">
+        <MetricCard label={en.reports.todaySale} value={formatMoney(report.todaySales)} helper={en.stockHistory.today} positive />
+        <MetricCard label={en.reports.todayPurchase} value={formatMoney(report.todayPurchase)} helper={en.stockHistory.today} />
+        <MetricCard label={en.reports.monthlySale} value={formatMoney(report.monthlySales)} helper={en.dashboard.currentMonth} positive />
+        <MetricCard label={en.reports.monthlyPurchase} value={formatMoney(report.monthlyPurchase)} helper={en.dashboard.currentMonth} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 2xl:grid-cols-4">
+        <MetricCard label={en.reports.gstBilled} value={formatMoney(report.invoiceTotal)} helper={`${report.invoiceCount} ${en.reports.invoicesSuffix}`} />
+        <MetricCard label={en.reports.gstCollected} value={formatMoney(report.gstCollected)} helper={en.dashboard.gstOnSales} positive={report.gstCollected > 0} />
+        <MetricCard label={en.reports.gstPaid} value={formatMoney(report.gstPaid)} helper={en.dashboard.gstOnPurchases} />
+        <MetricCard label={en.reports.lowCriticalStock} value={String(report.lowStockCount)} helper={`${report.criticalStockCount} ${en.reports.criticalStock} • ${report.outOfStockCount} ${en.reports.outOfStock}`} warning={report.lowStockCount > 0} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 2xl:grid-cols-4">
+        <MetricCard label={en.reports.expiryRisk} value={String(report.expiryRiskCount)} helper={`${report.expiredCount} ${en.reports.alreadyExpiredSuffix}`} warning={report.expiryRiskCount > 0} />
+        <MetricCard label={en.reports.estimatedMargin} value={formatMoney(report.estimatedMargin)} helper={`${report.marginPercent.toFixed(1)}% ${en.reports.loggedSalesSuffix}`} positive={report.estimatedMargin >= 0} warning={report.estimatedMargin < 0} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.3fr_0.7fr]">
+        <Panel title={en.reports.salesTrend} subtitle={en.reports.salesTrendSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingSalesTrend} /> : <LineChart points={report.salesTrend} />}
+        </Panel>
+
+        <Panel title={en.reports.stockHealth} subtitle={en.reports.stockHealthSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingStockHealth} /> : <StockHealthSummary health={report.stockHealth} />}
+        </Panel>
+      </div>
+
+      <Panel title={en.reports.salesPurchaseTrend} subtitle={en.reports.salesPurchaseTrendSubtitle}>
+        {loading ? <EmptyState text={en.reports.loadingBusinessTrend} /> : <BusinessComparisonChart points={report.businessTrend} />}
+      </Panel>
+
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
+        <Panel title={en.reports.topCategoriesByValue} subtitle={en.reports.topCategoriesSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingCategorySummary} /> : <HorizontalBarChart items={report.topCategories} />}
+        </Panel>
+
+        <Panel title={en.reports.topSellingProducts} subtitle={en.reports.topSellingProductsSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingSellingProducts} /> : <TopProductsTable items={report.topSellingProducts} />}
+        </Panel>
       </div>
 
       <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
-        <section className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Top Categories By Value</h2>
-          <div className="mt-4 space-y-3">
-            {loading ? (
-              <p className="text-sm text-[var(--text-muted)]">Loading category summary...</p>
-            ) : topCategories.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)]">Abhi category data available nahi hai.</p>
-            ) : (
-              topCategories.map(([category, value]) => (
-                <div key={category} className="flex items-center justify-between rounded-xl bg-black/5 px-4 py-3 dark:bg-white/5">
-                  <span className="font-medium text-[var(--text-primary)]">{category}</span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    Rs {value.toLocaleString("en-IN")}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+        <Panel title={en.reports.slowMovingProducts} subtitle={en.reports.slowMovingProductsSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingSellingProducts} /> : <SlowMovingProductsTable items={report.slowMovingProducts} />}
+        </Panel>
 
-        <section className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-5 shadow-[var(--shadow-card)]">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Low Stock Watchlist</h2>
-          <div className="mt-4 space-y-3">
-            {loading ? (
-              <p className="text-sm text-[var(--text-muted)]">Loading low stock products...</p>
-            ) : lowStockProducts.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)]">Low stock products abhi nahi hain.</p>
-            ) : (
-              lowStockProducts.map((product) => (
-                <div key={product.id} className="flex items-center justify-between rounded-xl bg-black/5 px-4 py-3 dark:bg-white/5">
-                  <div>
-                    <p className="font-medium capitalize text-[var(--text-primary)]">{product.name}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{product.category || "Uncategorized"}</p>
-                  </div>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                    {formatQuantity(product.quantity, product.quantityUnit)} left
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+        <Panel title={en.reports.recentTransactions} subtitle={en.reports.recentTransactionsSubtitle}>
+          {loading ? <EmptyState text={en.stockHistory.loadingEntries} /> : <RecentTransactionsList items={report.recentTransactions} />}
+        </Panel>
       </div>
+
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-3">
+        <Panel title={en.reports.lowStockWatchlist} subtitle={en.reports.lowStockSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingLowStockProducts} /> : <LowStockList products={report.lowStockProducts} />}
+        </Panel>
+
+        <Panel title={en.reports.expiryRisk} subtitle={en.reports.expiryRiskSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingExpiryRisk} /> : <ExpiryRiskList products={report.expiryRiskProducts} />}
+        </Panel>
+
+        <Panel title={en.reports.supplierDues} subtitle={en.reports.supplierDuesSubtitle}>
+          {loading ? <EmptyState text={en.reports.loadingSupplierDues} /> : <SupplierDueList suppliers={report.topSupplierDues} />}
+        </Panel>
+      </div>
+
+      <Panel title={en.reports.gstInvoiceSummary} subtitle={en.reports.gstInvoiceSummarySubtitle}>
+        {loading ? <EmptyState text={en.reports.loadingGstInvoices} /> : <InvoiceSummaryTable invoices={report.recentInvoices} />}
+      </Panel>
     </div>
   )
 }

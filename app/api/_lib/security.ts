@@ -24,6 +24,23 @@ export class SecurityError extends Error {
   }
 }
 
+
+export function assertJsonRequest(request: NextRequest) {
+  const contentType = request.headers.get("content-type") || ""
+  if (!contentType.toLowerCase().includes("application/json")) {
+    throw new SecurityError("Content-Type must be application/json", 415)
+  }
+}
+
+export async function readJsonBody<T>(request: NextRequest): Promise<T> {
+  assertJsonRequest(request)
+  try {
+    return (await request.json()) as T
+  } catch {
+    throw new SecurityError("Invalid JSON payload", 400)
+  }
+}
+
 export function assertContentLength(request: NextRequest, maxBytes: number) {
   const contentLength = request.headers.get("content-length")
   if (!contentLength) return

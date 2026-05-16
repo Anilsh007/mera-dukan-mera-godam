@@ -1,6 +1,7 @@
 // InvoiceHelpers.tsx
 
 import React from "react"
+import { en } from "@/app/messages/en"
 
 // -------------------- PartyCard --------------------
 export function PartyCard({
@@ -37,25 +38,25 @@ export function PartyCard({
 
     party.gstin && (
       <span>
-        <strong>{customLabels?.gstin || "GSTIN"}:</strong> {party.gstin}
+        <strong>{customLabels?.gstin || en.gstInvoice.gstin}:</strong> {party.gstin}
       </span>
     ),
 
     fullAddress && (
       <span>
-        <strong>{customLabels?.address || "Address"}:</strong> {fullAddress}
+        <strong>{customLabels?.address || en.profile.address}:</strong> {fullAddress}
       </span>
     ),
 
     party.phone && (
       <span>
-        <strong>Phone:</strong> {party.phone}
+        <strong>{en.profile.phone}:</strong> {party.phone}
       </span>
     ),
 
     party.email && (
       <span>
-        <strong>Email:</strong> {party.email}
+        <strong>{en.profile.email}:</strong> {party.email}
       </span>
     ),
   ].filter(Boolean)
@@ -93,7 +94,7 @@ export function SummaryRow({
         {label}
       </span>
       <span className={strong ? "font-bold" : "font-semibold"}>
-        Rs {value.toFixed(2)}
+        {en.common.rupeeSymbol} {value.toFixed(2)}
       </span>
     </div>
   )

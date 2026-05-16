@@ -6,6 +6,8 @@ export type InvoiceHeaderProps = {
   onChange: (field: string, value: string) => void
   onSave: () => void
   onReset: () => void
+  onPreview: () => void
+  onPrintPreview: () => void
   saving: boolean
 }
 
@@ -26,6 +28,7 @@ export type SellerSectionProps = {
 export type ItemsSectionProps = {
   items: GSTInvoiceItem[]
   onChange: (index: number, field: keyof GSTInvoiceItem, value: string) => void
+  onPatch: (index: number, patch: Partial<GSTInvoiceItem>) => void
   addItem: () => void
   removeItem: (index: number) => void
   isInterState: boolean
@@ -35,6 +38,7 @@ export type ItemCardProps = {
   item: GSTInvoiceItem
   index: number
   onChange: (index: number, field: keyof GSTInvoiceItem, value: string) => void
+  onPatch: (index: number, patch: Partial<GSTInvoiceItem>) => void
   onRemove: (index: number) => void
   isInterState: boolean
 }

@@ -1,5 +1,6 @@
 import { MdLocationOn, MdAccountBalance } from "react-icons/md"
 import InfoItem from "../components/InfoItem"
+import { en } from "@/app/messages/en"
 
 interface Props {
   data: {
@@ -18,10 +19,10 @@ export default function AddressTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* Address */}
-      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
+      <div className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-6 text-[var(--text-primary)]">
           <MdLocationOn className="text-amber-500" size={20} />
-          <h3 className="font-bold text-lg">Address Details</h3>
+          <h3 className="font-bold text-lg">{en.profile.addressDetails}</h3>
         </div>
         
         <div className="bg-[var(--bg-primary)] rounded-xl p-6 border border-[var(--border-card)]">
@@ -30,28 +31,28 @@ export default function AddressTab({ data }: Props) {
           <div className="flex flex-wrap gap-2">
             <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm">{data.address.district}</span>
             <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm">{data.address.state}</span>
-            <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-mono">PIN: {data.address.pincode}</span>
+            <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-mono">{en.profile.pin}: {data.address.pincode}</span>
           </div>
         </div>
       </div>
 
       {/* Banking */}
-      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
+      <div className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-6 text-[var(--text-primary)]">
           <MdAccountBalance className="text-purple-500" size={20} />
-          <h3 className="font-bold text-lg">Banking Information</h3>
-          <span className="ml-auto text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 px-2 py-1 rounded">Private</span>
+          <h3 className="font-bold text-lg">{en.profile.bankingInformation}</h3>
+          <span className="ml-auto text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 px-2 py-1 rounded">{en.profile.private}</span>
         </div>
         
         {data.banking.accountNumber ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InfoItem label="Account Holder" value={data.banking.accountHolderName} />
-            <InfoItem label="Bank Name" value={data.banking.bankName} />
-            <InfoItem label="Account Number" value={maskAccountNumber(data.banking.accountNumber)} />
-            <InfoItem label="IFSC Code" value={data.banking.ifscCode} mono />
+            <InfoItem label={en.profile.accountHolder} value={data.banking.accountHolderName} />
+            <InfoItem label={en.profile.bankName} value={data.banking.bankName} />
+            <InfoItem label={en.profile.accountNumber} value={maskAccountNumber(data.banking.accountNumber)} />
+            <InfoItem label={en.profile.ifscCode} value={data.banking.ifscCode} mono />
           </div>
         ) : (
-          <div className="text-center py-8 text-[var(--text-muted)]"><p>No banking details added yet</p></div>
+          <div className="text-center py-8 text-[var(--text-muted)]"><p>{en.profile.noBankDetails}</p></div>
         )}
       </div>
     </div>

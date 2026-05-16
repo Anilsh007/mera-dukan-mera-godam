@@ -1,5 +1,3 @@
-import hsnSacData from "../HSNandSAC.json"
-
 type RawTaxEntry = {
   HSN_Code?: string | number
   SAC?: string | number
@@ -20,29 +18,61 @@ export type HsnSacTaxInfo = {
   condition?: string
 }
 
-const rawData = hsnSacData as {
-  HSN?: RawTaxEntry[]
-  SAC?: RawTaxEntry[]
+type HsnSacIndex = {
+  exactCodeMap: Map<string, HsnSacTaxInfo>
+  prefixCandidates: Array<{ code: string; entry: HsnSacTaxInfo }>
 }
 
-const entries = buildEntries()
+let cachedIndex: HsnSacIndex | null = null
+let indexPromise: Promise<HsnSacIndex> | null = null
 
 export function findHsnSacTaxInfo(input: string | number | undefined | null): HsnSacTaxInfo | null {
-  const code = normalizeCode(input)
-  if (!code) return null
+  if (!cachedIndex) return null
+  return findFromIndex(cachedIndex, input)
+}
 
-  return (
-    entries.find((entry) => entry.codes.includes(code)) ||
-    entries.find((entry) => entry.codes.some((candidate) => code.startsWith(candidate))) ||
-    null
-  )
+export async function loadHsnSacTaxInfo(input: string | number | undefined | null): Promise<HsnSacTaxInfo | null> {
+  const index = await warmHsnSacLookup()
+  return findFromIndex(index, input)
+}
+
+export async function warmHsnSacLookup(): Promise<HsnSacIndex> {
+  if (cachedIndex) return cachedIndex
+  if (!indexPromise) {
+    indexPromise = import("../HSNandSAC.json").then((module) => {
+      const rawData = module.default as {
+        HSN?: RawTaxEntry[]
+        SAC?: RawTaxEntry[]
+      }
+      const entries = buildEntries(rawData)
+      const nextIndex = {
+        exactCodeMap: buildExactCodeMap(entries),
+        prefixCandidates: entries
+          .flatMap((entry) => entry.codes.map((code) => ({ code, entry })))
+          .sort((left, right) => right.code.length - left.code.length),
+      }
+      cachedIndex = nextIndex
+      return nextIndex
+    })
+  }
+  return indexPromise
 }
 
 export function formatTaxRate(rate: number) {
   return `${rate.toFixed(rate % 1 === 0 ? 0 : 2)}%`
 }
 
-function buildEntries() {
+function findFromIndex(index: HsnSacIndex, input: string | number | undefined | null) {
+  const code = normalizeCode(input)
+  if (!code) return null
+
+  const exactMatch = index.exactCodeMap.get(code)
+  if (exactMatch) return exactMatch
+
+  return index.prefixCandidates.find((candidate) => code.startsWith(candidate.code))?.entry || null
+}
+
+function buildEntries(rawData: { HSN?: RawTaxEntry[]; SAC?: RawTaxEntry[] }) {
   return [
     ...(rawData.HSN || []).flatMap((entry) => buildEntry(entry, "HSN")),
     ...(rawData.SAC || []).flatMap((entry) => buildEntry(entry, "SAC")),
@@ -104,4 +134,14 @@ function cleanText(value: string | number | undefined) {
   if (value === undefined || value === null) return undefined
   const text = String(value).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim()
   return text || undefined
+}
+
+function buildExactCodeMap(items: Array<HsnSacTaxInfo & { codes: string[] }>) {
+  const map = new Map<string, HsnSacTaxInfo>()
+  for (const entry of items) {
+    for (const code of entry.codes) {
+      if (!map.has(code)) map.set(code, entry)
+    }
+  }
+  return map
 }

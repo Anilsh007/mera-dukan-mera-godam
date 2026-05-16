@@ -1,17 +1,35 @@
-import type { MetadataRoute } from "next";
+import type { MetadataRoute } from "next"
+import { SITE_URL } from "@/app/lib/seo/site"
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://meradukanmeragodam.com";
-
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        disallow: ["/dashboard/", "/api/"],
+        allow: [
+          "/",
+          "/login",
+          "/about",
+          "/faq",
+          "/privacy-policy",
+          "/support",
+          "/terms",
+          "/manifest.webmanifest",
+          "/fevicon.ico",
+          "/icons/",
+          "/og-image.svg",
+        ],
+        disallow: [
+          "/dashboard",
+          "/dashboard/",
+          "/api/",
+          "/_next/",
+          "/*.json$",
+          "/*.map$",
+        ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
-  };
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
+  }
 }

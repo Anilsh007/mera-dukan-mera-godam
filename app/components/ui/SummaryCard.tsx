@@ -25,16 +25,18 @@ export default function SummaryCard({
             : "text-[var(--text-primary)]"
 
   return (
-    <div className="rounded-[22px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-[var(--border-primary)]">
+    <div className="premium-surface min-w-0 rounded-[22px] p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
         {icon && (
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-elevated)] ${toneClass}`}>
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-card)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-elevated)_85%,white_15%),var(--bg-elevated))] shadow-[var(--button-shadow)] ${toneClass}`}
+          >
             {icon}
           </span>
         )}
       </div>
-      <p className={`mt-2 text-2xl font-bold ${toneClass}`}>{value}</p>
+      <p className={`mt-2 break-words text-xl font-bold sm:text-2xl ${toneClass}`}>{value}</p>
     </div>
   )
 }

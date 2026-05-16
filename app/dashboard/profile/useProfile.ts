@@ -7,6 +7,8 @@ import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.
 import { loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
 import { migrateLocalUserData } from "@/app/lib/userDataMigration"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import { notify as toast } from "@/app/lib/notifications"
+import { en } from "@/app/messages/en"
 
 export type ProfileState = {
   personal: {
@@ -89,6 +91,14 @@ export default function useProfile() {
   useEffect(() => {
     let isMounted = true
 
+    if (!auth) {
+      setProfile(defaultState)
+      setLoading(false)
+      return () => {
+        isMounted = false
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return
 
@@ -125,8 +135,8 @@ export default function useProfile() {
         if (!localProfile || latestProfile?.updatedAt !== localProfile?.updatedAt) {
           await persistProfileLocally(mergedLatest, userId);
         }
-      } catch (error) {
-        console.error("Failed to initialize profile:", error)
+      } catch {
+        toast.error(en.profile.loadFailed)
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -141,8 +151,8 @@ export default function useProfile() {
   }, [])
 
   const saveProfile = useCallback(async (newData: ProfileState): Promise<ProfileSaveResult> => {
-    const user = auth.currentUser
-    if (!user) throw new Error("User not authenticated")
+    const user = auth?.currentUser
+    if (!user) throw new Error(en.profile.signInRequired)
     const userId = requireUserIdentityFromAuthUser(user)
 
     setSaving(true)
@@ -160,7 +170,6 @@ export default function useProfile() {
         return { profile: savedProfile }
       } catch (error) {
         if (isSupabaseRlsError(error)) {
-          console.warn("Profile saved locally, but cloud sync is blocked by Supabase RLS.", error)
           return {
             profile: savedProfile,
             cloudSyncSkipped: true,
@@ -170,7 +179,6 @@ export default function useProfile() {
         throw error
       }
     } catch (error) {
-      console.error("Save failed:", error)
       throw error
     } finally {
       setSaving(false)
@@ -186,7 +194,7 @@ export default function useProfile() {
   }
 }
 
-function buildFirebaseProfile(user: NonNullable<typeof auth.currentUser>): ProfileState {
+function buildFirebaseProfile(user: import("firebase/auth").User): ProfileState {
   const userId = requireUserIdentityFromAuthUser(user)
 
   return {
@@ -203,7 +211,7 @@ function buildFirebaseProfile(user: NonNullable<typeof auth.currentUser>): Profi
 
 function mergeWithFirebaseProfile(
   profileData: ProfileState,
-  user: NonNullable<typeof auth.currentUser>
+  user: import("firebase/auth").User
 ): ProfileState {
   const userId = requireUserIdentityFromAuthUser(user)
 

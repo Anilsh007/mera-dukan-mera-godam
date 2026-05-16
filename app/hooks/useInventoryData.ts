@@ -1,4 +1,6 @@
 import { db, Product, ProductLog } from "@/app/lib/db"
+import { notify } from "@/app/lib/notifications"
+import { en } from "@/app/messages/en"
 import useAuthLiveQuery from "./useAuthLiveQuery"
 
 type InventoryDataState = {
@@ -29,7 +31,10 @@ export default function useInventoryData(): InventoryDataState {
         logs: logs.sort((left, right) => right.date.localeCompare(left.date)),
       }
     },
-    (error) => console.error("Inventory data fetch error:", error)
+    (error) => {
+      console.error("Inventory data fetch error:", error)
+      notify.error(en.notifications.inventoryLoadFailed, { id: "inventory-load-failed" })
+    }
   )
 
   return { ...data, loading }

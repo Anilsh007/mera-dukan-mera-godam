@@ -7,6 +7,7 @@ import {
 } from "@/app/api/_lib/auth"
 import {
   assertContentLength,
+  readJsonBody,
   assertFiniteNumber,
   assertIsoDate,
   enforceRateLimit,
@@ -17,6 +18,9 @@ import {
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 
 export const runtime = "nodejs"
+
+type PurchaseEntryMode = "quick" | "detailed"
+type PurchaseDetailsStatus = "pending" | "completed"
 
 type PurchaseSyncPayload = {
   purchases: PurchaseRecord[]
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
     enforceRateLimit(request, { key: "purchases-sync:post", limit: 40, windowMs: 60_000 })
     assertContentLength(request, 1024 * 1024)
     const userId = await getUserIdentityFromRequest(request)
-    const { purchases } = validatePurchasePayload((await request.json()) as PurchaseSyncPayload, userId)
+    const { purchases } = validatePurchasePayload(await readJsonBody<PurchaseSyncPayload>(request), userId)
     const supabase = createSupabaseAdminClient()
 
     const { error } = await supabase.from("purchases").upsert(
@@ -119,6 +123,11 @@ function validatePurchasePayload(payload: PurchaseSyncPayload, userId: string) {
       totalAmount,
       dueAmount,
       note: sanitizeOptionalText(purchase.note, 1000),
+      entryMode: validateEntryMode(purchase.entryMode),
+      detailsStatus: validateDetailsStatus(purchase.detailsStatus),
+      detailsCompletedAt: purchase.detailsCompletedAt
+        ? assertIsoDate(purchase.detailsCompletedAt, "Purchase details completedAt")
+        : undefined,
       items: items.map(validatePurchaseItem),
       createdAt: assertIsoDate(purchase.createdAt, "Purchase createdAt"),
       updatedAt: assertIsoDate(purchase.updatedAt, "Purchase updatedAt"),
@@ -160,6 +169,18 @@ function validatePurchaseItem(item: PurchaseItem): PurchaseItem {
 function validatePaymentStatus(status: PurchasePaymentStatus) {
   if (status === "paid" || status === "partial" || status === "unpaid") return status
   throw new SecurityError("Invalid purchase payment status", 400)
+}
+
+function validateEntryMode(mode?: PurchaseEntryMode) {
+  if (!mode) return "detailed"
+  if (mode === "quick" || mode === "detailed") return mode
+  throw new SecurityError("Invalid purchase entry mode", 400)
+}
+
+function validateDetailsStatus(status?: PurchaseDetailsStatus) {
+  if (!status) return "completed"
+  if (status === "pending" || status === "completed") return status
+  throw new SecurityError("Invalid purchase details status", 400)
 }
 
 function mapPurchaseToDb(purchase: PurchaseRecord, userId: string) {

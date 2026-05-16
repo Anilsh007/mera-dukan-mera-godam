@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { GSTInvoiceParty } from "../types/gst.types";
+import { en } from "@/app/messages/en";
 
 type Props = {
   seller: GSTInvoiceParty;
@@ -16,7 +17,7 @@ export default function SellerHeader({ seller }: Props) {
         {seller.logoUrl && (
           <Image
             src={seller.logoUrl}
-            alt="Logo"
+            alt={en.profile.logoAlt}
             width={64}
             height={64}
             className="h-16 w-16 rounded-lg border object-contain"
@@ -25,25 +26,23 @@ export default function SellerHeader({ seller }: Props) {
 
         {/* Seller Info */}
         <div>
-          {/* <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tax Invoice</p> */}
-
           <h2 className="mt-2 text-xl font-bold sm:text-2xl">
-            {seller.name || "Business Name"}
+            {seller.name || en.gstInvoice.businessName}
           </h2>
 
           <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-            <span><b>Phone:</b> {seller.phone || "Not Available"}</span>
-            <span><b>Email:</b> {seller.email || "Not Available"}</span>
+            <span><b>{en.profile.phone}:</b> {seller.phone || en.common.notAvailable}</span>
+            <span><b>{en.profile.email}:</b> {seller.email || en.common.notAvailable}</span>
           </div>
 
           <p className="text-sm text-slate-600">
-            <b>Address:</b> {seller.address || "Seller address"}
+            <b>{en.profile.address}:</b> {seller.address || en.gstInvoice.sellerAddress}
             {seller.city ? `, ${seller.city}` : ""}
             {seller.state ? `, ${seller.state}` : ""}
             {seller.pincode ? ` - ${seller.pincode}` : ""}
           </p>
 
-          <p className="mt-1 text-sm text-slate-600"><b>GSTIN:</b> {seller.gstin || "Not Available"}
+          <p className="mt-1 text-sm text-slate-600"><b>{en.gstInvoice.gstin}:</b> {seller.gstin || en.common.notAvailable}
           </p>
         </div>
       </div>

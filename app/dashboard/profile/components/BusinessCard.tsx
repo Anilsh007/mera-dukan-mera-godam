@@ -1,6 +1,9 @@
 import { useRef } from "react"
+import Image from "next/image"
 import { MdBusiness } from "react-icons/md"
 import { toPng } from 'html-to-image'
+import { en } from "@/app/messages/en"
+import { notify as toast } from "@/app/lib/notifications"
 
 interface Props {
   data: {
@@ -21,8 +24,9 @@ export default function BusinessCard({ data }: Props) {
       link.download = `${data.business.shopName}-card.png`
       link.href = dataUrl
       link.click()
-    } catch (err) {
-      console.error('Failed to download:', err)
+      toast.success(en.profile.cardDownloaded)
+    } catch {
+      toast.error(en.profile.cardDownloadFailed)
     }
   }
 
@@ -43,9 +47,12 @@ export default function BusinessCard({ data }: Props) {
 
                 {/* ✅ LOGO */}
                 {data.business.logoUrl ? (
-                  <img
+                  <Image
                     src={data.business.logoUrl}
-                    alt="Logo"
+                    alt={en.profile.logoAlt}
+                    width={48}
+                    height={48}
+                    unoptimized
                     className="w-12 h-12 object-contain rounded-lg bg-white/10 p-1"
                   />
                 ) : (
@@ -57,7 +64,7 @@ export default function BusinessCard({ data }: Props) {
                 {/* Shop Info */}
                 <div>
                   <p className="text-emerald-200 text-xs uppercase tracking-wider">
-                    Business Card
+                    {en.profile.businessCard}
                   </p>
                   <h4 className="text-xl font-bold">
                     {data.business.shopName}
@@ -70,16 +77,16 @@ export default function BusinessCard({ data }: Props) {
 
             <div className="space-y-3">
               <div>
-                <p className="text-emerald-200 text-xs">Owner</p>
+                <p className="text-emerald-200 text-xs">{en.profile.owner}</p>
                 <p className="font-medium">{data.personal.displayName}</p>
               </div>
               <div>
-                <p className="text-emerald-200 text-xs">Contact</p>
+                <p className="text-emerald-200 text-xs">{en.profile.contact}</p>
                 <p className="font-medium">{data.personal.phone || data.personal.email}</p>
               </div>
               {data.business.gstNumber && (
                 <div>
-                  <p className="text-emerald-200 text-xs">GST</p>
+                  <p className="text-emerald-200 text-xs">{en.profile.gstShort}</p>
                   <p className="font-mono text-sm">{data.business.gstNumber}</p>
                 </div>
               )}
@@ -101,7 +108,7 @@ export default function BusinessCard({ data }: Props) {
         </div>
       </div>
 
-      <p className="text-center text-xs text-[var(--text-muted)] mt-3">This card can be downloaded</p>
+      <p className="text-center text-xs text-[var(--text-muted)] mt-3">{en.profile.cardDownloadHint}</p>
     </div>
   )
 }

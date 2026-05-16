@@ -1,5 +1,7 @@
+import { en } from "@/app/messages/en"
+
 export function formatCurrency(value: number | string | null | undefined) {
-  return `Rs ${Number(value || 0).toLocaleString("en-IN")}`
+  return `${en.common.rupeeSymbol} ${Number(value || 0).toLocaleString("en-IN")}`
 }
 
 export function formatDateTime(value: string | number | Date) {

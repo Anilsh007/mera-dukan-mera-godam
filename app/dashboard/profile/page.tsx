@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { MdArrowBack, MdEdit } from "react-icons/md"
-import { toast } from "sonner"
+import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
 import ProfileForm from "./ProfileForm"
 import ProfileShowcase from "./components/ProfileShowcase"
 import useProfile from "./useProfile"
+import { en } from "@/app/messages/en"
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
@@ -28,38 +29,38 @@ export default function ProfilePage() {
       const result = await saveProfile(data)
 
       if (result.cloudSyncSkipped) {
-        toast.success("Profile local database me save ho gaya")
-        toast.warning("Cloud sync abhi Supabase policy ki wajah se blocked hai")
+        toast.success(en.profile.savedLocally)
+        toast.warning(en.profile.cloudBlocked)
       } else {
-        toast.success("Profile saved in database")
+        toast.success(en.profile.saved)
       }
 
       setIsEditing(false)
       return result
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Save failed"
-      toast.error(message)
+      console.error("Profile save failed", error)
+      toast.error(en.profile.saveFailed)
       throw error
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-page space-y-6 pb-8">
       {showEditor ? (
-        <div className="flex items-center justify-between rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl p-2 shadow-[var(--shadow-card)]">
+        <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              {showEditor ? "" : "Business Profile"}
+              {showEditor ? "" : en.pages.profileTitle}
             </h1>
             <p className="text-sm text-[var(--text-muted)]">
               {showEditor
-                ? "Update your business information. This will help us personalize your experience and generate accurate invoices."
+                ? en.pages.profileDescription
                 : ""}
             </p>
           </div>
 
           {!isProfileEmpty && (
-            <Button variant={showEditor ? "outline" : "primary"} icon={showEditor ? <MdArrowBack /> : <MdEdit />} title={showEditor ? "Back to Profile" : "Edit Profile"} onClick={() => setIsEditing((prev) => !prev)} />
+            <Button variant={showEditor ? "outline" : "primary"} icon={showEditor ? <MdArrowBack /> : <MdEdit />} title={showEditor ? en.profile.backToProfile : en.profile.editProfile} onClick={() => setIsEditing((prev) => !prev)} className="w-full sm:w-auto" />
           )}
         </div>
       ) : ("")}

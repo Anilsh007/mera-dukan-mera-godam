@@ -4,7 +4,7 @@ import type { ProfileData } from "./profile.service";
 import { getUserIdentityFromAuthUser } from "../userIdentity";
 
 export async function loadProfileFromDb(userId?: string): Promise<ProfileData | null> {
-  const resolvedUserId = userId || getUserIdentityFromAuthUser(auth.currentUser);
+  const resolvedUserId = userId || getUserIdentityFromAuthUser(auth?.currentUser);
   if (!resolvedUserId) return null;
 
   const data = await db.profiles.get(resolvedUserId);
@@ -15,7 +15,7 @@ export async function saveProfileToDb(
   profileData: Omit<ProfileData, "userId" | "updatedAt">,
   userId?: string
 ): Promise<ProfileData> {
-  const resolvedUserId = userId || getUserIdentityFromAuthUser(auth.currentUser);
+  const resolvedUserId = userId || getUserIdentityFromAuthUser(auth?.currentUser);
   if (!resolvedUserId) throw new Error("User not authenticated");
 
   const fullData: ProfileData = {

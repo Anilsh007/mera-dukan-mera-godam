@@ -1,5 +1,6 @@
 import type { Product } from "@/app/lib/db"
 import { formatQuantity, normalizeQuantityUnit } from "./quantityUnit"
+import { en } from "@/app/messages/en"
 
 export const STOCK_THRESHOLDS = {
   criticalMax: 25,
@@ -19,7 +20,7 @@ export function getStockLevel(quantity: number, thresholds?: StockThresholds): S
   const criticalMax = normalizeThreshold(thresholds?.criticalMax, STOCK_THRESHOLDS.criticalMax)
   const lowMax = Math.max(normalizeThreshold(thresholds?.lowMax, STOCK_THRESHOLDS.lowMax), criticalMax)
 
-  if (quantity === 0) return "out"
+  if (quantity <= 0) return "out"
   if (quantity <= criticalMax) return "critical"
   if (quantity <= lowMax) return "low"
   return "healthy"
@@ -38,7 +39,7 @@ export function getProductThresholds(product: Product) {
 
 export function getGroupStockLevel(products: Product[]): StockLevel {
   const totalQty = products.reduce((sum, product) => sum + product.quantity, 0)
-  if (totalQty === 0) return "out"
+  if (totalQty <= 0) return "out"
   if (products.some((product) => getProductStockLevel(product) === "critical")) {
     return "critical"
   }
@@ -74,21 +75,21 @@ export function getExpiryInfo(expiry?: string): { label: string; cls: string } |
 
   if (days < 0) {
     return {
-      label: "Expired",
+      label: en.expiry.expired,
       cls: "bg-[var(--out-stock)] text-[var(--out-stock-text)] border border-[var(--out-stock-border)] shadow",
     }
   }
 
   if (days <= 7) {
     return {
-      label: `${days}d left`,
+      label: `${days} ${en.expiry.daysLeftSuffix}`,
       cls: "bg-[var(--expired)] text-[var(--expired-text)]",
     }
   }
 
   if (days <= 30) {
     return {
-      label: `${days}d left`,
+      label: `${days} ${en.expiry.daysLeftSuffix}`,
       cls: "bg-[var(--low-expiry)] text-[var(--low-expiry-text)]",
     }
   }
@@ -114,10 +115,18 @@ export function getDaysUntilExpiry(expiry: string) {
 }
 
 export function getNearestExpiry(products: Product[]) {
-  return products
-    .map((product) => product.expiry)
-    .filter((expiry): expiry is string => Boolean(expiry))
-    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())[0]
+  let nearestExpiry: string | undefined
+  let nearestTime = Number.POSITIVE_INFINITY
+
+  for (const product of products) {
+    if (!product.expiry) continue
+    const time = new Date(product.expiry).getTime()
+    if (!Number.isFinite(time) || time >= nearestTime) continue
+    nearestTime = time
+    nearestExpiry = product.expiry
+  }
+
+  return nearestExpiry
 }
 
 export function sortProducts(products: Product[], sort: ProductSortKey) {

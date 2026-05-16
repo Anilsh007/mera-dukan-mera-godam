@@ -7,6 +7,7 @@ import {
 } from "@/app/api/_lib/auth"
 import {
   assertContentLength,
+  readJsonBody,
   assertFiniteNumber,
   assertIsoDate,
   enforceRateLimit,
@@ -38,14 +39,58 @@ type SyncPayload = {
   logs: Array<{
     id: string
     productId: string
+    productName?: string
+    productCategory?: string
+    productSku?: string
+    productHsnCode?: string
     quantityAdded: number
+    quantity?: number
     quantityUnit?: string
+    oldStock?: number
+    newStock?: number
     type: "in" | "out"
     reason?: string
     price: number
+    amount?: number
+    taxableAmount?: number
+    gstRate?: number
+    cgstAmount?: number
+    sgstAmount?: number
+    igstAmount?: number
+    gstAmount?: number
     expiry?: string
     date: string
+    transactionId?: string
+    transactionType?:
+      | "purchase"
+      | "quick-purchase"
+      | "stock-in"
+      | "sale"
+      | "multi-item-sale"
+      | "stock-adjustment"
+      | "stock-correction"
+    invoiceReceiptNo?: string
+    paymentMode?: string
+    paymentStatus?: string
+    products?: Array<{
+      productId?: string
+      name: string
+      category?: string
+      sku?: string
+      hsnCode?: string
+      quantity: number
+      quantityUnit: string
+      oldStock?: number
+      newStock?: number
+      rate: number
+      amount: number
+      gstRate?: number
+      gstAmount?: number
+    }>
     note?: string
+    notes?: string
+    correctedAt?: string
+    correctionLabel?: string
   }>
 }
 
@@ -67,7 +112,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const productIds = (products || []).map((product) => String(product.id))
+    const productIds = (products || []).map((product: { id: unknown }) => String(product.id))
 
     const { data: logs, error: logError } = productIds.length
       ? await supabase.from("product_logs").select("*").in("product_id", productIds)
@@ -94,52 +139,9 @@ export async function POST(request: NextRequest) {
     enforceRateLimit(request, { key: "products-sync:post", limit: 40, windowMs: 60_000 })
     assertContentLength(request, 1024 * 1024)
     const userId = await getUserIdentityFromRequest(request)
-    const { products, logs } = validateSyncPayload((await request.json()) as SyncPayload)
+    const { products, logs } = validateSyncPayload(await readJsonBody<SyncPayload>(request))
     const supabase = createSupabaseAdminClient()
     const incomingProductIds = products.map((product) => product.id)
-    const incomingLogIds = logs.map((log) => log.id)
-
-    const { data: existingProducts, error: existingProductsError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("user_id", userId)
-
-    if (existingProductsError) {
-      return NextResponse.json(
-        { code: existingProductsError.code, message: existingProductsError.message, details: existingProductsError.details, hint: existingProductsError.hint },
-        { status: 500 }
-      )
-    }
-
-    const existingProductIds = (existingProducts || []).map((product) => String(product.id))
-    const productIdsToDelete = existingProductIds.filter((id) => !incomingProductIds.includes(id))
-
-    if (productIdsToDelete.length) {
-      const { error: deleteLogsByProductError } = await supabase
-        .from("product_logs")
-        .delete()
-        .in("product_id", productIdsToDelete)
-
-      if (deleteLogsByProductError) {
-        return NextResponse.json(
-          { code: deleteLogsByProductError.code, message: deleteLogsByProductError.message, details: deleteLogsByProductError.details, hint: deleteLogsByProductError.hint },
-          { status: 500 }
-        )
-      }
-
-      const { error: deleteProductsError } = await supabase
-        .from("products")
-        .delete()
-        .in("id", productIdsToDelete)
-        .eq("user_id", userId)
-
-      if (deleteProductsError) {
-        return NextResponse.json(
-          { code: deleteProductsError.code, message: deleteProductsError.message, details: deleteProductsError.details, hint: deleteProductsError.hint },
-          { status: 500 }
-        )
-      }
-    }
 
     const { error: productError } = await supabase.from("products").upsert(
       products.map((product) => ({
@@ -168,57 +170,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const scopedProductIds = incomingProductIds.length ? incomingProductIds : existingProductIds
+    const scopedProductIds = incomingProductIds
     const hasForeignLogReference = logs.some((log) => !scopedProductIds.includes(log.productId))
     if (hasForeignLogReference) {
       return NextResponse.json({ message: "Logs contain invalid product references" }, { status: 400 })
     }
 
-    const { data: existingLogs, error: existingLogsError } = scopedProductIds.length
-      ? await supabase
-          .from("product_logs")
-          .select("id")
-          .in("product_id", scopedProductIds)
-      : { data: [], error: null }
+    let { error: logError } = await supabase.from("product_logs").upsert(logs.map(mapLogToSupabaseRow))
 
-    if (existingLogsError) {
-      return NextResponse.json(
-        { code: existingLogsError.code, message: existingLogsError.message, details: existingLogsError.details, hint: existingLogsError.hint },
-        { status: 500 }
-      )
+    if (logError && isUnknownColumnError(logError)) {
+      const retry = await supabase.from("product_logs").upsert(logs.map(mapLegacyLogToSupabaseRow))
+      logError = retry.error
     }
-
-    const existingLogIds = (existingLogs || []).map((log) => String(log.id))
-    const logIdsToDelete = existingLogIds.filter((id) => !incomingLogIds.includes(id))
-
-    if (logIdsToDelete.length) {
-      const { error: deleteLogsError } = await supabase
-        .from("product_logs")
-        .delete()
-        .in("id", logIdsToDelete)
-
-      if (deleteLogsError) {
-        return NextResponse.json(
-          { code: deleteLogsError.code, message: deleteLogsError.message, details: deleteLogsError.details, hint: deleteLogsError.hint },
-          { status: 500 }
-        )
-      }
-    }
-
-    const { error: logError } = await supabase.from("product_logs").upsert(
-      logs.map((log) => ({
-        id: log.id,
-        product_id: log.productId,
-        quantity_added: log.quantityAdded,
-        quantity_unit: log.quantityUnit,
-        type: log.type,
-        reason: log.reason,
-        price: log.price,
-        expiry: log.expiry,
-        date: log.date,
-        note: log.note,
-      }))
-    )
 
     if (logError) {
       return NextResponse.json(
@@ -266,22 +229,134 @@ function validateSyncPayload(payload: SyncPayload) {
     createdAt: assertIsoDate(product.createdAt, "Product createdAt"),
   }))
 
-  const logs = payload.logs.map((log) => ({
-    id: sanitizeRequiredText(log.id, 120, "Log id"),
-    productId: sanitizeRequiredText(log.productId, 120, "Log productId"),
-    quantityAdded: assertFiniteNumber(log.quantityAdded, "Log quantity", { min: -1_000_000, max: 1_000_000 }),
-    quantityUnit: normalizeQuantityUnit(sanitizeOptionalText(log.quantityUnit, 40)),
-    type: log.type === "in" || log.type === "out" ? log.type : (() => {
-      throw new SecurityError("Invalid log type", 400)
-    })(),
-    reason: sanitizeOptionalText(log.reason, 120),
-    price: assertFiniteNumber(log.price, "Log price", { min: 0, max: 10_000_000 }),
-    expiry: log.expiry ? assertIsoDate(log.expiry, "Log expiry") : undefined,
-    date: assertIsoDate(log.date, "Log date"),
-    note: sanitizeOptionalText(log.note, 1000),
-  }))
+  const logs = payload.logs.map((log) => {
+    const quantityAdded = assertFiniteNumber(log.quantityAdded, "Log quantity", { min: -1_000_000, max: 1_000_000 })
+    const quantity = assertOptionalFiniteNumber(log.quantity, "Log absolute quantity", { min: 0, max: 1_000_000 }) ?? Math.abs(quantityAdded)
+
+    return {
+      id: sanitizeRequiredText(log.id, 120, "Log id"),
+      productId: sanitizeRequiredText(log.productId, 120, "Log productId"),
+      productName: sanitizeOptionalText(log.productName, 160),
+      productCategory: sanitizeOptionalText(log.productCategory, 100),
+      productSku: sanitizeOptionalText(log.productSku, 80),
+      productHsnCode: sanitizeOptionalText(log.productHsnCode, 40),
+      quantityAdded,
+      quantity,
+      quantityUnit: normalizeQuantityUnit(sanitizeOptionalText(log.quantityUnit, 40)),
+      oldStock: assertOptionalFiniteNumber(log.oldStock, "Log old stock", { min: -1_000_000, max: 1_000_000 }),
+      newStock: assertOptionalFiniteNumber(log.newStock, "Log new stock", { min: -1_000_000, max: 1_000_000 }),
+      type: log.type === "in" || log.type === "out" ? log.type : (() => {
+        throw new SecurityError("Invalid log type", 400)
+      })(),
+      reason: sanitizeOptionalText(log.reason, 120),
+      price: assertFiniteNumber(log.price, "Log price", { min: 0, max: 10_000_000 }),
+      amount: assertOptionalFiniteNumber(log.amount, "Log amount", { min: 0, max: 100_000_000 }),
+      taxableAmount: assertOptionalFiniteNumber(log.taxableAmount, "Log taxable amount", { min: 0, max: 100_000_000 }),
+      gstRate: assertOptionalFiniteNumber(log.gstRate, "Log GST rate", { min: 0, max: 100 }),
+      cgstAmount: assertOptionalFiniteNumber(log.cgstAmount, "Log CGST", { min: 0, max: 100_000_000 }),
+      sgstAmount: assertOptionalFiniteNumber(log.sgstAmount, "Log SGST", { min: 0, max: 100_000_000 }),
+      igstAmount: assertOptionalFiniteNumber(log.igstAmount, "Log IGST", { min: 0, max: 100_000_000 }),
+      gstAmount: assertOptionalFiniteNumber(log.gstAmount, "Log GST amount", { min: 0, max: 100_000_000 }),
+      expiry: log.expiry ? assertIsoDate(log.expiry, "Log expiry") : undefined,
+      date: assertIsoDate(log.date, "Log date"),
+      transactionId: sanitizeOptionalText(log.transactionId, 120),
+      transactionType: sanitizeTransactionType(log.transactionType),
+      invoiceReceiptNo: sanitizeOptionalText(log.invoiceReceiptNo, 120),
+      paymentMode: sanitizeOptionalText(log.paymentMode, 80),
+      paymentStatus: sanitizeOptionalText(log.paymentStatus, 80),
+      products: sanitizeTransactionProducts(log.products),
+      note: sanitizeOptionalText(log.note, 1000),
+      notes: sanitizeOptionalText(log.notes, 1000),
+      correctedAt: log.correctedAt ? assertIsoDate(log.correctedAt, "Log corrected date") : undefined,
+      correctionLabel: sanitizeOptionalText(log.correctionLabel, 80),
+    }
+  })
 
   return { products, logs }
+}
+
+
+function mapLegacyLogToSupabaseRow(log: ReturnType<typeof validateSyncPayload>["logs"][number]) {
+  return {
+    id: log.id,
+    product_id: log.productId,
+    quantity_added: log.quantityAdded,
+    quantity_unit: log.quantityUnit,
+    type: log.type,
+    reason: log.reason,
+    price: log.price,
+    expiry: log.expiry,
+    date: log.date,
+    note: log.note,
+  }
+}
+
+function mapLogToSupabaseRow(log: ReturnType<typeof validateSyncPayload>["logs"][number]) {
+  return {
+    ...mapLegacyLogToSupabaseRow(log),
+    product_name: log.productName,
+    product_category: log.productCategory,
+    product_sku: log.productSku,
+    product_hsn_code: log.productHsnCode,
+    quantity: log.quantity,
+    old_stock: log.oldStock,
+    new_stock: log.newStock,
+    amount: log.amount,
+    taxable_amount: log.taxableAmount,
+    gst_rate: log.gstRate,
+    cgst_amount: log.cgstAmount,
+    sgst_amount: log.sgstAmount,
+    igst_amount: log.igstAmount,
+    gst_amount: log.gstAmount,
+    transaction_id: log.transactionId,
+    transaction_type: log.transactionType,
+    invoice_receipt_no: log.invoiceReceiptNo,
+    payment_mode: log.paymentMode,
+    payment_status: log.paymentStatus,
+    products: log.products,
+    notes: log.notes,
+    corrected_at: log.correctedAt,
+    correction_label: log.correctionLabel,
+  }
+}
+
+function isUnknownColumnError(error: { code?: string; message?: string }) {
+  const message = error.message || ""
+  return error.code === "PGRST204" || message.includes("schema cache") || message.includes("column")
+}
+
+function sanitizeTransactionType(value: SyncPayload["logs"][number]["transactionType"]) {
+  if (!value) return undefined
+  const validTypes = new Set([
+    "purchase",
+    "quick-purchase",
+    "stock-in",
+    "sale",
+    "multi-item-sale",
+    "stock-adjustment",
+    "stock-correction",
+  ])
+  if (!validTypes.has(value)) throw new SecurityError("Invalid transaction type", 400)
+  return value
+}
+
+function sanitizeTransactionProducts(value: SyncPayload["logs"][number]["products"]) {
+  if (!Array.isArray(value)) return undefined
+  return value.slice(0, 100).map((product) => ({
+    productId: sanitizeOptionalText(product.productId, 120),
+    name: sanitizeRequiredText(product.name, 160, "Transaction product name"),
+    category: sanitizeOptionalText(product.category, 100),
+    sku: sanitizeOptionalText(product.sku, 80),
+    hsnCode: sanitizeOptionalText(product.hsnCode, 40),
+    quantity: assertFiniteNumber(product.quantity, "Transaction product quantity", { min: 0, max: 1_000_000 }),
+    quantityUnit: normalizeQuantityUnit(sanitizeOptionalText(product.quantityUnit, 40)),
+    oldStock: assertOptionalFiniteNumber(product.oldStock, "Transaction product old stock", { min: -1_000_000, max: 1_000_000 }),
+    newStock: assertOptionalFiniteNumber(product.newStock, "Transaction product new stock", { min: -1_000_000, max: 1_000_000 }),
+    rate: assertFiniteNumber(product.rate, "Transaction product rate", { min: 0, max: 10_000_000 }),
+    amount: assertFiniteNumber(product.amount, "Transaction product amount", { min: 0, max: 100_000_000 }),
+    gstRate: assertOptionalFiniteNumber(product.gstRate, "Transaction product GST rate", { min: 0, max: 100 }),
+    gstAmount: assertOptionalFiniteNumber(product.gstAmount, "Transaction product GST amount", { min: 0, max: 100_000_000 }),
+  }))
 }
 
 function assertOptionalFiniteNumber(

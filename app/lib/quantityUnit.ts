@@ -15,7 +15,7 @@ export const QUANTITY_UNITS = [
 
 export type QuantityUnit = (typeof QUANTITY_UNITS)[number]["value"] | string
 
-export const DEFAULT_QUANTITY_UNIT = "pcs"
+export const DEFAULT_QUANTITY_UNIT = " "
 
 export function normalizeQuantityUnit(unit: string | null | undefined) {
   const cleaned = unit?.trim().toLowerCase()

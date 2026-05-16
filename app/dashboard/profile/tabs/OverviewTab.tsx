@@ -1,5 +1,6 @@
 import { MdPerson, MdBusiness } from "react-icons/md"
 import InfoItem from "../components/InfoItem"
+import { en } from "@/app/messages/en"
 
 interface Props {
   data: {
@@ -12,45 +13,47 @@ interface Props {
 export default function OverviewTab({ data, onViewBusiness }: Props) {
   return (
     <div className="space-y-6">
-      {/* Personal Info */}
-      <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-6">
-        <div className="flex items-center gap-2 mb-4 text-[var(--text-primary)]">
-          <MdPerson className="text-emerald-500" size={20} />
-          <h3 className="font-bold text-lg">Personal Information</h3>
+      <div className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
+        <div className="mb-4 flex items-center gap-2 text-[var(--text-primary)]">
+          <MdPerson className="text-emerald-500" size={20} aria-hidden="true" />
+          <h3 className="text-lg font-bold">{en.profile.personalInformation}</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InfoItem label="Full Name" value={data.personal.displayName} />
-          <InfoItem label="Email" value={data.personal.email} />
-          <InfoItem label="Phone" value={data.personal.phone || "Not set"} />
-          <InfoItem label="Alt. Email" value={data.personal.alternateEmail || "Not set"} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <InfoItem label={en.profile.fullName} value={data.personal.displayName} />
+          <InfoItem label={en.profile.email} value={data.personal.email} />
+          <InfoItem label={en.profile.phone} value={data.personal.phone || en.profile.notSet} />
+          <InfoItem label={en.profile.alternateEmail} value={data.personal.alternateEmail || en.profile.notSet} />
         </div>
       </div>
 
-      {/* Business Preview */}
-      <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 p-6 dark:border-emerald-800">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-            <MdBusiness size={20} />
-            <h3 className="font-bold text-lg">Business Overview</h3>
+            <MdBusiness size={20} aria-hidden="true" />
+            <h3 className="text-lg font-bold">{en.profile.businessOverview}</h3>
           </div>
-          <button onClick={onViewBusiness} className="text-sm text-emerald-600 hover:underline">View Details →</button>
+          <button type="button" onClick={onViewBusiness} className="text-sm text-emerald-600 hover:underline">
+            {en.profile.viewDetails}
+          </button>
         </div>
         <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
-          <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
-            <p className="text-xs text-[var(--text-muted)] uppercase">Shop Name</p>
-            <p className="font-semibold text-[var(--text-primary)] text-lg">{data.business.shopName}</p>
+          <div className="rounded-xl bg-white/50 p-4 dark:bg-black/20">
+            <p className="text-xs uppercase text-[var(--text-muted)]">{en.profile.shopName}</p>
+            <p className="text-lg font-semibold text-[var(--text-primary)]">{data.business.shopName}</p>
           </div>
-          <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
-            <p className="text-xs text-[var(--text-muted)] uppercase">GST Number</p>
-            <p className="font-mono font-semibold text-[var(--text-primary)]">{data.business.gstNumber || "Not registered"}</p>
+          <div className="rounded-xl bg-white/50 p-4 dark:bg-black/20">
+            <p className="text-xs uppercase text-[var(--text-muted)]">{en.profile.gstNumber}</p>
+            <p className="font-mono font-semibold text-[var(--text-primary)]">
+              {data.business.gstNumber || en.profile.notRegistered}
+            </p>
           </div>
-          <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
-            <p className="text-xs text-[var(--text-muted)] uppercase">Invoice Prefix</p>
+          <div className="rounded-xl bg-white/50 p-4 dark:bg-black/20">
+            <p className="text-xs uppercase text-[var(--text-muted)]">{en.profile.invoicePrefix}</p>
             <p className="font-semibold text-[var(--text-primary)]">{data.business.invoicePrefix}</p>
           </div>
-          <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
-            <p className="text-xs text-[var(--text-muted)] uppercase">Business Type</p>
-            <p className="font-semibold text-[var(--text-primary)] capitalize">{data.business.businessType}</p>
+          <div className="rounded-xl bg-white/50 p-4 dark:bg-black/20">
+            <p className="text-xs uppercase text-[var(--text-muted)]">{en.profile.businessType}</p>
+            <p className="capitalize font-semibold text-[var(--text-primary)]">{data.business.businessType}</p>
           </div>
         </div>
       </div>
