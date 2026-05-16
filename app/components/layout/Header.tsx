@@ -14,6 +14,7 @@ import { en } from "@/app/messages/en";
 
 const accountMenuId = "account-menu";
 const publicNavItems = [
+  { href: "/", label: en.seo.home },
   { href: "/about", label: en.seo.about },
   { href: "/faq", label: en.seo.faq },
   { href: "/support", label: en.navigation.support },

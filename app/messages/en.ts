@@ -1295,6 +1295,7 @@ const baseMessages = {
     modernInventoryManagementPlatform: "Modern inventory management platform",
     platformDescription: "A modern inventory management platform designed to help businesses manage stock, suppliers, purchases, invoices, and reports with a simple and efficient workflow.",
     startupDescription: "Currently being independently developed as a solo startup project focused on simplicity, reliability, and continuous improvement.",
+    home: "Home",
     about: "About",
     faq: "FAQ",
     support: "Support",
