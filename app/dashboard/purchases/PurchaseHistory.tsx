@@ -87,8 +87,8 @@ function PurchaseCards({ purchases, onCompleteDetails }: Props) {
 
             <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 text-sm">
               <HistoryAmount label={en.purchases.total} value={formatCurrency(purchase.totalAmount)} />
-              <HistoryAmount label={en.purchases.paid} value={formatCurrency(purchase.amountPaid)} className="text-emerald-600" />
-              <HistoryAmount label={en.purchases.due} value={formatCurrency(purchase.dueAmount)} className="text-amber-600" />
+              <HistoryAmount label={en.purchases.paid} value={formatCurrency(purchase.amountPaid)} className="text-emerald-700 dark:text-emerald-300" />
+              <HistoryAmount label={en.purchases.due} value={formatCurrency(purchase.dueAmount)} className="text-amber-700 dark:text-amber-300" />
             </div>
 
             <p className="mt-3 text-xs text-[var(--text-secondary)]">

@@ -12,7 +12,7 @@ export default function SupportPage() {
     <main className="min-h-screen bg-white text-gray-900">
       {/* Hero Section */}
       <section className="border-b bg-gray-50">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mx-auto  px-6 py-20">
           <span className="rounded-full border border-gray-300 px-4 py-1 text-sm font-medium text-gray-600">{uiText("Support")}</span>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-tight md:text-5xl">{uiText("Need Help or Have Feedback?")}</h1>
@@ -22,7 +22,7 @@ export default function SupportPage() {
       </section>
 
       {/* Main Section */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
+      <section className="mx-auto  px-6 py-16">
         <div className="grid gap-10 lg:grid-cols-3">
           {/* Left Side */}
           <div className="space-y-6 lg:col-span-2">

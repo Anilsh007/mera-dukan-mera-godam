@@ -102,14 +102,9 @@ export default async function HomePage({ searchParams }: PageProps) {
             <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,var(--surface-highlight),transparent)]" />
           </div>
 
-          <section className="mx-auto grid min-h-[calc(100vh-3.5rem)] w-full max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
+          <section className="mx-auto grid min-h-[calc(100vh-3.5rem)] w-full  items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-3 rounded-full border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)] shadow-[var(--shadow-card)]">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-soft)]">
-                  <Store aria-hidden="true" className="h-4 w-4 text-[var(--accent)]" />
-                </span>
-                {en.marketing.home.badge}
-              </div>
+              
 
               <h1 className="mt-7 text-balance text-4xl font-black leading-[1.05] tracking-[-0.04em] text-[var(--text-primary)] sm:text-5xl lg:text-7xl">
                 {en.marketing.home.title}
@@ -196,7 +191,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             </div>
           </section>
 
-          <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
+          <section className="mx-auto w-full  px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
             <div className="rounded-[2rem] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-5 shadow-[var(--shadow-card)] sm:p-8">
               <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
                 <div>
@@ -232,7 +227,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             </div>
           </section>
 
-          <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
+          <section className="mx-auto w-full  px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
             <div className="grid gap-4 lg:grid-cols-4">
               {en.marketing.home.audienceGroups.map((group) => (
                 <article key={group.title} className="rounded-[1.75rem] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-5 shadow-[var(--shadow-card)]">
@@ -249,7 +244,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             </div>
           </section>
 
-          <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8">
+          <section className="mx-auto w-full  px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8">
             <div className="relative overflow-hidden rounded-[2rem] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-6 shadow-[var(--shadow-lifted)] sm:p-8 lg:p-10">
               <div aria-hidden="true" className="absolute right-[-8rem] top-[-8rem] h-80 w-80 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">

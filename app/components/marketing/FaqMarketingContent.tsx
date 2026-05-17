@@ -35,7 +35,7 @@ export default function FaqMarketingContent() {
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
-        <div className="mx-auto max-w-5xl px-4 py-20 text-center sm:px-6">
+        <div className="mx-auto  px-4 py-20 text-center sm:px-6">
           <span className="inline-flex rounded-full border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 py-1 text-sm font-medium text-[var(--text-secondary)]">
             {en.marketing.faq.badge}
           </span>
@@ -44,7 +44,7 @@ export default function FaqMarketingContent() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+      <section className="mx-auto  px-4 py-16 sm:px-6">
         <div className="space-y-5">
           {en.marketing.faqItems.map((faq) => (
             <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />
@@ -53,7 +53,7 @@ export default function FaqMarketingContent() {
       </section>
 
       <section className="pb-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="mx-auto  px-4 sm:px-6">
           <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-8 py-12 text-center shadow-[var(--shadow-card)]">
             <h2 className="text-3xl font-bold">{en.marketing.faq.moreHelpTitle}</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">{en.marketing.faq.moreHelpDescription}</p>

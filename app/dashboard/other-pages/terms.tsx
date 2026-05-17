@@ -5,7 +5,7 @@ export default function TermsPage() {
     <main className="min-h-screen bg-white text-gray-900">
       {/* Hero Section */}
       <section className="border-b bg-gray-50">
-        <div className="mx-auto max-w-5xl px-6 py-20">
+        <div className="mx-auto  px-6 py-20">
           <span className="rounded-full border border-gray-300 px-4 py-1 text-sm font-medium text-gray-600">{uiText("Legal")}</span>
 
           <h1 className="mt-6 text-4xl font-bold md:text-5xl">{uiText("Terms & Conditions")}</h1>
@@ -17,7 +17,7 @@ export default function TermsPage() {
       </section>
 
       {/* Content */}
-      <section className="mx-auto max-w-5xl px-6 py-16">
+      <section className="mx-auto  px-6 py-16">
         <div className="space-y-10 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
           {/* Section 1 */}
           <div>

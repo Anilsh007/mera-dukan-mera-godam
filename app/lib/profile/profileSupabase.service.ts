@@ -44,3 +44,22 @@ export async function saveProfileToSupabase(
 
   return (await response.json()) as ProfileData;
 }
+
+export async function deleteProfileFromSupabase(): Promise<void> {
+  const token = await getFirebaseIdToken();
+  if (!token) throw new Error(en.profile.signInRequired);
+
+  const response = await fetch("/api/profile", {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+
+  if (response.status === 404) {
+    return;
+  }
+
+  if (!response.ok) {
+    const error = await readApiError(response, "Profile delete request");
+    throw error;
+  }
+}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { LayoutDashboard, Package, PlusCircle, ChevronLeft, Settings, ChevronDown, ChevronRight, Download, SlidersHorizontal, History, TriangleAlert, Truck, BarChart3, ShoppingCart, type LucideIcon, } from "lucide-react";
+import { LayoutDashboard, Package, PlusCircle, ChevronLeft, Settings, ChevronDown, ChevronRight, Download, SlidersHorizontal, History, TriangleAlert, Truck, BarChart3, ShoppingCart, UserCog, type LucideIcon, } from "lucide-react";
 import logo from "@/assets/logo.webp";
 import { en } from "@/app/messages/en";
 
@@ -32,7 +32,10 @@ const navItems: NavItem[] = [
   {
     label: en.navigation.settings,
     icon: Settings,
-    children: [{ href: "/dashboard/settings/download", label: en.navigation.downloadData, icon: Download }],
+    children: [
+      { href: "/dashboard/settings/download", label: en.navigation.downloadData, icon: Download },
+      { href: "/dashboard/settings/account", label: en.navigation.accountSettings, icon: UserCog },
+    ],
   },
 ];
 

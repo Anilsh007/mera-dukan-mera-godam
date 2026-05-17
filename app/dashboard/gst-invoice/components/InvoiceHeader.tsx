@@ -8,15 +8,10 @@ export default function InvoiceHeader({ invoice, onChange, onSave, onReset, onPr
     return (
         <>
             <section className="premium-surface min-w-0 rounded-2xl p-4 sm:p-5">
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols] xl:items-center">
-                    <div className="min-w-0">
-                        <h2 className="text-2xl font-bold">{en.gstInvoice.createTitle}</h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 md:grid-cols-4">
+                <div className="flex justify-between">
+                    <h2 className="text-2xl font-bold">{en.gstInvoice.createTitle}</h2>
+                    <div className="gap-3">
                         <Button title={en.gstInvoice.newInvoice} variant="outline" icon={<MdOutlineWallet />} onClick={onReset} />
-                        {/* <Button title={en.gstInvoice.preview} variant="outline" icon={<MdVisibility />} onClick={onPreview} /> */}
-
                         <Button title={en.gstInvoice.save} variant="primary" icon={<MdSave />} onClick={onSave} loading={saving} />
                     </div>
                 </div>

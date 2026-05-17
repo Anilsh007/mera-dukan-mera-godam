@@ -12,13 +12,13 @@ import { en } from "@/app/messages/en";
 
 export default function Footer() {
   return (
-    <footer className="border-t bg-white">
+    <footer className="border-t border-[var(--border-card)] bg-[var(--bg-card-strong)] text-[var(--text-primary)] backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-12 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-black text-lg font-bold text-white">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_74%,#ec4899_26%))] text-lg font-bold text-white shadow-[var(--button-shadow)]">
                 {en.seo.inventoryManagementSystem.split(" ").map((word) => word[0]).join("")}
               </div>
 
@@ -27,17 +27,17 @@ export default function Footer() {
                   {en.seo.inventoryManagementSystem}
                 </h2>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--text-muted)]">
                   {en.seo.modernInventoryManagementPlatform}
                 </p>
               </div>
             </div>
 
-            <p className="mt-6 max-w-2xl leading-8 text-gray-600">
+            <p className="mt-6 max-w-2xl leading-8 text-[var(--text-secondary)]">
               {en.seo.platformDescription}
             </p>
 
-            <p className="mt-4 leading-8 text-gray-600">
+            <p className="mt-4 leading-8 text-[var(--text-secondary)]">
               {en.seo.startupDescription}
             </p>
 
@@ -48,7 +48,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={en.seo.githubProfile}
-                className="rounded-xl border border-gray-200 p-3 text-gray-700 transition hover:bg-gray-100"
+                className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-elevated)] p-3 text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-soft-strong)] hover:text-[var(--text-primary)]"
               >
                 <Github size={18} aria-hidden="true" />
               </a>
@@ -56,7 +56,7 @@ export default function Footer() {
               <a
                 href="mailto:support@yourdomain.com"
                 aria-label={en.seo.emailSupport}
-                className="rounded-xl border border-gray-200 p-3 text-gray-700 transition hover:bg-gray-100"
+                className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-elevated)] p-3 text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-soft-strong)] hover:text-[var(--text-primary)]"
               >
                 <Mail size={18} aria-hidden="true" />
               </a>
@@ -65,15 +65,15 @@ export default function Footer() {
 
           {/* {en.seo.navigation} */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-primary)]">
               {en.seo.navigation}
             </h3>
 
-            <ul className="mt-5 space-y-4 text-sm text-gray-600">
+            <ul className="mt-5 space-y-4 text-sm text-[var(--text-secondary)]">
               <li>
                 <Link
                   href="/about"
-                  className="transition hover:text-black"
+                  className="transition hover:text-[var(--text-primary)]"
                 >
                   {en.seo.about}
                 </Link>
@@ -82,7 +82,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/faq"
-                  className="transition hover:text-black"
+                  className="transition hover:text-[var(--text-primary)]"
                 >
                   {en.seo.faq}
                 </Link>
@@ -91,7 +91,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/support"
-                  className="transition hover:text-black"
+                  className="transition hover:text-[var(--text-primary)]"
                 >
                   {en.seo.support}
                 </Link>
@@ -100,7 +100,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="transition hover:text-black"
+                  className="transition hover:text-[var(--text-primary)]"
                 >
                   {en.navigation.overview}
                 </Link>
@@ -110,15 +110,15 @@ export default function Footer() {
 
           {/* {en.seo.legal} */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-primary)]">
               {en.seo.legal}
             </h3>
 
-            <ul className="mt-5 space-y-4 text-sm text-gray-600">
+            <ul className="mt-5 space-y-4 text-sm text-[var(--text-secondary)]">
               <li>
                 <Link
                   href="/privacy-policy"
-                  className="flex items-center gap-2 transition hover:text-black"
+                  className="flex items-center gap-2 transition hover:text-[var(--text-primary)]"
                 >
                   <ShieldCheck size={16} aria-hidden="true" />
                   {en.seo.privacyPolicy}
@@ -128,7 +128,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="flex items-center gap-2 transition hover:text-black"
+                  className="flex items-center gap-2 transition hover:text-[var(--text-primary)]"
                 >
                   <FileText size={16} aria-hidden="true" />
                   {en.seo.termsConditions}
@@ -138,7 +138,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/faq"
-                  className="flex items-center gap-2 transition hover:text-black"
+                  className="flex items-center gap-2 transition hover:text-[var(--text-primary)]"
                 >
                   <HelpCircle size={16} aria-hidden="true" />
                   {en.seo.helpCenter}
@@ -149,10 +149,10 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="my-10 border-t border-gray-200" />
+        <div className="my-10 border-t border-[var(--border-card)]" />
 
         {/* Bottom */}
-        <div className="flex flex-col gap-4 text-sm text-gray-500 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 text-sm text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>
             © {new Date().getFullYear()} {en.seo.inventoryManagementSystem}. {en.seo.allRightsReserved}
           </p>
@@ -160,21 +160,21 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <Link
               href="/privacy-policy"
-              className="transition hover:text-black"
+              className="transition hover:text-[var(--text-primary)]"
             >
               {en.seo.privacy}
             </Link>
 
             <Link
               href="/terms"
-              className="transition hover:text-black"
+              className="transition hover:text-[var(--text-primary)]"
             >
               {en.seo.terms}
             </Link>
 
             <Link
               href="/support"
-              className="transition hover:text-black"
+              className="transition hover:text-[var(--text-primary)]"
             >
               {en.seo.support}
             </Link>

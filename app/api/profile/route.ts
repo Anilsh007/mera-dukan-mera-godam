@@ -106,6 +106,30 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    enforceRateLimit(request, { key: "profile:delete", limit: 10, windowMs: 60_000 });
+    const userId = await getUserIdentityFromRequest(request);
+    const supabase = createSupabaseAdminClient();
+
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("user_id", userId);
+
+    if (error) {
+      return NextResponse.json(
+        { code: error.code, message: error.message, details: error.details, hint: error.hint },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return toApiErrorResponse(error, "Unexpected profile delete API error");
+  }
+}
+
 function mapProfileToDb(profile: ProfilePayload, userId: string) {
   return {
     user_id: userId,

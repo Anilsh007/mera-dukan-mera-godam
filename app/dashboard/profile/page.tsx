@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { MdArrowBack, MdEdit } from "react-icons/md"
 import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
@@ -10,6 +11,7 @@ import useProfile from "./useProfile"
 import { en } from "@/app/messages/en"
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const { profile, loading, saveProfile } = useProfile()
 
@@ -60,7 +62,15 @@ export default function ProfilePage() {
           </div>
 
           {!isProfileEmpty && (
-            <Button variant={showEditor ? "outline" : "primary"} icon={showEditor ? <MdArrowBack /> : <MdEdit />} title={showEditor ? en.profile.backToProfile : en.profile.editProfile} onClick={() => setIsEditing((prev) => !prev)} className="w-full sm:w-auto" />
+            <div className="responsive-actions">
+              <Button
+                variant="outline"
+                title={en.profile.manageAccount}
+                onClick={() => router.push("/dashboard/settings/account")}
+                className="w-full sm:w-auto"
+              />
+              <Button variant={showEditor ? "outline" : "primary"} icon={showEditor ? <MdArrowBack /> : <MdEdit />} title={showEditor ? en.profile.backToProfile : en.profile.editProfile} onClick={() => setIsEditing((prev) => !prev)} className="w-full sm:w-auto" />
+            </div>
           )}
         </div>
       ) : ("")}

@@ -49,7 +49,7 @@ export default function OverviewMiniTrendChart({ values, loading }: OverviewMini
     : ""
 
   return (
-    <div className="relative overflow-hidden rounded-[24px] border border-[var(--border-card)] bg-black/5 p-3 shadow-sm dark:bg-white/5">
+    <div className="relative overflow-hidden rounded-[24px] border border-[var(--border-card)] bg-[var(--surface-primary)] p-3 shadow-[var(--shadow-card)]">
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-400/20 blur-2xl" aria-hidden="true" />
       <div className="relative mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
@@ -63,7 +63,7 @@ export default function OverviewMiniTrendChart({ values, loading }: OverviewMini
         </div>
         <div className="text-right">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{en.reports.sales}</p>
-          <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(latest)}</p>
+          <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">{formatCurrency(latest)}</p>
         </div>
       </div>
 

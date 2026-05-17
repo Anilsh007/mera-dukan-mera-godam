@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/app/lib/firebase"
-import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
-import { loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
+import { deleteProfileFromDb, loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
+import { deleteProfileFromSupabase, loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
 import { migrateLocalUserData } from "@/app/lib/userDataMigration"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { notify as toast } from "@/app/lib/notifications"
@@ -185,11 +185,38 @@ export default function useProfile() {
     }
   }, [])
 
+  const deleteProfile = useCallback(async () => {
+    const user = auth?.currentUser
+    if (!user) throw new Error(en.profile.signInRequired)
+    const userId = requireUserIdentityFromAuthUser(user)
+
+    setSaving(true)
+
+    try {
+      await deleteProfileFromDb(userId)
+      setProfile(buildFirebaseProfile(user))
+
+      try {
+        await deleteProfileFromSupabase()
+        return { cloudSyncSkipped: false }
+      } catch (error) {
+        if (isSupabaseRlsError(error)) {
+          return { cloudSyncSkipped: true }
+        }
+
+        throw error
+      }
+    } finally {
+      setSaving(false)
+    }
+  }, [])
+
   return {
     profile,
     loading,
     saving,
     saveProfile,
+    deleteProfile,
     setProfile,
   }
 }

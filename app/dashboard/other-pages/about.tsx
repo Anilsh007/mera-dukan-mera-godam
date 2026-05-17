@@ -8,7 +8,7 @@ export default function AboutPage() {
     <main className="min-h-screen bg-white text-gray-900">
       {/* Hero Section */}
       <section className="border-b bg-gray-50">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mx-auto  px-6 py-20">
           <span className="rounded-full border border-gray-300 px-4 py-1 text-sm font-medium text-gray-600">{uiText("About The Platform")}</span>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-tight md:text-5xl">{uiText("Simple, Modern & Reliable Inventory Management")}</h1>
@@ -19,7 +19,7 @@ export default function AboutPage() {
 
       {/* Main Content */}
       <section>
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 lg:grid-cols-3">
+        <div className="mx-auto grid  gap-10 px-6 py-16 lg:grid-cols-3">
           {/* Left Side */}
           <div className="lg:col-span-2 space-y-10">
             {/* Our Story */}

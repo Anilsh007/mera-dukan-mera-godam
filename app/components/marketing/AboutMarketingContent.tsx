@@ -3,18 +3,15 @@ import { en } from "@/app/messages/en"
 
 export default function AboutMarketingContent() {
   return (
-    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <span className="inline-flex rounded-full border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 py-1 text-sm font-medium text-[var(--text-secondary)]">
-            {en.marketing.about.badge}
-          </span>
-          <h1 className="mt-6 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">{en.marketing.about.title}</h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.about.description}</p>
+    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] w-96">
+      <section className="px-4 sm:px-6 border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
+        <div className="mx-auto px-4 py-10">
+          <h1 className="mt-6 text-4xl font-bold leading-tight md:text-5xl">{en.marketing.about.title}</h1>
+          <p className="mt-6 text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.about.description}</p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+      <section className="mx-auto  px-4 py-16 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="space-y-10 lg:col-span-2">
             <article className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-8 shadow-[var(--shadow-card)]">

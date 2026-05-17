@@ -79,7 +79,11 @@ function QtyCell({
         criticalMax: criticalStockThreshold,
     })
     const dot = stockLevel === "out" ? "bg-red-500" : stockLevel === "critical" ? "bg-red-400" : stockLevel === "low" ? "bg-amber-400" : "bg-emerald-500"
-    const txt = stockLevel === "out" ? "font-semibold text-red-500" : stockLevel === "critical" || stockLevel === "low" ? "text-amber-600" : "text-[var(--text-primary)]"
+    const txt = stockLevel === "out"
+        ? "font-semibold text-red-700 dark:text-rose-300"
+        : stockLevel === "critical" || stockLevel === "low"
+            ? "font-semibold text-amber-700 dark:text-amber-300"
+            : "text-[var(--text-primary)]"
     return (
         <span className={`inline-flex items-center gap-1.5 ${txt}`}>
             <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
@@ -182,7 +186,7 @@ export default function TableComponent({
                                         />
                                     </td>
 
-                                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">
+                                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-300">
                                         {en.common.rupeeSymbol} {total.toLocaleString("en-IN")}
                                     </td>
 

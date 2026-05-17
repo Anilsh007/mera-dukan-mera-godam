@@ -97,7 +97,7 @@ export default function FAQPage() {
     <main className="min-h-screen bg-white text-gray-900">
       {/* Hero Section */}
       <section className="border-b bg-gray-50">
-        <div className="mx-auto max-w-5xl px-6 py-20 text-center">
+        <div className="mx-auto  px-6 py-20 text-center">
           <span className="rounded-full border border-gray-300 px-4 py-1 text-sm font-medium text-gray-600">{uiText("Help Center")}</span>
 
           <h1 className="mt-6 text-4xl font-bold md:text-5xl">{uiText("Frequently Asked Questions")}</h1>
@@ -107,7 +107,7 @@ export default function FAQPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="mx-auto max-w-5xl px-6 py-16">
+      <section className="mx-auto  px-6 py-16">
         <div className="space-y-5">
           {faqs.map((faq, index) => (
             <FAQItem
@@ -121,7 +121,7 @@ export default function FAQPage() {
 
       {/* Bottom CTA */}
       <section className="pb-20">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto  px-6">
           <div className="rounded-3xl bg-black px-8 py-12 text-center text-white shadow-sm">
             <h2 className="text-3xl font-bold">{uiText("Still Have Questions?")}</h2>
 

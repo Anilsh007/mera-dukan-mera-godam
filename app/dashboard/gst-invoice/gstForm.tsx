@@ -16,6 +16,7 @@ import { en } from "@/app/messages/en"
 
 import { useGstInvoiceForm } from "./useGstInvoiceForm"
 import Button from "@/app/components/ui/Button"
+import NoteSection from "./components/NoteSection"
 
 export default function GstForm() {
   const {
@@ -56,14 +57,13 @@ export default function GstForm() {
         </div>
 
       {activeTab === "new" ? (
-        <div className="">
+        <div>
           <div className="min-w-0 space-y-6">
             <InvoiceHeader invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} onSave={saveInvoice} onReset={resetInvoice} onPreview={() => setPreviewMode("preview")} onPrintPreview={() => setPreviewMode("print")} saving={saving} />
 
-            <TransactionOptions value={transactionOptions} onChange={setTransactionOptions} allowPrint allowDownloadShare disabled={saving} />
-
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <SellerSection seller={invoice.seller} />
+              {/* SellerSection is declared as a function taking two params; call it directly to satisfy its signature */}
+              {SellerSection({ seller: invoice.seller }, { invoice, onChange: (field, value) => setInvoice({ ...invoice, [field]: value }) })}
               <BankNotesSection invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} />
             </div>
 
@@ -72,6 +72,12 @@ export default function GstForm() {
 
               <ItemsSection items={invoice.items} onChange={handleItemChange} onPatch={handleItemPatch} addItem={addItem} removeItem={removeItem} isInterState={isInterState} />
             </div>
+
+            <div>
+              <NoteSection invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} />
+            </div>
+
+            {/* <TransactionOptions value={transactionOptions} onChange={setTransactionOptions} allowPrint allowDownloadShare disabled={saving} /> */}
           </div>
 
           {/* <div className="min-w-0 space-y-6 2xl:sticky 2xl:top-4 2xl:self-start">

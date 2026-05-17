@@ -6,9 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { auth } from "@/app/lib/firebase";
 import ThemeToggle from "@/app/components/theme/ThemeToggle";
-import LanguageSelector from "@/app/components/layout/LanguageSelector";
 import Link from "next/link";
-import { LifeBuoy, LogOut, Menu, User as UserIcon, X } from "lucide-react";
+import { LogOut, Menu, User as UserIcon, UserCog, X } from "lucide-react";
 import logo from "@/assets/logo.webp";
 import { en } from "@/app/messages/en";
 
@@ -91,14 +90,14 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const navLinkClass = (active: boolean) =>
     `inline-flex min-h-11 items-center rounded-2xl border px-3 py-2 text-sm font-semibold transition ${active
-      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text-primary)] shadow-[var(--button-shadow)]"
-      : "border-transparent text-[var(--text-secondary)] hover:border-[var(--border-card)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
+      ? "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent-soft),color-mix(in_srgb,var(--accent-soft)_70%,white_30%))] text-[var(--text-primary)] shadow-[var(--button-shadow)]"
+      : "border-[var(--border-card)] bg-[var(--bg-card-strong)] text-[var(--text-secondary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
     }`;
 
   const actionLinkClass = (active: boolean) =>
     `inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition ${active
-      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text-primary)] shadow-[var(--button-shadow)]"
-      : "border-[var(--border-card)] bg-[var(--bg-header)] text-[var(--text-primary)] shadow-[var(--button-shadow)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--button-shadow-hover)]"
+      ? "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_76%,#ec4899_24%))] text-white shadow-[var(--button-shadow-hover)]"
+      : "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_76%,#ec4899_24%))] text-white shadow-[var(--button-shadow)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_92%,white_8%),color-mix(in_srgb,var(--accent)_72%,#ec4899_28%))] hover:shadow-[var(--button-shadow-hover)]"
     }`;
 
   return (
@@ -179,6 +178,9 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
                   <Link href="/dashboard/profile" role="menuitem" className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-soft)]" onClick={() => setAccountMenuPath(null)}>
                     <UserIcon size={15} aria-hidden="true" /> {en.common.profile}
+                  </Link>
+                  <Link href="/dashboard/settings/account" role="menuitem" className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-soft)]" onClick={() => setAccountMenuPath(null)}>
+                    <UserCog size={15} aria-hidden="true" /> {en.navigation.accountSettings}
                   </Link>
                   <button type="button" role="menuitem" onClick={handleLogout} className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-sm text-red-500 transition-colors hover:bg-red-500/10">
                     <LogOut size={15} aria-hidden="true" /> {en.common.logout}

@@ -27,3 +27,10 @@ export async function saveProfileToDb(
   await db.profiles.put(fullData);
   return fullData;
 }
+
+export async function deleteProfileFromDb(userId?: string): Promise<void> {
+  const resolvedUserId = userId || getUserIdentityFromAuthUser(auth?.currentUser);
+  if (!resolvedUserId) throw new Error("User not authenticated");
+
+  await db.profiles.delete(resolvedUserId);
+}

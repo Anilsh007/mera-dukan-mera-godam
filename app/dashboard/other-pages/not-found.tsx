@@ -6,7 +6,7 @@ import { uiText } from "@/app/messages/uiText";
 export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 px-6 py-12">
-      <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl md:p-12">
+      <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-xl md:p-12">
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm">
           <SearchX size={30} />
         </div>
