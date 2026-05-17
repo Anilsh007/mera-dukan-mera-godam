@@ -38,6 +38,10 @@ export default function TransactionDocument({
   const warnings = getProfileDocumentWarnings(seller, { requireGstin })
   const grandTotal = document.totals?.grandTotal ?? document.items.reduce((sum, item) => sum + Number(item.total || 0), 0)
   const date = document.date || new Date().toLocaleString("en-IN")
+  const showNotes = Boolean(document.notes?.trim())
+  const showTerms = Boolean((document.terms || seller.terms)?.trim())
+  const showSecondaryParty = Boolean(document.secondaryParty && Object.values(document.secondaryParty).some(Boolean))
+  const showSellerPanel = document.type !== "gst-invoice"
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -81,12 +85,15 @@ export default function TransactionDocument({
             <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">{document.title}</p>
             <MetaRow label={en.receipt.ref} value={document.reference || "-"} />
             <MetaRow label={en.receipt.date} value={date} />
+            {document.dueDate && <MetaRow label={en.gstInvoice.dueDate} value={document.dueDate} />}
             {document.paymentMode && <MetaRow label={en.transaction.paymentMode} value={document.paymentMode} />}
           </div>
         </div>
 
-        <div className="grid gap-3 border-b border-[var(--border-card)] p-4 sm:grid-cols-2 sm:p-5">
-          <PartyPanel title={en.receipt.seller} lines={[seller.businessName, getAddressLine(seller), seller.mobile, seller.email, seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : ""]} />
+        <div className={`grid gap-3 border-b border-[var(--border-card)] p-4 sm:p-5 ${showSecondaryParty ? "sm:grid-cols-2" : showSellerPanel ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
+          {showSellerPanel ? (
+            <PartyPanel title={en.receipt.seller} lines={[seller.businessName, getAddressLine(seller), seller.mobile, seller.email, seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : ""]} />
+          ) : null}
           <PartyPanel
             title={document.partyLabel || en.receipt.buyer}
             lines={[
@@ -97,6 +104,18 @@ export default function TransactionDocument({
             ]}
             fallback={en.transaction.noPartyDetails}
           />
+          {showSecondaryParty ? (
+            <PartyPanel
+              title={document.secondaryPartyLabel || en.gstInvoice.shipTo}
+              lines={[
+                document.secondaryParty?.name,
+                document.secondaryParty?.gstin ? `${en.gstInvoice.gstin}: ${document.secondaryParty.gstin}` : "",
+                [document.secondaryParty?.address, document.secondaryParty?.city, document.secondaryParty?.state, document.secondaryParty?.pincode].filter(Boolean).join(", "),
+                [document.secondaryParty?.phone, document.secondaryParty?.email].filter(Boolean).join(" | "),
+              ]}
+              fallback={en.transaction.noPartyDetails}
+            />
+          ) : null}
         </div>
 
         <div className="p-4 sm:p-5">
@@ -161,8 +180,8 @@ export default function TransactionDocument({
                 <p>{[seller.paymentDetails.upiId ? `${en.transaction.upi}: ${seller.paymentDetails.upiId}` : "", seller.paymentDetails.bankName, seller.paymentDetails.accountNumber, seller.paymentDetails.ifsc].filter(Boolean).join(" | ")}</p>
               </div>
             )}
-            {document.notes && <p><strong>{en.gstInvoice.notes}:</strong> {document.notes}</p>}
-            <p><strong>{en.gstInvoice.terms}:</strong> {document.terms || seller.terms || en.gstInvoice.noTermsAdded}</p>
+            {showNotes ? <p><strong>{en.gstInvoice.notes}:</strong> {document.notes}</p> : null}
+            {showTerms ? <p><strong>{en.gstInvoice.terms}:</strong> {document.terms || seller.terms}</p> : null}
           </div>
 
           <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-input)] p-4">

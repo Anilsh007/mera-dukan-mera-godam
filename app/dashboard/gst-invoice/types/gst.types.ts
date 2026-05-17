@@ -31,11 +31,11 @@ export interface GSTInvoiceItem {
   hsnSacType?: "HSN" | "SAC";
   hsnSacDescription?: string;
   gstCondition?: string;
-  quantity: number;
+  quantity: number | string;
   unit: string;
-  discount: number;
+  discount: number | string;
   expiry: string;
-  rate: number;
+  rate: number | string;
   gstRate: number;
   taxableValue: number;
   cgstRate: number;

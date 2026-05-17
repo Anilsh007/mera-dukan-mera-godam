@@ -63,9 +63,12 @@ export type TransactionDocumentData = {
   title: string
   reference?: string
   date?: string
+  dueDate?: string
   seller?: BusinessDocumentProfile
   partyLabel?: string
   party?: TransactionParty
+  secondaryPartyLabel?: string
+  secondaryParty?: TransactionParty
   items: TransactionDocumentItem[]
   totals?: {
     taxableAmount?: number
@@ -138,6 +141,10 @@ export function buildTransactionPrintHtml(data: TransactionDocumentData) {
   const seller = data.seller || {}
   const date = data.date || new Date().toLocaleString("en-IN")
   const grandTotal = data.totals?.grandTotal ?? data.items.reduce((sum, item) => sum + Number(item.total || 0), 0)
+  const showNotes = Boolean(data.notes?.trim())
+  const showTerms = Boolean((data.terms || seller.terms)?.trim())
+  const showSecondaryParty = Boolean(data.secondaryParty && Object.values(data.secondaryParty).some(Boolean))
+  const showSellerPanel = data.type !== "gst-invoice"
 
   return `
     <html>
@@ -188,20 +195,25 @@ export function buildTransactionPrintHtml(data: TransactionDocumentData) {
               <h2>${escapePrintHtml(data.title)}</h2>
               ${metaRow(en.receipt.ref, data.reference || "-")}
               ${metaRow(en.receipt.date, date)}
+              ${data.dueDate ? metaRow(en.gstInvoice.dueDate, data.dueDate) : ""}
               ${data.paymentMode ? metaRow(en.transaction.paymentMode, data.paymentMode) : ""}
             </div>
           </div>
           <div class="section grid">
-            <div class="box">
+            ${showSellerPanel ? `<div class="box">
               <h3>${escapePrintHtml(en.receipt.seller)}</h3>
               <p>${escapePrintHtml(seller.businessName || "-")}</p>
               <p class="muted">${escapePrintHtml(getAddressLine(seller) || "-")}</p>
               <p class="muted">${escapePrintHtml(seller.mobile || "-")}</p>
-            </div>
+            </div>` : ""}
             <div class="box">
               <h3>${escapePrintHtml(data.partyLabel || en.receipt.buyer)}</h3>
               ${partyHtml(data.party)}
             </div>
+            ${showSecondaryParty ? `<div class="box">
+              <h3>${escapePrintHtml(data.secondaryPartyLabel || en.gstInvoice.shipTo)}</h3>
+              ${partyHtml(data.secondaryParty)}
+            </div>` : ""}
           </div>
           <div class="section">
             ${itemsTable(data)}
@@ -221,8 +233,8 @@ export function buildTransactionPrintHtml(data: TransactionDocumentData) {
           </div>
           <div class="footer">
             ${paymentHtml(seller)}
-            ${data.notes ? `<p><strong>${escapePrintHtml(en.gstInvoice.notes)}:</strong> ${escapePrintHtml(data.notes)}</p>` : ""}
-            <p><strong>${escapePrintHtml(en.gstInvoice.terms)}:</strong> ${escapePrintHtml(data.terms || seller.terms || en.gstInvoice.noTermsAdded)}</p>
+            ${showNotes ? `<p><strong>${escapePrintHtml(en.gstInvoice.notes)}:</strong> ${escapePrintHtml(data.notes || "")}</p>` : ""}
+            ${showTerms ? `<p><strong>${escapePrintHtml(en.gstInvoice.terms)}:</strong> ${escapePrintHtml(data.terms || seller.terms || "")}</p>` : ""}
             <p>${escapePrintHtml(data.footerNote || `${en.receipt.printedOn}: ${new Date().toLocaleString("en-IN")}`)}</p>
           </div>
         </div>

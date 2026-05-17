@@ -191,7 +191,7 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
           </div>
         ) : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button title={en.modals.deleteEntry} variant="soft-danger" onClick={() => setDeleteMode(true)} disabled={loading} />
+            <Button title={en.modals.deleteEntry} variant="danger" onClick={() => setDeleteMode(true)} disabled={loading} />
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button title={en.modals.cancel} variant="outline" onClick={onClose} disabled={loading} />
               <Button title={en.modals.saveChanges} variant="success" loading={loading} onClick={handleSave} />

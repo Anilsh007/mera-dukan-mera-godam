@@ -2,7 +2,6 @@
 
 import { en } from "@/app/messages/en"
 import {
-  buildTransactionPrintHtml,
   formatMoney,
   getAddressLine,
   type TransactionDocumentData,
@@ -13,6 +12,7 @@ export type SharePayload = {
   title: string
   text: string
   url?: string
+  files?: File[]
 }
 
 function hasBrowserApis() {
@@ -136,8 +136,82 @@ export function buildReportShareMessage(summaryLines: Array<[string, string | nu
 
 export async function nativeShare(payload: SharePayload) {
   if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false
-  await navigator.share({ title: payload.title, text: payload.text, url: payload.url })
+  await navigator.share({ title: payload.title, text: payload.text, url: payload.url, files: payload.files })
   return true
+}
+
+function escapePdfText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)")
+}
+
+function buildTransactionPdfBytes(data: TransactionDocumentData) {
+  const lines = buildShareMessage(data).split("\n")
+  const pageWidth = 595
+  const pageHeight = 842
+  const left = 40
+  const top = 800
+  const lineHeight = 16
+  const minBottom = 48
+  const pages: string[][] = [[]]
+  let pageIndex = 0
+  let currentY = top
+
+  const pushLine = (line: string) => {
+    if (currentY <= minBottom) {
+      pageIndex += 1
+      pages[pageIndex] = []
+      currentY = top
+    }
+    pages[pageIndex].push(`BT /F1 11 Tf 1 0 0 1 ${left} ${currentY} Tm (${escapePdfText(line || " ")}) Tj ET`)
+    currentY -= lineHeight
+  }
+
+  lines.forEach(pushLine)
+
+  const objects: string[] = []
+  objects.push("<< /Type /Catalog /Pages 2 0 R >>")
+
+  const pageObjectNumbers: number[] = []
+  const contentObjectNumbers: number[] = []
+  let nextObject = 3
+
+  pages.forEach(() => {
+    pageObjectNumbers.push(nextObject++)
+    contentObjectNumbers.push(nextObject++)
+  })
+
+  const fontObjectNumber = nextObject
+  const kids = pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")
+  objects.push(`<< /Type /Pages /Kids [ ${kids} ] /Count ${pageObjectNumbers.length} >>`)
+
+  pageObjectNumbers.forEach((pageNumber, index) => {
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentObjectNumbers[index]} 0 R >>`)
+    const stream = pages[index].join("\n")
+    objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)
+  })
+
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+
+  let pdf = "%PDF-1.4\n"
+  const offsets = [0]
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length)
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
+  })
+
+  const xrefOffset = pdf.length
+  pdf += `xref\n0 ${objects.length + 1}\n`
+  pdf += "0000000000 65535 f \n"
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`
+  })
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`
+
+  return new TextEncoder().encode(pdf)
+}
+
+export function buildTransactionPdfBlob(data: TransactionDocumentData) {
+  return new Blob([buildTransactionPdfBytes(data)], { type: "application/pdf" })
 }
 
 export async function copyToClipboard(text: string) {
@@ -181,6 +255,11 @@ export function openEmailShare(subject: string, body: string) {
 export function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
   if (!hasBrowserApis()) return false
   const blob = new Blob([content], { type: mimeType })
+  return downloadBlob(filename, blob)
+}
+
+function downloadBlob(filename: string, blob: Blob) {
+  if (!hasBrowserApis()) return false
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement("a")
   anchor.href = url
@@ -198,11 +277,7 @@ export function getTransactionDownloadName(data: TransactionDocumentData, extens
 }
 
 export function downloadTransactionDocument(data: TransactionDocumentData) {
-  return downloadTextFile(
-    getTransactionDownloadName(data),
-    buildTransactionPrintHtml(data),
-    "text/html;charset=utf-8"
-  )
+  return downloadBlob(getTransactionDownloadName(data, "pdf"), buildTransactionPdfBlob(data))
 }
 
 export async function shareTransactionDocument(data: TransactionDocumentData) {
@@ -213,9 +288,12 @@ export async function shareTransactionDocument(data: TransactionDocumentData) {
   }
 
   const title = data.title || en.share.transactionDetails
+  const pdfFile = new File([buildTransactionPdfBlob(data)], getTransactionDownloadName(data, "pdf"), {
+    type: "application/pdf",
+  })
 
   try {
-    if (await nativeShare({ title, text })) {
+    if (await nativeShare({ title, text, files: [pdfFile] })) {
       notify.info(en.share.shareOpened)
       return true
     }
@@ -225,13 +303,13 @@ export async function shareTransactionDocument(data: TransactionDocumentData) {
   }
 
   try {
-    const copied = await copyToClipboard(text)
-    if (copied) {
-      notify.success(en.share.copiedSuccessfully)
+    const downloaded = downloadBlob(pdfFile.name, pdfFile)
+    if (downloaded) {
+      notify.success(en.share.downloadStarted)
       return true
     }
   } catch (error) {
-    console.error("Clipboard share fallback failed", error)
+    console.error("PDF share fallback failed", error)
   }
 
   notify.error(en.share.shareFailed)

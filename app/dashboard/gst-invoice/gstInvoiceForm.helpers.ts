@@ -56,18 +56,26 @@ export function calculateInvoiceItem(
   rawItem: GSTInvoice["items"][number],
   interState: boolean
 ): GSTInvoice["items"][number] {
-  const name = cleanDraftText(rawItem.name) || cleanDraftText(rawItem.description)
+  const rawName = typeof rawItem.name === "string" ? rawItem.name : ""
+  const rawDescription = typeof rawItem.description === "string" ? rawItem.description : ""
+  const normalizedName = rawName.trim() || rawDescription.trim()
+  const rawRate = rawItem.rate === "" ? "" : rawItem.rate
+  const rawQuantity = rawItem.quantity === "" ? "" : rawItem.quantity
+  const rawDiscount = rawItem.discount === "" ? "" : rawItem.discount
+  const numericRate = toSafeNumber(rawItem.rate)
+  const numericQuantity = toSafeNumber(rawItem.quantity)
+  const numericDiscount = toSafeNumber(rawItem.discount)
 
   const item = {
     ...createEmptyInvoiceItem(),
     ...rawItem,
-    name,
-    description: cleanDraftText(rawItem.description) || name,
+    name: rawName,
+    description: rawDescription || normalizedName,
     hsnCode: cleanDraftText(rawItem.hsnCode),
     unit: cleanDraftText(rawItem.unit) || "pcs",
-    rate: toSafeNumber(rawItem.rate),
-    quantity: toSafeNumber(rawItem.quantity),
-    discount: toSafeNumber(rawItem.discount),
+    rate: rawRate,
+    quantity: rawQuantity,
+    discount: rawDiscount,
   }
 
   const taxInfo = findHsnSacTaxInfo(item.hsnCode)
@@ -78,7 +86,7 @@ export function calculateInvoiceItem(
   const igstRate = taxInfo?.igstRate ?? fallbackGstRate
   const gstRate = interState ? igstRate : cgstRate + sgstRate
 
-  const gst = calculateGST(gstRate, item.quantity, item.rate, item.discount, interState, {
+  const gst = calculateGST(gstRate, numericQuantity, numericRate, numericDiscount, interState, {
     cgstRate,
     sgstRate,
     igstRate,

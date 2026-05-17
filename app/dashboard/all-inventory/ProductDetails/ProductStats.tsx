@@ -249,7 +249,7 @@ export default function ProductStats({
                             onClick={onDeleteProduct}
                             title={en.inventory.deleteItem}
                             icon={<Trash2 size={16} />}
-                            variant="soft-danger"
+                            variant="danger"
                             className="w-full text-xs sm:w-auto sm:text-sm"
                         />
                     </div>

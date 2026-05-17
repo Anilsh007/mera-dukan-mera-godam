@@ -119,9 +119,30 @@ export default function ItemCard({ item, index, onChange, onPatch, onRemove, isI
             </div>
           )}
         </div>
-        <Input label={en.inventory.rate} type="number" value={String(item.rate)} onChange={(e) => onChange(index, "rate", e.target.value)} />
-        <Input label={en.stockHistory.labels.qty} type="number" value={String(item.quantity)} onChange={(e) => onChange(index, "quantity", e.target.value)} />
-        <Input label={en.gstInvoice.itemDiscount} type="number" value={String(item.discount)} onChange={(e) => onChange(index, "discount", e.target.value)} />
+        <Input
+          label={en.inventory.rate}
+          type="number"
+          inputMode="decimal"
+          step="any"
+          value={String(item.rate)}
+          onChange={(e) => onChange(index, "rate", e.target.value)}
+        />
+        <Input
+          label={en.stockHistory.labels.qty}
+          type="number"
+          inputMode="decimal"
+          step="any"
+          value={String(item.quantity)}
+          onChange={(e) => onChange(index, "quantity", e.target.value)}
+        />
+        <Input
+          label={en.gstInvoice.itemDiscount}
+          type="number"
+          inputMode="decimal"
+          step="any"
+          value={String(item.discount)}
+          onChange={(e) => onChange(index, "discount", e.target.value)}
+        />
         <Input label={en.gstInvoice.expiryDate} type="date" value={String(item.expiry)} onChange={(e) => onChange(index, "expiry", e.target.value)} />
       </div>
 
