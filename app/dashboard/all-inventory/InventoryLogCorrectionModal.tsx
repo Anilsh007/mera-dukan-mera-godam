@@ -10,14 +10,17 @@ import TransactionOptions from "@/app/components/ui/TransactionOptions"
 import { isValidGstin } from "@/app/lib/gst.utils"
 import { deleteProductLog, updateProductLog } from "@/app/dashboard/quick-purchase/product.service"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 const REASONS = [
   { value: "Sold", label: en.inventory.reasons.sold },
@@ -80,12 +83,7 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
   const [loading, setLoading] = useState(false)
   const [deleteMode, setDeleteMode] = useState(false)
   const [showMore, setShowMore] = useState(false)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
 
   useEffect(() => {
     if (!row) return
@@ -121,6 +119,8 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
     if (!form.date) return toast.error(en.inventory.selectDateTime)
     if (isSaleFlow && !form.buyerName.trim()) return toast.error(en.inventory.enterBuyerNameForThisSale)
     if (isSaleFlow && form.buyerGstin.trim() && !isValidGstin(form.buyerGstin)) return toast.error(en.profile.invalidGstin)
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) return toast.warning(optionValidation.message)
 
     try {
       setLoading(true)
@@ -138,12 +138,7 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
         buyerGstin: isSaleFlow ? form.buyerGstin : undefined,
       })
       const adjustmentDocument = buildAdjustmentDocument({ row, form, seller: buildBusinessDocumentProfile(profile) })
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(adjustmentDocument)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) await shareTransactionDocument(adjustmentDocument)
+      await runTransactionDocumentActions(adjustmentDocument, transactionOptions)
       toast.success(en.inventory.entryUpdated)
       onSaved(en.inventory.entryUpdatedAdjusted)
       onClose()
@@ -274,7 +269,10 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
             value={transactionOptions}
             onChange={setTransactionOptions}
             allowPrint
-            allowDownloadShare
+            allowDownloadPdf
+            allowShareWhatsApp
+            allowShareEmail
+            allowCopyDetails
             disabled={loading}
           />
 

@@ -29,7 +29,8 @@ type Props = {
     onSelectAll?: () => void
     onPrintRow?: (row: TableItem) => void
     showActions?: boolean
-    actionLabel?: string
+    actionLabel?: string | ((item: TableItem) => string)
+    showActionForRow?: (item: TableItem) => boolean
     minWidth?: number
 }
 
@@ -112,6 +113,7 @@ export default function TableComponent({
     onSelectAll,
     showActions = false,
     actionLabel = en.common.edit,
+    showActionForRow,
     minWidth = 780,
 }: Props) {
     if (data.length === 0) {
@@ -148,6 +150,8 @@ export default function TableComponent({
                         {data.map((item, index) => {
                             const total = (item.price ?? 0) * (item.quantity ?? 0)
                             const rowId = getRowId(item, index)
+                            const shouldShowAction = showActions && (showActionForRow ? showActionForRow(item) : true)
+                            const resolvedActionLabel = typeof actionLabel === "function" ? actionLabel(item) : actionLabel
                             return (
                                 <tr key={rowId} className={selectedIds?.has(rowId) ? "bg-[var(--selected-row)]" : "transition-colors hover:bg-[var(--surface-subtle)]"}>
                                     {showSelection && (
@@ -202,7 +206,9 @@ export default function TableComponent({
 
                                     {showActions && (
                                         <td className="whitespace-nowrap px-4 py-3">
-                                            <Button title={actionLabel} variant="outline" onClick={() => onEdit?.(item)} />
+                                            {shouldShowAction ? (
+                                                <Button title={resolvedActionLabel} variant="outline" onClick={() => onEdit?.(item)} />
+                                            ) : null}
                                         </td>
                                     )}
                                 </tr>

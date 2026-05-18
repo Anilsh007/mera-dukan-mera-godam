@@ -16,12 +16,15 @@ import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 export type SupplierPaymentSummary = {
   name: string
@@ -41,12 +44,7 @@ export default function SupplierPaymentModal({
   const [note, setNote] = useState("")
   const [showMore, setShowMore] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const amountNumber = Number(amount || 0)
   const payableAmount = Math.min(Math.max(amountNumber, 0), supplier.dueAmount)
   const remainingDue = Math.max(supplier.dueAmount - payableAmount, 0)
@@ -62,6 +60,12 @@ export default function SupplierPaymentModal({
 
     if (payableAmount <= 0) {
       toast.error(en.suppliers.paymentSaveFailed)
+      return
+    }
+
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
       return
     }
 
@@ -84,14 +88,7 @@ export default function SupplierPaymentModal({
         note,
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(documentData)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(documentData)
-      }
+      await runTransactionDocumentActions(documentData, transactionOptions)
 
       toast.success(`${formatCurrency(result.paidAmount)} ${en.suppliers.paymentSaved}`)
       onClose()
@@ -190,7 +187,10 @@ export default function SupplierPaymentModal({
           value={transactionOptions}
           onChange={setTransactionOptions}
           allowPrint
-          allowDownloadShare
+          allowDownloadPdf
+          allowShareWhatsApp
+          allowShareEmail
+          allowCopyDetails
           disabled={loading}
         />
 

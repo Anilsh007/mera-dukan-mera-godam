@@ -106,7 +106,7 @@ export default function Sidebar({
         />
       )}
 
-      <aside aria-label={en.navigation.workspaceTagline} className={`fixed top-0 left-0 border border-[var(--border-color)] bg-[var(--bg-sidebar)] shadow-[var(--shadow-card)] backdrop-blur-xl flex h-[100dvh] flex-col p-1 transition-all duration-300 shrink-0 ${isMobile
+      <aside aria-label={en.navigation.workspaceTagline} className={`sidebar-shell fixed top-0 left-0 border border-[var(--border-color)] bg-[var(--bg-sidebar)] shadow-[var(--shadow-card)] backdrop-blur-xl flex h-[100dvh] flex-col p-1 transition-all duration-300 shrink-0 ${isMobile
         ? `fixed inset-y-0 left-0 z-50 m-2 ${isOpen ? "translate-x-0" : "-translate-x-[120%]"} w-[min(88vw,260px)] rounded-[24px]`
         : `inset-y-0 z-40 ${isCollapsed ? "w-12" : "w-[228px]"}`
         }`}
@@ -141,7 +141,7 @@ export default function Sidebar({
             if (item.children?.length) {
               return (
                 <div key={item.label}>
-                  <button type="button" onClick={() => toggleSubmenu(item.label)} aria-expanded={menuOpen} className={`flex min-h-11 w-full items-center justify-between rounded-xl p-1 transition hover:-translate-y-0.5 active:scale-[0.99] ${parentActive ? "border-white/10 bg-[linear-gradient(135deg,var(--sidebar-active),color-mix(in_srgb,var(--sidebar-active)_72%,#ec4899_28%))] text-white shadow-[var(--button-shadow-hover)]" : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[var(--sidebar-hover)] hover:shadow-[var(--button-shadow)]"}`} >
+                  <button type="button" onClick={() => toggleSubmenu(item.label)} aria-expanded={menuOpen} className={`flex min-h-11 w-full items-center justify-between rounded-xl border p-1 transition hover:-translate-y-0.5 active:scale-[0.99] ${parentActive ? "border-[color-mix(in_srgb,var(--sidebar-active)_56%,white_12%)] bg-[linear-gradient(135deg,var(--sidebar-active),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow-hover)]" : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[linear-gradient(135deg,var(--sidebar-hover),transparent)] hover:shadow-[var(--button-shadow)]"}`} >
                     <div className="flex items-center gap-2">
                       <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${(isActive(item.href) || isChildRoute(item.href)) ? "" : ""}`}>
                         <Icon size={18} aria-hidden="true" />
@@ -158,9 +158,9 @@ export default function Sidebar({
                         const ChildIcon = child.icon;
 
                         return (
-                          <Link key={child.href} href={child.href} onClick={() => isMobile && setIsOpen(false)} className={`flex items-center gap-3 rounded-xl p-3 text-sm transition ${pathname === child.href
-                            ? "border-white/10 bg-[linear-gradient(135deg,var(--sidebar-active),color-mix(in_srgb,var(--sidebar-active)_72%,#ec4899_28%))] font-medium text-white shadow-[var(--button-shadow-hover)]"
-                            : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)] hover:shadow-[var(--button-shadow)]"
+                          <Link key={child.href} href={child.href} onClick={() => isMobile && setIsOpen(false)} className={`flex items-center gap-3 rounded-xl border p-3 text-sm transition ${pathname === child.href
+                            ? "border-[color-mix(in_srgb,var(--sidebar-active)_56%,white_12%)] bg-[linear-gradient(135deg,var(--sidebar-active),var(--accent-secondary,#8b5cf6))] font-medium text-white shadow-[var(--button-shadow-hover)]"
+                            : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[linear-gradient(135deg,var(--sidebar-hover),transparent)] hover:text-[var(--text-primary)] hover:shadow-[var(--button-shadow)]"
                             }`} >
                             {ChildIcon && <ChildIcon size={15} aria-hidden="true" />}
                             <span>{child.label}</span>
@@ -174,9 +174,9 @@ export default function Sidebar({
             }
 
             return (
-              <Link key={item.href} href={item.href!} onClick={() => isMobile && setIsOpen(false)} className={`flex items-center gap-3 rounded-xl p-1 transition ${isActive(item.href) || isChildRoute(item.href)
-                ? "border-white/10 bg-[linear-gradient(135deg,var(--sidebar-active),color-mix(in_srgb,var(--sidebar-active)_72%,#ec4899_28%))] text-white shadow-[var(--button-shadow-hover)]"
-                : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[var(--sidebar-hover)] hover:shadow-[var(--button-shadow)]"
+              <Link key={item.href} href={item.href!} onClick={() => isMobile && setIsOpen(false)} className={`flex items-center gap-3 rounded-xl border p-1 transition ${isActive(item.href) || isChildRoute(item.href)
+                ? "border-[color-mix(in_srgb,var(--sidebar-active)_56%,white_12%)] bg-[linear-gradient(135deg,var(--sidebar-active),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow-hover)]"
+                : "border-transparent text-[var(--text-primary)] hover:border-[var(--border-card)] hover:bg-[linear-gradient(135deg,var(--sidebar-hover),transparent)] hover:shadow-[var(--button-shadow)]"
                 }`} >
                 <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${(isActive(item.href) || isChildRoute(item.href)) ? "" : ""}`}>
                   <Icon size={18} aria-hidden="true" />

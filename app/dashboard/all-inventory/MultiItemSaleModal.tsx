@@ -20,12 +20,15 @@ import { calculateGstBreakup, isValidGstin } from "@/app/lib/gst.utils"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 type SaleLine = {
   productId: string
@@ -91,12 +94,12 @@ export default function MultiItemSaleModal({
   )
   const [buyer, setBuyer] = useState<BuyerForm>(emptyBuyer)
   const [loading, setLoading] = useState(false)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: false,
-    generateGstInvoice: true,
-    printReceipt: true,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(
+    createTransactionOptions({
+      generateGstInvoice: true,
+      printReceipt: true,
+    })
+  )
   const [showMore, setShowMore] = useState(false)
   const [buyerSuggestions, setBuyerSuggestions] = useState<ReturnType<typeof buildBuyerSuggestions>>([])
 
@@ -192,6 +195,12 @@ export default function MultiItemSaleModal({
       return
     }
 
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
+      return
+    }
+
     try {
       setLoading(true)
       const receiptNo = `SALE-${Date.now()}`
@@ -270,15 +279,7 @@ export default function MultiItemSaleModal({
         reference: receiptNo,
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(saleDocument)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(saleDocument)
-      }
+      await runTransactionDocumentActions(saleDocument, transactionOptions)
 
       toast.success(`${en.inventory.saleSavedItemsPrefix} ${validLines.length} ${validLines.length > 1 ? en.inventory.saleSavedItemsPlural : en.inventory.saleSavedItemsSingular}`)
       onSuccess()
@@ -431,7 +432,10 @@ export default function MultiItemSaleModal({
         onChange={setTransactionOptions}
         allowGstInvoice
         allowPrint
-        allowDownloadShare
+        allowDownloadPdf
+        allowShareWhatsApp
+        allowShareEmail
+        allowCopyDetails
         disabled={loading}
         className="mt-4"
       />

@@ -17,7 +17,7 @@ export default function QuickPill({ icon, label, value }: QuickPillProps) {
         </span>
         <span className="text-[11px] font-medium uppercase tracking-wide">{label}</span>
       </div>
-      <p className="mt-3 text-base font-black tracking-[-0.02em] text-[var(--text-primary)] sm:text-lg">{value}</p>
+      <p className="text-base text-center font-black tracking-[-0.02em] text-[var(--text-primary)] sm:text-lg">{value}</p>
     </div>
   )
 }

@@ -15,15 +15,18 @@ import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { saveQuickPurchase } from "@/app/dashboard/purchases/purchase.service"
 import { formatCurrency } from "@/app/dashboard/purchases/purchase.utils"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 import { QuickPurchaseRow, createEmptyRow, formatCurrentDateTime, getCurrentDateTime } from "@/app/dashboard/quick-purchase/supportFunction"
 
@@ -38,12 +41,7 @@ export default function AddProductForm() {
   const [rows, setRows] = useState<QuickPurchaseRow[]>([createEmptyRow()])
   const [loading, setLoading] = useState(false)
   const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
 
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentDateTime(getCurrentDateTime()), 30_000)
@@ -89,6 +87,12 @@ export default function AddProductForm() {
       return
     }
 
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
+      return
+    }
+
     try {
       setLoading(true)
       const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
@@ -108,14 +112,7 @@ export default function AddProductForm() {
         })),
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(receiptDocument)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(receiptDocument)
-      }
+      await runTransactionDocumentActions(receiptDocument, transactionOptions)
 
       toast.success(en.quickPurchase.savedPending, {
         action: savedIds[0]
@@ -204,7 +201,10 @@ export default function AddProductForm() {
         value={transactionOptions}
         onChange={setTransactionOptions}
         allowPrint
-        allowDownloadShare
+        allowDownloadPdf
+        allowShareWhatsApp
+        allowShareEmail
+        allowCopyDetails
         disabled={loading}
         className="mt-5"
       />

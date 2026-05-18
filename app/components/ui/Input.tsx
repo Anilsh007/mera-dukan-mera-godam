@@ -30,8 +30,8 @@ export default function Input({
     const errorId = error ? `${inputId}-error` : undefined
     const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined
     const inputClass = [
-        "min-h-11 w-full min-w-0 bg-[var(--bg-input)] p-2 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-all sm:text-sm",
-        leftAddon || rightAddon ? "border-0" : "rounded-xl border border-[var(--border-input)] focus:ring-2 focus:ring-emerald-400",
+        "min-h-11 w-full min-w-0 bg-[var(--bg-input)] p-2 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none backdrop-blur-xl transition-all sm:text-sm",
+        leftAddon || rightAddon ? "border-0" : "rounded-xl border border-[var(--border-input)] shadow-[var(--button-shadow)] focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent)]",
         error && !(leftAddon || rightAddon) ? "border-red-400 focus:ring-red-300" : "",
         className,
     ].join(" ")
@@ -50,13 +50,13 @@ export default function Input({
     return (
         <div className={`min-w-0 ${containerClassName || ""}`}>
             {label && (
-                <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-[var(--text-primary)]" >
+                <label htmlFor={inputId} className="mb-1 block text-sm font-semibold text-[var(--text-primary)]" >
                     {label}
                 </label>
             )}
 
             {leftAddon || rightAddon ? (
-                <div className={`flex min-h-11 min-w-0 overflow-hidden rounded-xl border bg-[var(--bg-input)] transition-all focus-within:ring-2 ${error ? "border-red-400 focus-within:ring-red-300" : "border-[var(--border-input)] focus-within:ring-emerald-400"}`}>
+                <div className={`flex min-h-11 min-w-0 overflow-hidden rounded-xl border bg-[var(--bg-input)] shadow-[var(--button-shadow)] backdrop-blur-xl transition-all focus-within:ring-2 ${error ? "border-red-400 focus-within:ring-red-300" : "border-[var(--border-input)] focus-within:border-[var(--accent)] focus-within:ring-[var(--focus-ring)]"}`}>
                     {leftAddon && (
                         <span className="flex items-center border-r border-[var(--border-input)] px-3 text-sm font-semibold text-[var(--text-secondary)]">
                             {leftAddon}

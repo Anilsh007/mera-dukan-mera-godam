@@ -6,7 +6,7 @@ import {
   formatCurrency,
   formatPurchaseDate,
   getPaymentStatusClass,
-} from "./purchase.utils"
+} from "../purchases/purchase.utils"
 
 type Props = {
   purchases: PurchaseRecord[]
@@ -97,7 +97,7 @@ function PurchaseCards({ purchases, onCompleteDetails }: Props) {
 
             {isDetailsPending(purchase) && onCompleteDetails && (
               <div className="mt-3">
-                <Button type="button" variant="warning" title={en.purchases.completeDetails} onClick={() => onCompleteDetails(purchase)} />
+                <Button type="button" variant="warning" title={en.gstInvoice.pending} onClick={() => onCompleteDetails(purchase)} />
               </div>
             )}
           </div>
@@ -131,7 +131,15 @@ function PurchaseTable({ purchases, onCompleteDetails }: Props) {
 
   return (
     <div className="hidden p-4 pt-0 md:block">
-      <TableComponent data={tableData} minWidth={950} showActions actionLabel={en.purchases.complete}
+      <TableComponent
+        data={tableData}
+        minWidth={950}
+        showActions
+        actionLabel={en.gstInvoice.pending}
+        showActionForRow={(item) => {
+          const purchaseItem = item as PurchaseTableItem
+          return isDetailsPending(purchaseItem.purchase)
+        }}
         onEdit={(item) => {
           const purchaseItem = item as PurchaseTableItem
 

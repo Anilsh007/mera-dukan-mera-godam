@@ -6,6 +6,7 @@ import { db, type PurchaseDetailsStatus, type PurchaseEntryMode, type PurchaseIt
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { en } from "@/app/messages/en"
+import { makePurchaseBillNo } from "./purchase.form"
 
 export type PurchaseLineInput = {
   name: string
@@ -67,7 +68,7 @@ export type ApplySupplierPaymentInput = {
 }
 
 export async function savePurchase(input: SavePurchaseInput) {
-  const billNo = input.billNo.trim()
+  const billNo = input.billNo.trim() || makePurchaseBillNo()
   const supplierName = input.supplierName.trim()
   const purchaseDate = input.purchaseDate || new Date().toISOString().slice(0, 10)
   const purchaseDateTime = input.purchaseDateTime || buildDateTimeFromDate(purchaseDate)
@@ -290,7 +291,6 @@ export async function completeQuickPurchaseDetails(input: CompletePurchaseDetail
   const supplierName = input.supplierName.trim()
   const purchaseDate = input.purchaseDate || purchase.purchaseDate
 
-  if (!billNo) throw new Error("Bill or invoice number is required.")
   if (!supplierName) throw new Error("Supplier name is required.")
 
   const duplicate = await db.purchases.where("[userId+billNo]").equals([input.userId, billNo]).first()
@@ -398,7 +398,13 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
 }
 
 function buildPurchaseLogNote(billNo: string, purchaseId: string, note?: string) {
-  return [`${en.purchases.purchaseBill}: ${billNo}`, `${en.purchases.purchaseId}: ${purchaseId}`, note].filter(Boolean).join(" | ")
+  return [
+    `${en.purchases.purchaseBill}: ${billNo}`,
+    `${en.purchases.purchaseId}: ${formatDisplayId(purchaseId)}`,
+    note,
+  ]
+    .filter(Boolean)
+    .join(" | ")
 }
 
 function buildPaymentNote({
@@ -424,4 +430,8 @@ function buildDateTimeFromDate(date: string) {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return new Date().toISOString()
   return parsed.toISOString()
+}
+
+function formatDisplayId(value: string) {
+  return value.replace(/-/g, "").slice(0, 8).toUpperCase()
 }

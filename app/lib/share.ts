@@ -141,32 +141,391 @@ export async function nativeShare(payload: SharePayload) {
 }
 
 function escapePdfText(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)")
+  return value
+    .replace(/₹/g, "Rs. ")
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)")
 }
 
 function buildTransactionPdfBytes(data: TransactionDocumentData) {
-  const lines = buildShareMessage(data).split("\n")
   const pageWidth = 595
   const pageHeight = 842
-  const left = 40
-  const top = 800
-  const lineHeight = 16
+  const margin = 36
+  const contentWidth = pageWidth - margin * 2
   const minBottom = 48
+  const seller = data.seller || {}
+  const date = data.date || new Date().toLocaleString("en-IN")
+  const grandTotal = getGrandTotal(data)
+  const showGst = data.type === "gst-invoice" || data.items.some((item) => item.gstRate || item.cgstAmount || item.sgstAmount || item.igstAmount)
+  const showSecondaryParty = Boolean(data.secondaryParty && Object.values(data.secondaryParty).some(Boolean))
+  const showSellerPanel = data.type !== "gst-invoice"
+  const showNotes = Boolean(data.notes?.trim())
+  const showTerms = Boolean((data.terms || seller.terms)?.trim())
   const pages: string[][] = [[]]
   let pageIndex = 0
-  let currentY = top
+  let currentY = pageHeight - margin
 
-  const pushLine = (line: string) => {
-    if (currentY <= minBottom) {
-      pageIndex += 1
-      pages[pageIndex] = []
-      currentY = top
-    }
-    pages[pageIndex].push(`BT /F1 11 Tf 1 0 0 1 ${left} ${currentY} Tm (${escapePdfText(line || " ")}) Tj ET`)
-    currentY -= lineHeight
+  const pushCommand = (command: string) => {
+    pages[pageIndex].push(command)
   }
 
-  lines.forEach(pushLine)
+  const startNewPage = () => {
+    pageIndex += 1
+    pages[pageIndex] = []
+    currentY = pageHeight - margin
+  }
+
+  const ensureSpace = (requiredHeight: number) => {
+    if (currentY - requiredHeight <= minBottom) startNewPage()
+  }
+
+  const fillRect = (x: number, y: number, w: number, h: number, color: [number, number, number]) => {
+    pushCommand(`${color[0]} ${color[1]} ${color[2]} rg ${x} ${y} ${w} ${h} re f`)
+  }
+
+  const strokeRect = (x: number, y: number, w: number, h: number, color: [number, number, number], lineWidth = 1) => {
+    pushCommand(`${lineWidth} w ${color[0]} ${color[1]} ${color[2]} RG ${x} ${y} ${w} ${h} re S`)
+  }
+
+  const drawLine = (x1: number, y1: number, x2: number, y2: number, color: [number, number, number], lineWidth = 1) => {
+    pushCommand(`${lineWidth} w ${color[0]} ${color[1]} ${color[2]} RG ${x1} ${y1} m ${x2} ${y2} l S`)
+  }
+
+  const drawText = (
+    text: string,
+    x: number,
+    y: number,
+    options: { size?: number; font?: "F1" | "F2"; color?: [number, number, number] } = {}
+  ) => {
+    const size = options.size ?? 10
+    const font = options.font ?? "F1"
+    const color = options.color ?? [0.11, 0.15, 0.23]
+    pushCommand(`BT ${color[0]} ${color[1]} ${color[2]} rg /${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(text || " ")}) Tj ET`)
+  }
+
+  const estimateTextWidth = (text: string, fontSize: number) => text.length * fontSize * 0.52
+
+  const wrapText = (text: string, maxWidth: number, fontSize: number) => {
+    const cleanText = cleanLine(text)
+    if (!cleanText) return []
+
+    const words = cleanText.split(/\s+/)
+    const lines: string[] = []
+    let currentLine = ""
+
+    const pushCurrentLine = () => {
+      if (currentLine) lines.push(currentLine)
+      currentLine = ""
+    }
+
+    words.forEach((word) => {
+      const candidate = currentLine ? `${currentLine} ${word}` : word
+      if (estimateTextWidth(candidate, fontSize) <= maxWidth) {
+        currentLine = candidate
+        return
+      }
+
+      if (!currentLine) {
+        let remainder = word
+        const maxChars = Math.max(4, Math.floor(maxWidth / (fontSize * 0.52)))
+        while (remainder.length > maxChars) {
+          lines.push(remainder.slice(0, maxChars - 1) + "-")
+          remainder = remainder.slice(maxChars - 1)
+        }
+        currentLine = remainder
+        return
+      }
+
+      pushCurrentLine()
+      currentLine = word
+    })
+
+    pushCurrentLine()
+    return lines
+  }
+
+  const drawTextBlock = (
+    lines: string[],
+    x: number,
+    yTop: number,
+    options: { size?: number; leading?: number; font?: "F1" | "F2"; color?: [number, number, number] } = {}
+  ) => {
+    const size = options.size ?? 10
+    const leading = options.leading ?? size + 3
+    lines.forEach((line, index) => drawText(line, x, yTop - index * leading, options))
+  }
+
+  const drawLabeledRows = (
+    entries: Array<{ label: string; value?: string }>,
+    x: number,
+    yTop: number,
+    width: number
+  ) => {
+    let rowTop = yTop
+    entries.forEach(({ label, value }) => {
+      const wrappedValue = wrapText(value || "-", width * 0.52, 10)
+      drawText(label, x, rowTop, { size: 9, color: [0.42, 0.47, 0.58] })
+      drawTextBlock(wrappedValue, x + width * 0.44, rowTop, { size: 10, font: "F2", color: [0.11, 0.15, 0.23] })
+      rowTop -= Math.max(18, wrappedValue.length * 13)
+    })
+    return rowTop
+  }
+
+  const drawPartyBox = (
+    title: string,
+    partyLines: string[],
+    x: number,
+    yTop: number,
+    width: number
+  ) => {
+    const contentLines = partyLines.length ? partyLines : [en.transaction.noPartyDetails]
+    const wrappedLines = contentLines.flatMap((line) => wrapText(line, width - 24, 10))
+    const height = 36 + wrappedLines.length * 14 + 14
+    fillRect(x, yTop - height, width, height, [0.98, 0.99, 1])
+    strokeRect(x, yTop - height, width, height, [0.86, 0.89, 0.94])
+    drawText(title, x + 12, yTop - 18, { size: 9, font: "F2", color: [0.35, 0.4, 0.52] })
+    drawTextBlock(wrappedLines, x + 12, yTop - 38, { size: 10, leading: 14, color: [0.11, 0.15, 0.23] })
+    return height
+  }
+
+  const drawTableHeader = (yTop: number) => {
+    const columns = showGst
+      ? [
+          { label: "#", width: 26, align: "left" as const },
+          { label: en.receipt.product, width: 226, align: "left" as const },
+          { label: en.receipt.qty, width: 74, align: "left" as const },
+          { label: en.receipt.rate, width: 72, align: "left" as const },
+          { label: en.gstInvoice.gst, width: 56, align: "left" as const },
+          { label: en.receipt.total, width: 69, align: "right" as const },
+        ]
+      : [
+          { label: "#", width: 26, align: "left" as const },
+          { label: en.receipt.product, width: 282, align: "left" as const },
+          { label: en.receipt.qty, width: 84, align: "left" as const },
+          { label: en.receipt.rate, width: 82, align: "left" as const },
+          { label: en.receipt.total, width: 85, align: "right" as const },
+        ]
+
+    fillRect(margin, yTop - 22, contentWidth, 22, [0.93, 0.95, 0.99])
+    drawLine(margin, yTop - 22, margin + contentWidth, yTop - 22, [0.84, 0.87, 0.93])
+    drawLine(margin, yTop, margin + contentWidth, yTop, [0.84, 0.87, 0.93])
+
+    let cursor = margin + 8
+    columns.forEach((column, index) => {
+      const textX = column.align === "right" ? cursor + column.width - estimateTextWidth(column.label, 9) - 8 : cursor
+      drawText(column.label, textX, yTop - 14, { size: 9, font: "F2", color: [0.31, 0.36, 0.47] })
+      cursor += column.width
+      if (index < columns.length - 1) drawLine(cursor, yTop, cursor, yTop - 22, [0.88, 0.9, 0.95])
+    })
+
+    return columns
+  }
+
+  const formatRate = (rate?: number) => (typeof rate === "number" ? formatMoney(rate) : "-")
+
+  ensureSpace(120)
+
+  fillRect(margin, currentY - 108, contentWidth, 108, [0.98, 0.99, 1])
+  strokeRect(margin, currentY - 108, contentWidth, 108, [0.86, 0.89, 0.94], 1.1)
+  fillRect(margin, currentY - 108, 6, 108, [0.19, 0.42, 0.89])
+  drawText(seller.businessName || en.common.appName, margin + 18, currentY - 22, { size: 18, font: "F2" })
+  const sellerLines = [
+    getAddressLine(seller) || en.transaction.addressNotAdded,
+    [seller.mobile, seller.email].filter(Boolean).join(" | ") || en.transaction.contactNotAdded,
+    seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : "",
+  ].filter(Boolean)
+  drawTextBlock(sellerLines, margin + 18, currentY - 42, { size: 10, leading: 14, color: [0.38, 0.43, 0.53] })
+
+  const titleBadgeWidth = 178
+  fillRect(pageWidth - margin - titleBadgeWidth, currentY - 42, titleBadgeWidth, 26, [0.18, 0.33, 0.75])
+  drawText(data.title, pageWidth - margin - titleBadgeWidth + 12, currentY - 26, { size: 11, font: "F2", color: [1, 1, 1] })
+
+  drawLabeledRows(
+    [
+      { label: en.receipt.ref, value: data.reference || "-" },
+      { label: en.receipt.date, value: date },
+      { label: en.gstInvoice.dueDate, value: data.dueDate || "-" },
+      { label: en.transaction.paymentMode, value: data.paymentMode || "-" },
+    ],
+    pageWidth - margin - 190,
+    currentY - 58,
+    170
+  )
+
+  currentY -= 128
+
+  const partyCols = showSecondaryParty ? 3 : showSellerPanel ? 2 : 1
+  const gap = 14
+  const partyWidth = (contentWidth - gap * (partyCols - 1)) / partyCols
+  const partyHeights: number[] = []
+
+  if (showSellerPanel) {
+    partyHeights.push(
+      drawPartyBox(
+        en.receipt.seller,
+        [
+          seller.businessName || "-",
+          getAddressLine(seller) || "-",
+          [seller.mobile, seller.email].filter(Boolean).join(" | ") || "-",
+          seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : "",
+        ].filter(Boolean),
+        margin,
+        currentY,
+        partyWidth
+      )
+    )
+  }
+
+  partyHeights.push(
+    drawPartyBox(
+      data.partyLabel || en.receipt.buyer,
+      [
+        data.party?.name || "",
+        data.party?.gstin ? `${en.gstInvoice.gstin}: ${data.party.gstin}` : "",
+        [data.party?.address, data.party?.city, data.party?.state, data.party?.pincode].filter(Boolean).join(", "),
+        [data.party?.phone, data.party?.email].filter(Boolean).join(" | "),
+      ].filter(Boolean),
+      margin + (showSellerPanel ? partyWidth + gap : 0),
+      currentY,
+      partyWidth
+    )
+  )
+
+  if (showSecondaryParty) {
+    partyHeights.push(
+      drawPartyBox(
+        data.secondaryPartyLabel || en.gstInvoice.shipTo,
+        [
+          data.secondaryParty?.name || "",
+          data.secondaryParty?.gstin ? `${en.gstInvoice.gstin}: ${data.secondaryParty.gstin}` : "",
+          [data.secondaryParty?.address, data.secondaryParty?.city, data.secondaryParty?.state, data.secondaryParty?.pincode].filter(Boolean).join(", "),
+          [data.secondaryParty?.phone, data.secondaryParty?.email].filter(Boolean).join(" | "),
+        ].filter(Boolean),
+        margin + (showSellerPanel ? (partyWidth + gap) * 2 : partyWidth + gap),
+        currentY,
+        partyWidth
+      )
+    )
+  }
+
+  currentY -= Math.max(...partyHeights, 88) + 18
+
+  let columns = drawTableHeader(currentY)
+  currentY -= 24
+
+  const drawItemRow = (item: TransactionDocumentData["items"][number], index: number) => {
+    const descriptionParts = [
+      item.name || "-",
+      item.description || "",
+      item.hsnCode ? `${en.gstInvoice.hsnSac}: ${item.hsnCode}` : "",
+      item.note || "",
+    ].filter(Boolean)
+    const productLines = descriptionParts.flatMap((line, lineIndex) =>
+      wrapText(line, columns[1].width - 14, lineIndex === 0 ? 10.5 : 9)
+    )
+    const quantityLines = wrapText([item.quantity, item.unit].filter(Boolean).join(" ") || "-", columns[2].width - 12, 9.5)
+    const rateLines = wrapText(formatRate(item.rate), columns[3].width - 12, 9.5)
+    const gstLines = showGst ? wrapText(item.gstRate !== undefined ? `${Number(item.gstRate).toFixed(2)}%` : "-", 42, 9.5) : []
+    const totalLines = wrapText(formatMoney(item.total), 58, 9.5)
+    const lineCount = Math.max(productLines.length, quantityLines.length, rateLines.length, totalLines.length, gstLines.length || 1)
+    const rowHeight = Math.max(28, lineCount * 13 + 10)
+
+    ensureSpace(rowHeight + 12)
+    if (currentY === pageHeight - margin) {
+      columns = drawTableHeader(currentY)
+      currentY -= 24
+    }
+
+    const rowBottom = currentY - rowHeight
+    drawLine(margin, rowBottom, margin + contentWidth, rowBottom, [0.89, 0.91, 0.95])
+    let cursor = margin
+
+    drawText(String(index + 1), cursor + 8, currentY - 14, { size: 9.5, color: [0.3, 0.35, 0.46] })
+    cursor += columns[0].width
+
+    drawTextBlock(productLines, cursor + 8, currentY - 14, { size: 10, leading: 12.5, font: "F2" })
+    cursor += columns[1].width
+
+    drawTextBlock(quantityLines, cursor + 8, currentY - 14, { size: 9.5, leading: 12.5, color: [0.3, 0.35, 0.46] })
+    cursor += columns[2].width
+
+    drawTextBlock(rateLines, cursor + 8, currentY - 14, { size: 9.5, leading: 12.5, color: [0.3, 0.35, 0.46] })
+    cursor += columns[3].width
+
+    if (showGst) {
+      drawTextBlock(gstLines, cursor + 8, currentY - 14, { size: 9.5, leading: 12.5, color: [0.3, 0.35, 0.46] })
+      cursor += columns[4].width
+    }
+
+    const totalX = cursor + (showGst ? columns[5].width : columns[4].width) - estimateTextWidth(totalLines[0] || "-", 9.5) - 8
+    drawTextBlock(totalLines, totalX, currentY - 14, { size: 9.5, leading: 12.5, font: "F2" })
+
+    currentY = rowBottom
+  }
+
+  data.items.forEach(drawItemRow)
+  currentY -= 18
+
+  const summaryEntries = [
+    { label: en.gstInvoice.taxableValue, value: data.totals?.taxableAmount },
+    { label: en.gstInvoice.cgst, value: data.totals?.cgstTotal },
+    { label: en.gstInvoice.sgstUtgst, value: data.totals?.sgstTotal },
+    { label: en.gstInvoice.igst, value: data.totals?.igstTotal },
+    { label: en.transaction.totalGst, value: data.totals?.totalGst },
+    { label: en.purchases.paid, value: data.totals?.paidAmount },
+    { label: en.purchases.due, value: data.totals?.dueAmount },
+  ].filter((entry) => entry.value !== undefined && entry.value !== null && Number(entry.value) !== 0)
+
+  const summaryHeight = 54 + summaryEntries.length * 18 + (data.totals?.amountInWords ? 34 : 0)
+  ensureSpace(summaryHeight + 20)
+
+  const summaryWidth = 220
+  const summaryX = pageWidth - margin - summaryWidth
+  fillRect(summaryX, currentY - summaryHeight, summaryWidth, summaryHeight, [0.98, 0.99, 1])
+  strokeRect(summaryX, currentY - summaryHeight, summaryWidth, summaryHeight, [0.86, 0.89, 0.94])
+  drawText(en.receipt.grandTotal, summaryX + 14, currentY - 18, { size: 10, font: "F2", color: [0.38, 0.43, 0.53] })
+  drawText(formatMoney(grandTotal), summaryX + summaryWidth - estimateTextWidth(formatMoney(grandTotal), 14) - 14, currentY - 20, { size: 14, font: "F2", color: [0.12, 0.44, 0.32] })
+
+  let summaryY = currentY - 42
+  summaryEntries.forEach((entry) => {
+    drawText(entry.label, summaryX + 14, summaryY, { size: 9.5, color: [0.38, 0.43, 0.53] })
+    const value = formatMoney(entry.value)
+    drawText(value, summaryX + summaryWidth - estimateTextWidth(value, 9.5) - 14, summaryY, { size: 9.5, font: "F2" })
+    summaryY -= 18
+  })
+
+  if (data.totals?.amountInWords) {
+    const amountLines = wrapText(`${en.transaction.amountInWords}: ${data.totals.amountInWords}`, contentWidth - summaryWidth - 24, 9.5)
+    drawTextBlock(amountLines, margin, currentY - 18, { size: 9.5, leading: 13, color: [0.38, 0.43, 0.53] })
+  }
+
+  currentY -= summaryHeight + 18
+
+  const footerSections = [
+    paymentStatusFromTotals(data)
+      ? `${en.share.paymentStatus}: ${paymentStatusFromTotals(data)}`
+      : "",
+    seller.paymentDetails
+      ? [
+          seller.paymentDetails.upiId ? `${en.transaction.upi}: ${seller.paymentDetails.upiId}` : "",
+          seller.paymentDetails.bankName ? `${en.gstInvoice.bank}: ${seller.paymentDetails.bankName}` : "",
+          seller.paymentDetails.accountNumber ? `${en.gstInvoice.accountNo}: ${seller.paymentDetails.accountNumber}` : "",
+          seller.paymentDetails.ifsc ? `${en.gstInvoice.ifsc}: ${seller.paymentDetails.ifsc}` : "",
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      : "",
+    showNotes ? `${en.gstInvoice.notes}: ${data.notes}` : "",
+    showTerms ? `${en.gstInvoice.terms}: ${data.terms || seller.terms}` : "",
+    data.footerNote || `${en.receipt.printedOn}: ${new Date().toLocaleString("en-IN")}`,
+  ].filter(Boolean)
+
+  const footerLines = footerSections.flatMap((line) => wrapText(line, contentWidth, 9))
+  ensureSpace(footerLines.length * 12 + 16)
+  drawLine(margin, currentY, pageWidth - margin, currentY, [0.88, 0.9, 0.95])
+  drawTextBlock(footerLines, margin, currentY - 14, { size: 9, leading: 12, color: [0.4, 0.45, 0.55] })
 
   const objects: string[] = []
   objects.push("<< /Type /Catalog /Pages 2 0 R >>")
@@ -180,17 +539,19 @@ function buildTransactionPdfBytes(data: TransactionDocumentData) {
     contentObjectNumbers.push(nextObject++)
   })
 
-  const fontObjectNumber = nextObject
+  const fontObjectNumber = nextObject++
+  const boldFontObjectNumber = nextObject
   const kids = pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")
   objects.push(`<< /Type /Pages /Kids [ ${kids} ] /Count ${pageObjectNumbers.length} >>`)
 
   pageObjectNumbers.forEach((pageNumber, index) => {
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentObjectNumbers[index]} 0 R >>`)
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectNumber} 0 R /F2 ${boldFontObjectNumber} 0 R >> >> /Contents ${contentObjectNumbers[index]} 0 R >>`)
     const stream = pages[index].join("\n")
     objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)
   })
 
   objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
 
   let pdf = "%PDF-1.4\n"
   const offsets = [0]
@@ -278,6 +639,67 @@ export function getTransactionDownloadName(data: TransactionDocumentData, extens
 
 export function downloadTransactionDocument(data: TransactionDocumentData) {
   return downloadBlob(getTransactionDownloadName(data, "pdf"), buildTransactionPdfBlob(data))
+}
+
+export async function shareTransactionDocumentOnWhatsApp(data: TransactionDocumentData, subject?: string) {
+  const title = subject || data.title || en.share.transactionDetails
+
+  try {
+    const pdfFile = new File([buildTransactionPdfBlob(data)], getTransactionDownloadName(data, "pdf"), {
+      type: "application/pdf",
+    })
+
+    if (await nativeShare({ title, text: en.share.footerNote, files: [pdfFile] })) {
+      return "shared" as const
+    }
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === "AbortError")) {
+      console.error("WhatsApp PDF share failed", error)
+    }
+  }
+
+  const downloaded = downloadTransactionDocument(data)
+  if (!downloaded) return false
+
+  return openWhatsAppShare(`${title}\n${en.share.downloadStarted}`) ? ("downloaded" as const) : false
+}
+
+export async function shareTransactionDocumentByEmail(data: TransactionDocumentData, subject?: string) {
+  const title = subject || data.title || en.share.transactionDetails
+
+  try {
+    const pdfFile = new File([buildTransactionPdfBlob(data)], getTransactionDownloadName(data, "pdf"), {
+      type: "application/pdf",
+    })
+
+    if (await nativeShare({ title, text: en.share.footerNote, files: [pdfFile] })) {
+      return "shared" as const
+    }
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === "AbortError")) {
+      console.error("Email PDF share failed", error)
+    }
+  }
+
+  const downloaded = downloadTransactionDocument(data)
+  if (!downloaded) return false
+
+  return openEmailShare(title, `${en.share.downloadStarted}\n${title}`) ? ("downloaded" as const) : false
+}
+
+export async function copyTransactionDocument(data: TransactionDocumentData) {
+  try {
+    if (typeof navigator !== "undefined" && "clipboard" in navigator && typeof window !== "undefined" && "ClipboardItem" in window) {
+      const pdfBlob = buildTransactionPdfBlob(data)
+      const item = new ClipboardItem({ "application/pdf": pdfBlob })
+      await navigator.clipboard.write([item])
+      return "copied" as const
+    }
+  } catch (error) {
+    console.error("Copy PDF failed", error)
+  }
+
+  return downloadTransactionDocument(data) ? ("downloaded" as const) : false
 }
 
 export async function shareTransactionDocument(data: TransactionDocumentData) {

@@ -11,6 +11,7 @@ import {
   PAYMENT_STATUSES,
 } from "./purchase.constants"
 import { calculatePaymentAmounts, formatCurrency } from "./purchase.utils"
+import { makePurchaseBillNo } from "./purchase.form"
 import { en } from "@/app/messages/en"
 
 type Props = {
@@ -47,7 +48,7 @@ export default function CompletePurchaseDetailsModal({
     if (!purchase) return
 
     const timeout = window.setTimeout(() => {
-      setBillNo(purchase.billNo.startsWith("QP-") ? "" : purchase.billNo)
+      setBillNo(purchase.billNo.startsWith("QP-") ? makePurchaseBillNo() : purchase.billNo)
       setSupplierName(
         purchase.supplierName === "Details Pending" ? "" : purchase.supplierName
       )

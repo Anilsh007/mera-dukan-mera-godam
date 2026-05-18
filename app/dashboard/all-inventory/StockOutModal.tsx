@@ -18,12 +18,15 @@ import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 const REASONS = [
   { value: "Sold", label: en.inventory.reasons.sold },
@@ -64,12 +67,7 @@ export default function StockOutModal({
   const [expiryOptions, setExpiryOptions] = useState<Array<{ expiry: string; quantity: number }>>([])
   const [loading, setLoading] = useState(false)
   const [logsLoading, setLogsLoading] = useState(true)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const [showMore, setShowMore] = useState(false)
   const isSoldFlow = reason === "Sold"
   const quantityUnit = normalizeQuantityUnit(product.quantityUnit)
@@ -125,6 +123,8 @@ export default function StockOutModal({
     if (selectedBatch && qty > selectedBatch.quantity) {
       return toast.error(`${en.inventory.onlyRemainingPrefix} ${formatQuantity(selectedBatch.quantity, quantityUnit)} ${en.inventory.batchRemainingSuffix}`)
     }
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) return toast.warning(optionValidation.message)
     if (!product.id) {
       toast.error(en.inventory.somethingWentWrong)
       return
@@ -207,15 +207,7 @@ export default function StockOutModal({
         reference: receiptNo,
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(documentData)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(documentData)
-      }
+      await runTransactionDocumentActions(documentData, transactionOptions)
 
       toast.success(isSoldFlow && transactionOptions.generateGstInvoice ? en.inventory.saleInvoiceDraftSaved : `-${formatQuantity(qty, quantityUnit)} ${en.inventory.stockRemoved}`)
       onClose()
@@ -365,7 +357,10 @@ export default function StockOutModal({
           onChange={setTransactionOptions}
           allowGstInvoice={isSoldFlow}
           allowPrint
-          allowDownloadShare
+          allowDownloadPdf
+          allowShareWhatsApp
+          allowShareEmail
+          allowCopyDetails
           disabled={loading}
         />
 

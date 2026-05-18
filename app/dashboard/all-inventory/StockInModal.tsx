@@ -17,12 +17,15 @@ import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
-import { shareTransactionDocument } from "@/app/lib/share"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 type StockInForm = {
   name: string
@@ -67,12 +70,7 @@ export default function StockInModal({
   const [form, setForm] = useState<StockInForm>(initForm(product))
   const [loading, setLoading] = useState(false)
   const [showMore, setShowMore] = useState(false)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const { products } = useProducts()
 
   const supplierSuggestions = useMemo(
@@ -91,6 +89,8 @@ export default function StockInModal({
     if (!form.quantity || Number(form.quantity) <= 0) return toast.error(en.inventory.enterQuantity)
     if (!form.price || Number(form.price) <= 0) return toast.error(en.inventory.enterRate)
     if (!form.expiry) return toast.error(en.inventory.enterExpiry)
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) return toast.warning(optionValidation.message)
 
     const userId = getUserIdentityFromAuthUser(auth?.currentUser)
     if (!userId) return toast.error(en.inventory.loginMissing)
@@ -121,14 +121,7 @@ export default function StockInModal({
         },
       })
       const documentData = buildStockInDocument({ form, seller: sellerProfile, total: subtotal, reference: receiptNo })
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(documentData)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(documentData)
-      }
+      await runTransactionDocumentActions(documentData, transactionOptions)
       toast.success(`${formatQuantity(form.quantity, form.quantityUnit)} ${en.inventory.stockAdded}`)
       onClose()
     } catch (error) {
@@ -203,7 +196,10 @@ export default function StockInModal({
         value={transactionOptions}
         onChange={setTransactionOptions}
         allowPrint
-        allowDownloadShare
+        allowDownloadPdf
+        allowShareWhatsApp
+        allowShareEmail
+        allowCopyDetails
         disabled={loading}
         className="mt-4"
       />

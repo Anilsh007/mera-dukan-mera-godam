@@ -12,7 +12,6 @@ import { completeQuickPurchaseDetails, loadPurchases, savePurchase } from "./pur
 import { DEFAULT_PAYMENT_MODE } from "./purchase.constants"
 import { calculatePaymentAmounts } from "./purchase.utils"
 import PurchaseFields from "./PurchaseFields"
-import PurchaseHistory from "./PurchaseHistory"
 import CompletePurchaseDetailsModal from "./CompletePurchaseDetailsModal"
 import {
   createPurchaseRow,
@@ -27,13 +26,16 @@ import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  printTransactionDocument,
   type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import Button from "@/app/components/ui/Button"
 import TransactionOptions from "@/app/components/ui/TransactionOptions"
-import { shareTransactionDocument } from "@/app/lib/share"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 export default function PurchasesPage() {
   const { products } = useProducts()
@@ -51,12 +53,7 @@ export default function PurchasesPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [selectedPendingPurchase, setSelectedPendingPurchase] = useState<PurchaseRecord | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
 
   const totalAmount = useMemo(
     () => rows.reduce((sum, row) => sum + Number(row.price || 0) * Number(row.quantity || 0), 0),
@@ -149,6 +146,11 @@ export default function PurchasesPage() {
     note: string
   }) => {
     if (!selectedPendingPurchase) return
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
+      return
+    }
     try {
       setDetailsLoading(true)
       const receiptDocument = buildPurchaseDocumentFromRecord(selectedPendingPurchase, {
@@ -166,14 +168,7 @@ export default function PurchasesPage() {
         purchaseId: selectedPendingPurchase.id,
         ...values,
       })
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(receiptDocument)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(receiptDocument)
-      }
+      await runTransactionDocumentActions(receiptDocument, transactionOptions)
       toast.success(en.purchases.quickDetailsCompleted)
       setSelectedPendingPurchase(null)
       if (typeof window !== "undefined") window.history.replaceState(null, "", "/dashboard/purchases")
@@ -202,6 +197,12 @@ export default function PurchasesPage() {
       setValidationErrors(errors)
       toast.error(errors[0])
       focusPurchaseField(focusId)
+      return
+    }
+
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
       return
     }
 
@@ -243,14 +244,7 @@ export default function PurchasesPage() {
         })),
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(receiptDocument)
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(receiptDocument)
-      }
+      await runTransactionDocumentActions(receiptDocument, transactionOptions)
       toast.success(en.purchases.savedAndUpdated)
       resetForm()
       await refreshPurchases()
@@ -276,7 +270,7 @@ export default function PurchasesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-bold">{pendingPurchases.length} {en.dashboard.qcnw} {pendingPurchases.length > 1 ? "s" : ""} {en.dashboard.ndqp}</p>
-              <p className="text-sm text-amber-700 dark:text-amber-200">{en.dashboard.QPwarningPara}</p>
+              <p className="text-sm">{en.dashboard.QPwarningPara}</p>
             </div>
             <Button type="button" onClick={() => setSelectedPendingPurchase(pendingPurchases[0])} variant="warning" className="w-full sm:ml-auto sm:w-auto" title={en.purchases.reviewNow}/>
           </div>
@@ -335,13 +329,16 @@ export default function PurchasesPage() {
         />
 
         <TransactionOptions
-          value={transactionOptions}
-          onChange={setTransactionOptions}
-          allowPrint
-          allowDownloadShare
-          disabled={loading || detailsLoading}
-          className="mt-5"
-        />
+      value={transactionOptions}
+      onChange={setTransactionOptions}
+      allowPrint
+      allowDownloadPdf
+      allowShareWhatsApp
+      allowShareEmail
+      allowCopyDetails
+      disabled={loading || detailsLoading}
+      className="mt-5"
+    />
 
         {profileWarnings.length > 0 && (
           <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
@@ -353,8 +350,6 @@ export default function PurchasesPage() {
           </div>
         )}
       </form>
-
-      <PurchaseHistory purchases={purchases} onCompleteDetails={setSelectedPendingPurchase} />
 
       <CompletePurchaseDetailsModal
         purchase={selectedPendingPurchase}

@@ -18,9 +18,18 @@ import StockHistoryMobileCards from "./StockHistoryMobileCards"
 import StockHistoryPagination from "./StockHistoryPagination"
 import StockHistorySelectionBar from "./StockHistorySelectionBar"
 import type { HistoryRow, HistoryTab, StockHistoryLog } from "./stock-history.types"
-import { formatDateInput, formatReason, printRows, toTitleCase } from "./stock-history.utils"
+import {
+  buildGroupedPrintDocument,
+  canGenerateCombinedGstInvoice,
+  formatDateInput,
+  formatReason,
+  getBuyerMismatchWarning,
+  getBuyerSelectionState,
+  printRows,
+  toTitleCase,
+} from "./stock-history.utils"
 import useProfile from "@/app/dashboard/profile/useProfile"
-import { buildBusinessDocumentProfile, type TransactionDocumentData } from "@/app/lib/transactionDocument"
+import { buildBusinessDocumentProfile } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 
@@ -151,19 +160,18 @@ export default function StockHistoryTabs({
     [selectedRows]
   )
 
-  const selectedBuyerCount = useMemo(
-    () => new Set(selectedSaleRows.map((row) => `${row.buyerName}|${row.buyerPhone}|${row.buyerGstin}`)).size,
-    [selectedSaleRows]
+  const buyerSelectionState = useMemo(
+    () => getBuyerSelectionState(selectedRows),
+    [selectedRows]
   )
 
-  const canCreateGstBill =
-    selectedRows.length > 0 &&
-    selectedSaleRows.length === selectedRows.length &&
-    selectedBuyerCount === 1 &&
-    Boolean(selectedSaleRows[0]?.buyerName)
+  const canCreateGstBill = useMemo(
+    () => canGenerateCombinedGstInvoice(selectedRows),
+    [selectedRows]
+  )
 
   const selectedShareDocument = useMemo(
-    () => selectedRows.length ? buildStockHistoryDocument(selectedRows, buildBusinessDocumentProfile(profile)) : undefined,
+    () => selectedRows.length ? buildGroupedPrintDocument(selectedRows, buildBusinessDocumentProfile(profile)) : undefined,
     [selectedRows, profile]
   )
 
@@ -171,11 +179,11 @@ export default function StockHistoryTabs({
     ? en.stockHistory.actionMessages.gstReady
     : selectedRows.length === 0
       ? ""
-      : selectedSaleRows.length !== selectedRows.length
-        ? en.stockHistory.actionMessages.onlySalesForBill
-        : selectedBuyerCount > 1
-          ? en.stockHistory.actionMessages.singleBuyerForBill
-          : !selectedSaleRows[0]?.buyerName
+        : selectedSaleRows.length !== selectedRows.length
+          ? en.stockHistory.actionMessages.onlySalesForBill
+        : buyerSelectionState.code === "multiple"
+          ? en.stockHistory.actionMessages.gstBuyerMismatchHindi
+          : buyerSelectionState.code === "missing"
             ? en.stockHistory.actionMessages.buyerRequiredForBill
             : ""
 
@@ -299,26 +307,24 @@ export default function StockHistoryTabs({
       return
     }
 
-    const saleRows = selectedRows.filter(
-      (row) => row.logType === "out" && row.reason.toLowerCase() === "sold"
-    )
+    const saleRows = selectedRows.filter((row) => row.logType === "out" && row.reason.toLowerCase() === "sold")
 
     if (saleRows.length !== selectedRows.length) {
       setActionMessage(en.stockHistory.actionMessages.onlySalesForBill)
+      toast.warning(en.stockHistory.actionMessages.onlySalesForBill)
       return
     }
 
-    const buyerKeySet = new Set(
-      saleRows.map((row) => `${row.buyerName}|${row.buyerPhone}|${row.buyerGstin}`)
-    )
-
-    if (buyerKeySet.size !== 1) {
-      setActionMessage(en.stockHistory.actionMessages.singleBuyerForBill)
+    const buyerMismatchWarning = getBuyerMismatchWarning(saleRows)
+    if (buyerMismatchWarning) {
+      setActionMessage(buyerMismatchWarning)
+      toast.warning(buyerMismatchWarning)
       return
     }
 
     if (!saleRows[0]?.buyerName) {
       setActionMessage(en.stockHistory.actionMessages.buyerRequiredForBill)
+      toast.warning(en.stockHistory.actionMessages.buyerRequiredForBill)
       return
     }
 
@@ -470,6 +476,7 @@ export default function StockHistoryTabs({
       <StockHistorySelectionBar
         selectedCount={selectedRows.length}
         selectedActionHint={selectedActionHint}
+        buyerStatus={buyerSelectionState.label}
         actionMessage={actionMessage}
         canCreateGstBill={canCreateGstBill}
         onPrint={handlePrintSelected}
@@ -512,47 +519,4 @@ function getHistorySearchText(row: HistoryRow) {
     row.note,
     row.notes,
   ].filter(Boolean).join(" ").toLowerCase()
-}
-
-
-function buildStockHistoryDocument(
-  rows: HistoryRow[],
-  seller: ReturnType<typeof buildBusinessDocumentProfile>
-): TransactionDocumentData {
-  const total = rows.reduce((sum, row) => sum + Number(row.amount || row.price * row.quantity || 0), 0)
-  return {
-    type: "stock-adjustment",
-    title: en.receipt.selectedStockHistory,
-    reference: `HIST-${Date.now()}`,
-    date: new Date().toLocaleString("en-IN"),
-    seller,
-    partyLabel: en.stockHistory.selectedEntries,
-    party: { name: `${rows.length} ${en.stockHistory.selectedEntries}` },
-    items: rows.map((row) => ({
-      name: row.productName,
-      description: [
-        row.category,
-        row.invoiceReceiptNo ? `${en.receipt.ref}: ${row.invoiceReceiptNo}` : "",
-        row.oldStock !== undefined ? `${en.share.oldStock}: ${row.oldStock}` : "",
-        row.newStock !== undefined ? `${en.share.newStock}: ${row.newStock}` : "",
-        row.reason,
-      ].filter(Boolean).join(" | "),
-      hsnCode: row.hsnCode,
-      quantity: row.quantity,
-      unit: row.quantityUnit,
-      rate: row.price,
-      gstRate: row.gstRate,
-      taxableAmount: row.taxableAmount,
-      cgstAmount: row.cgstAmount,
-      sgstAmount: row.sgstAmount,
-      igstAmount: row.igstAmount,
-      total: Number(row.amount || row.price * row.quantity || 0),
-      note: row.note,
-    })),
-    totals: {
-      grandTotal: total,
-      totalGst: rows.reduce((sum, row) => sum + Number(row.gstAmount || 0), 0),
-    },
-    notes: rows.map((row) => row.note).filter(Boolean).join(", "),
-  }
 }

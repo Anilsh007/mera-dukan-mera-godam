@@ -1,6 +1,7 @@
 "use client"
 
 import { en } from "@/app/messages/en"
+import Button from "../components/ui/Button"
 
 export default function DashboardError({ reset }: { reset: () => void }) {
   return (
@@ -11,11 +12,7 @@ export default function DashboardError({ reset }: { reset: () => void }) {
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           {en.errors.dashboardRetrySafeData}
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-6 rounded-full bg-[var(--btn-primary)] px-5 py-3 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--btn-primary)]"
-        >{en.errors.retry}</button>
+        <Button  title={en.errors.retry} onClick={reset} type="button" variant="primary"/>
       </section>
     </div>
   )

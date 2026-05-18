@@ -1,7 +1,11 @@
 import { formatQuantity } from "@/app/lib/quantityUnit"
 import type { HistoryRow } from "./stock-history.types"
 import { en } from "@/app/messages/en"
-import { printTransactionDocument, type BusinessDocumentProfile } from "@/app/lib/transactionDocument"
+import {
+  printTransactionDocument,
+  type BusinessDocumentProfile,
+  type TransactionDocumentData,
+} from "@/app/lib/transactionDocument"
 
 export const HISTORY_PAGE_SIZES = [5, 10, 20, 50]
 
@@ -35,36 +39,148 @@ export function formatReason(reason: string) {
   return reason || "-"
 }
 
-export function printRows(rows: HistoryRow[], seller?: BusinessDocumentProfile) {
-  const total = rows.reduce((sum, row) => sum + (row.amount || row.price * row.quantity), 0)
-  const uniqueBuyers = Array.from(new Set(rows.map((row) => row.buyerName).filter(Boolean)))
-  const buyerLabel = uniqueBuyers.length === 1 ? uniqueBuyers[0] : uniqueBuyers.length ? en.stockHistory.labels.multipleBuyers : en.stockHistory.labels.na
+export function getBuyerKey(row: Pick<HistoryRow, "buyerName" | "buyerPhone" | "buyerGstin">) {
+  const name = row.buyerName?.trim().toLowerCase() || ""
+  const phone = row.buyerPhone?.trim().toLowerCase() || ""
+  const gstin = row.buyerGstin?.trim().toLowerCase() || ""
+  return [name, phone, gstin].join("|")
+}
 
-  return printTransactionDocument({
+export function groupTransactionsByBuyer(rows: HistoryRow[]) {
+  const groups = new Map<string, HistoryRow[]>()
+
+  rows.forEach((row) => {
+    const key = getBuyerKey(row) || "__missing__"
+    const current = groups.get(key) || []
+    current.push(row)
+    groups.set(key, current)
+  })
+
+  return groups
+}
+
+export function hasSingleBuyer(rows: HistoryRow[]) {
+  const buyerKeys = Array.from(
+    new Set(
+      rows
+        .filter((row) => row.buyerName?.trim())
+        .map((row) => getBuyerKey(row))
+        .filter(Boolean)
+    )
+  )
+
+  return buyerKeys.length === 1
+}
+
+export function getBuyerSelectionState(rows: HistoryRow[]) {
+  const saleRows = rows.filter((row) => row.logType === "out" && row.reason.toLowerCase() === "sold")
+  const missingBuyer = saleRows.some((row) => !row.buyerName?.trim())
+  const buyerKeys = Array.from(new Set(saleRows.map((row) => getBuyerKey(row)).filter(Boolean)))
+
+  if (!saleRows.length) {
+    return {
+      code: "unknown" as const,
+      label: en.stockHistory.buyerStatusUnknown,
+      warning: "",
+    }
+  }
+
+  if (missingBuyer) {
+    return {
+      code: "missing" as const,
+      label: en.stockHistory.buyerStatusMissing,
+      warning: en.stockHistory.actionMessages.buyerMissingForSelection,
+    }
+  }
+
+  if (buyerKeys.length > 1) {
+    return {
+      code: "multiple" as const,
+      label: en.stockHistory.buyerStatusMultiple,
+      warning: en.stockHistory.actionMessages.gstBuyerMismatchHindi,
+    }
+  }
+
+  return {
+    code: "single" as const,
+    label: en.stockHistory.buyerStatusSame,
+    warning: "",
+  }
+}
+
+export function canGenerateCombinedGstInvoice(rows: HistoryRow[]) {
+  const saleRows = rows.filter((row) => row.logType === "out" && row.reason.toLowerCase() === "sold")
+  return (
+    rows.length > 0 &&
+    saleRows.length === rows.length &&
+    hasSingleBuyer(saleRows) &&
+    Boolean(saleRows[0]?.buyerName?.trim())
+  )
+}
+
+export function getBuyerMismatchWarning(rows: HistoryRow[]) {
+  return getBuyerSelectionState(rows).warning
+}
+
+export function buildGroupedPrintDocument(
+  rows: HistoryRow[],
+  seller?: BusinessDocumentProfile
+): TransactionDocumentData {
+  const total = rows.reduce((sum, row) => sum + (row.amount || row.price * row.quantity), 0)
+  const buyerState = getBuyerSelectionState(rows)
+  const grouped = groupTransactionsByBuyer(rows)
+
+  const buyerSummary = Array.from(grouped.values())
+    .map((group) => {
+      const first = group[0]
+      const name = first?.buyerName?.trim() || en.stockHistory.labels.buyerUnavailable
+      const groupTotal = group.reduce((sum, row) => sum + Number(row.amount || row.price * row.quantity), 0)
+      return `${name}: ${en.common.rupeeSymbol} ${groupTotal.toLocaleString("en-IN")}`
+    })
+    .join(" | ")
+
+  return {
     type: "stock-adjustment",
     title: en.stockHistory.labels.selectedStockHistory,
     reference: `HIS-${Date.now()}`,
     date: new Date().toLocaleString("en-IN"),
     seller,
-    partyLabel: en.stockHistory.labels.buyer,
-    party: { name: buyerLabel },
+    partyLabel: en.stockHistory.labels.buyerSummary,
+    party: {
+      name:
+        buyerState.code === "single"
+          ? rows.find((row) => row.buyerName?.trim())?.buyerName || en.stockHistory.labels.na
+          : en.stockHistory.labels.multipleBuyers,
+    },
     items: rows.map((row) => ({
       name: toTitleCase(row.productName),
       description: [
         row.category,
-        row.buyerName || row.reason,
-        row.expiry ? `${en.inventory.expiry}: ${row.expiry}` : "",
+        `${en.stockHistory.labels.buyer}: ${row.buyerName || en.stockHistory.labels.buyerUnavailable}`,
         row.invoiceReceiptNo ? `${en.receipt.ref}: ${row.invoiceReceiptNo}` : "",
-        row.oldStock !== undefined && row.newStock !== undefined ? `${en.stockHistory.labels.stock}: ${row.oldStock} → ${row.newStock}` : "",
-      ].filter(Boolean).join(" | "),
+        row.oldStock !== undefined && row.newStock !== undefined ? `${en.stockHistory.labels.stock}: ${row.oldStock} -> ${row.newStock}` : "",
+        row.expiry ? `${en.inventory.expiry}: ${row.expiry}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
       quantity: formatQuantity(row.quantity, row.quantityUnit),
       rate: row.price,
       total: row.amount || row.price * row.quantity,
-      note: [row.note, row.gstAmount ? `${en.transaction.totalGst}: ${en.common.rupeeSymbol} ${row.gstAmount.toLocaleString("en-IN")}` : ""].filter(Boolean).join(" | "),
+      note: [row.note, row.gstAmount ? `${en.transaction.totalGst}: ${en.common.rupeeSymbol} ${row.gstAmount.toLocaleString("en-IN")}` : ""]
+        .filter(Boolean)
+        .join(" | "),
     })),
-    totals: { grandTotal: total },
+    totals: {
+      grandTotal: total,
+      totalGst: rows.reduce((sum, row) => sum + Number(row.gstAmount || 0), 0),
+    },
+    notes: buyerSummary || undefined,
     footerNote: `${en.stockHistory.labels.printedOn}: ${new Date().toLocaleString("en-IN")}`,
-  })
+  }
+}
+
+export function printRows(rows: HistoryRow[], seller?: BusinessDocumentProfile) {
+  return printTransactionDocument(buildGroupedPrintDocument(rows, seller))
 }
 
 export function toTitleCase(value: string) {

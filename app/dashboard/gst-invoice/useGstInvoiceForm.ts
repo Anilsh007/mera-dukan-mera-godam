@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { notify as toast } from "@/app/lib/notifications"
 import { syncSupabaseToDexie } from "@/app/lib/supabaseDownload.service"
-import { printTransactionDocument, type TransactionOptionFlags } from "@/app/lib/transactionDocument"
-import { shareTransactionDocument } from "@/app/lib/share"
+import { type TransactionOptionFlags } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
 
 import { buildGstInvoiceDocument } from "./Preview/InvoicePreview"
@@ -35,6 +34,11 @@ import { warmHsnSacLookup } from "./lib/hsnSacLookup"
 import { isInterStateSupply, sanitizeInvoiceForSave, validateInvoice } from "./lib/invoiceValidation"
 import { consumeSaleInvoiceDraft } from "./invoiceDraft.service"
 import { buildInvoiceFromSaleDraft, calculateInvoiceItem } from "./gstInvoiceForm.helpers"
+import {
+  createTransactionOptions,
+  runTransactionDocumentActions,
+  validateTransactionOptions,
+} from "@/app/lib/transactionActions"
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -48,12 +52,7 @@ export function useGstInvoiceForm() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
   const [hsnLookupVersion, setHsnLookupVersion] = useState(0)
 
-  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>({
-    saveOnly: true,
-    generateGstInvoice: false,
-    printReceipt: false,
-    downloadShare: false,
-  })
+  const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
 
   const { profile } = useProfile()
 
@@ -261,6 +260,12 @@ export function useGstInvoiceForm() {
       return
     }
 
+    const optionValidation = validateTransactionOptions(transactionOptions)
+    if (!optionValidation.valid) {
+      toast.warning(optionValidation.message)
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -283,15 +288,7 @@ export function useGstInvoiceForm() {
         return [finalSaved, ...withoutCurrent]
       })
 
-      if (transactionOptions.printReceipt) {
-        const printed = printTransactionDocument(buildGstInvoiceDocument(invoiceToSave))
-        if (printed) toast.success(en.common.printStarted)
-        else toast.error(en.common.popupBlocked)
-      }
-
-      if (transactionOptions.downloadShare) {
-        await shareTransactionDocument(buildGstInvoiceDocument(invoiceToSave))
-      }
+      await runTransactionDocumentActions(buildGstInvoiceDocument(invoiceToSave), transactionOptions)
 
       toast.success(en.gstInvoice.saved)
       completeInvoiceReset()

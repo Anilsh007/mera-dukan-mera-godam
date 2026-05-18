@@ -88,10 +88,14 @@ export type TransactionDocumentData = {
 }
 
 export type TransactionOptionFlags = {
-  saveOnly: boolean
+  saveTransaction: boolean
+  saveAsDraft: boolean
   generateGstInvoice: boolean
   printReceipt: boolean
-  downloadShare: boolean
+  downloadPdf: boolean
+  shareWhatsApp: boolean
+  shareEmail: boolean
+  copyDetails: boolean
 }
 
 export function buildBusinessDocumentProfile(profile?: ProfileState): BusinessDocumentProfile {

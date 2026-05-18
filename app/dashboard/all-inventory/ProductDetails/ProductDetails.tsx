@@ -19,6 +19,8 @@ import { notify as toast } from "@/app/lib/notifications"
 import BulkSaleSection from "./BulkSaleSection"
 import ShareActions from "@/app/components/ui/ShareActions"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
+import { buildBusinessDocumentProfile, type TransactionDocumentData } from "@/app/lib/transactionDocument"
+import useProfile from "@/app/dashboard/profile/useProfile"
 
 type CategoryGroup = {
   key: string
@@ -62,6 +64,7 @@ export default function ProductDetails({
     key: "",
     limit: PRODUCT_PICKER_PAGE_SIZE,
   })
+  const { profile } = useProfile()
   const debouncedProductSearch = useDebouncedValue(productSearch, 180)
   const logCacheRef = useRef(new Map<string, StockHistoryLog[]>())
   const logRequestRef = useRef(0)
@@ -88,6 +91,38 @@ export default function ProductDetails({
     () => buildProductShareMessage(activeProduct),
     [activeProduct]
   )
+
+  const productShareDocument = useMemo<TransactionDocumentData | undefined>(() => {
+    if (!activeProduct) return undefined
+    return {
+      type: "stock-adjustment",
+      title: activeProduct.name,
+      reference: activeProduct.sku || activeProduct.id || activeProduct.name,
+      date: new Date().toLocaleString("en-IN"),
+      seller: buildBusinessDocumentProfile(profile),
+      partyLabel: en.inventory.category,
+      party: { name: activeProduct.category || en.inventory.noCategory },
+      items: [
+        {
+          name: activeProduct.name,
+          description: [
+            activeProduct.supplier ? `${en.inventory.supplier}: ${activeProduct.supplier}` : "",
+            activeProduct.hsnCode ? `${en.stockHistory.labels.hsn}: ${activeProduct.hsnCode}` : "",
+            activeProduct.expiry ? `${en.inventory.expiry}: ${activeProduct.expiry}` : "",
+          ].filter(Boolean).join(" | "),
+          quantity: activeProduct.quantity,
+          unit: activeProduct.quantityUnit,
+          rate: activeProduct.price,
+          total: Number(activeProduct.quantity || 0) * Number(activeProduct.price || 0),
+          note: activeProduct.note,
+        },
+      ],
+      totals: {
+        grandTotal: Number(activeProduct.quantity || 0) * Number(activeProduct.price || 0),
+      },
+      notes: productShareMessage,
+    }
+  }, [activeProduct, profile, productShareMessage])
 
   const filteredProductChoices = useMemo(() => {
     const search = debouncedProductSearch.trim().toLowerCase()
@@ -269,9 +304,8 @@ export default function ProductDetails({
 
             <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
               <ShareActions
-                message={productShareMessage}
+                document={productShareDocument}
                 subject={activeProduct.name}
-                filename={`${activeProduct.name.replace(/[^a-z0-9-_]/gi, "-") || "product"}.txt`}
                 showPrint={false}
                 showDownload
                 compact

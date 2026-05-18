@@ -8,10 +8,13 @@ import { printTransactionDocument, type TransactionDocumentData } from "@/app/li
 import {
   buildTransactionPdfBlob,
   buildShareMessage,
+  copyTransactionDocument,
   copyToClipboard,
   downloadTextFile,
   downloadTransactionDocument,
   nativeShare,
+  shareTransactionDocumentByEmail,
+  shareTransactionDocumentOnWhatsApp,
   openEmailShare,
   openWhatsAppShare,
 } from "@/app/lib/share"
@@ -25,6 +28,14 @@ type ShareActionsProps = {
   showDownload?: boolean
   compact?: boolean
   className?: string
+}
+
+type ActionItem = {
+  key: string
+  label: string
+  icon: React.ReactNode
+  onClick: () => void | Promise<void>
+  variant: "primary" | "secondary" | "success" | "outline"
 }
 
 export default function ShareActions({
@@ -78,25 +89,10 @@ export default function ShareActions({
   const handleWhatsApp = () => {
     if (document) {
       const sharePdf = async () => {
-        try {
-          const file = new File([buildTransactionPdfBlob(document)], filename || `${document.reference || "document"}.pdf`, {
-            type: "application/pdf",
-          })
-          if (await nativeShare({ title: shareSubject, text: en.share.footerNote, files: [file] })) {
-            notify.info(en.share.shareOpened)
-            return
-          }
-        } catch (error) {
-          console.error("WhatsApp PDF share failed", error)
-        }
-
-        const downloaded = downloadTransactionDocument(document)
-        if (downloaded) {
-          openWhatsAppShare(`${shareSubject}\n${en.share.downloadStarted}`)
-          notify.success(en.share.downloadStarted)
-        } else {
-          notify.error(en.share.downloadFailed)
-        }
+        const result = await shareTransactionDocumentOnWhatsApp(document, shareSubject)
+        if (result === "shared") notify.info(en.share.shareOpened)
+        else if (result === "downloaded") notify.success(en.share.downloadStarted)
+        else notify.error(en.share.downloadFailed)
       }
 
       void sharePdf()
@@ -110,25 +106,10 @@ export default function ShareActions({
   const handleEmail = () => {
     if (document) {
       const sharePdf = async () => {
-        try {
-          const file = new File([buildTransactionPdfBlob(document)], filename || `${document.reference || "document"}.pdf`, {
-            type: "application/pdf",
-          })
-          if (await nativeShare({ title: shareSubject, text: en.share.footerNote, files: [file] })) {
-            notify.info(en.share.shareOpened)
-            return
-          }
-        } catch (error) {
-          console.error("Email PDF share failed", error)
-        }
-
-        const downloaded = downloadTransactionDocument(document)
-        if (downloaded) {
-          openEmailShare(shareSubject, `${en.share.downloadStarted}\n${shareSubject}`)
-          notify.success(en.share.downloadStarted)
-        } else {
-          notify.error(en.share.downloadFailed)
-        }
+        const result = await shareTransactionDocumentByEmail(document, shareSubject)
+        if (result === "shared") notify.info(en.share.shareOpened)
+        else if (result === "downloaded") notify.success(en.share.downloadStarted)
+        else notify.error(en.share.downloadFailed)
       }
 
       void sharePdf()
@@ -141,21 +122,10 @@ export default function ShareActions({
 
   const handleCopy = async () => {
     if (document) {
-        try {
-          if (typeof navigator !== "undefined" && "clipboard" in navigator && "ClipboardItem" in window) {
-            const pdfBlob = buildTransactionPdfBlob(document)
-            const item = new ClipboardItem({ "application/pdf": pdfBlob })
-            await navigator.clipboard.write([item])
-            notify.success(en.share.copiedSuccessfully)
-        } else {
-          const downloaded = downloadTransactionDocument(document)
-          if (downloaded) notify.success(en.share.downloadStarted)
-          else notify.error(en.share.copyFailed)
-        }
-      } catch (error) {
-        console.error("Copy failed", error)
-        notify.error(en.share.copyFailed)
-      }
+      const result = await copyTransactionDocument(document)
+      if (result === "copied") notify.success(en.share.copiedSuccessfully)
+      else if (result === "downloaded") notify.success(en.share.downloadStarted)
+      else notify.error(en.share.copyFailed)
       return
     }
     if (!ensureShareText()) return
@@ -193,14 +163,58 @@ export default function ShareActions({
     }
   }
 
+  const actions: ActionItem[] = [
+    {
+      key: "share",
+      label: en.share.nativeShare,
+      icon: <Share2 size={16} />,
+      onClick: handleNativeShare,
+      variant: "outline",
+    },
+    {
+      key: "whatsapp",
+      label: en.share.whatsapp,
+      icon: <MessageCircle size={16} />,
+      onClick: handleWhatsApp,
+      variant: "success",
+    },
+    {
+      key: "email",
+      label: en.share.email,
+      icon: <Mail size={16} />,
+      onClick: handleEmail,
+      variant: "secondary",
+    },
+    {
+      key: "copy",
+      label: en.share.copyDetails,
+      icon: <Copy size={16} />,
+      onClick: handleCopy,
+      variant: "outline",
+    },
+    {
+      key: "print",
+      label: en.share.print,
+      icon: <Printer size={16} />,
+      onClick: handlePrint,
+      variant: "secondary" as const,
+    },
+    {
+      key: "download",
+      label: en.share.download,
+      icon: <Download size={16} />,
+      onClick: handleDownload,
+      variant: "outline" as const,
+    },
+  ]
+
   return (
-    <div className={`grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap ${compact ? "sm:justify-start" : "sm:justify-end"} ${className}`}>
-      <Button type="button" variant="outline" title={en.share.nativeShare} icon={<Share2 size={16} />} onClick={handleNativeShare} className="min-h-10 w-full sm:w-auto" />
-      <Button type="button" variant="success" title={en.share.whatsapp} icon={<MessageCircle size={16} />} onClick={handleWhatsApp} className="min-h-10 w-full sm:w-auto" />
-      <Button type="button" variant="secondary" title={en.share.email} icon={<Mail size={16} />} onClick={handleEmail} className="min-h-10 w-full sm:w-auto" />
-      <Button type="button" variant="outline" title={en.share.copyDetails} icon={<Copy size={16} />} onClick={handleCopy} className="min-h-10 w-full sm:w-auto" />
-      {showPrint && <Button type="button" variant="secondary" title={en.share.print} icon={<Printer size={16} />} onClick={handlePrint} className="min-h-10 w-full sm:w-auto" />}
-      {showDownload && <Button type="button" variant="outline" title={en.share.download} icon={<Download size={16} />} onClick={handleDownload} className="min-h-10 w-full sm:w-auto" />}
-    </div>
+    <section aria-label={en.share.transactionDetails} >
+      <div className={`flex flex-wrap gap-2`} >
+        {actions.map((action) => (
+          <Button key={action.key} type="button" variant={action.variant} icon={action.icon} onClick={action.onClick} className="shadow-none" />
+        ))}
+      </div>
+    </section>
   )
 }

@@ -15,6 +15,7 @@ import { en } from "@/app/messages/en"
 import { useReportsData } from "./reports/lib/useReportsData"
 import { buildReport } from "./reports/lib/reportBuilder"
 import type { ProductLog } from "@/app/lib/db"
+import Button from "../components/ui/Button"
 
 function buildSevenDaySales(logs: ProductLog[]) {
   const today = new Date()
@@ -162,12 +163,12 @@ export default function DashboardHome() {
     <div className="dashboard-page space-y-6 pb-8">
       <section className="dashboard-hero-panel rounded-[28px] p-4 sm:p-6" aria-labelledby="dashboard-title">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--text-muted)]">{en.dashboard.overviewLabel}</p>
-            <h1 id="dashboard-title" className="dashboard-glow-text mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+          <div className="text-[var(--text-secondary)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em]">{en.dashboard.overviewLabel}</p>
+            <h1 id="dashboard-title" className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
               {userName ? `${en.dashboard.greeting}, ${userName}` : en.dashboard.fallbackTitle}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{en.dashboard.overviewDescription}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6">{en.dashboard.overviewDescription}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
@@ -179,14 +180,17 @@ export default function DashboardHome() {
       </section>
 
       {stats.pendingPurchaseDetails > 0 && (
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/purchases")}
-          className="w-full rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left text-amber-800 shadow-sm transition hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20"
-        >
-          <p className="font-bold">{stats.pendingPurchaseDetails} {stats.pendingPurchaseDetails > 1 ? en.dashboard.quickPurchasesPlural : en.dashboard.quickPurchaseSingular} {en.dashboard.needDetails}</p>
-          <p className="mt-1 text-sm">{en.dashboard.pendingPurchaseDetailsDescription}</p>
-        </button>
+        <>
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-bold">{stats.pendingPurchaseDetails} {stats.pendingPurchaseDetails > 1 ? en.dashboard.quickPurchasesPlural : en.dashboard.quickPurchaseSingular} {en.dashboard.needDetails}</p>
+                <p className="mt-1 text-sm">{en.dashboard.pendingPurchaseDetailsDescription}</p>
+              </div>
+              <Button type="button" onClick={() => router.push("/dashboard/purchases")} variant="warning" className="w-full sm:ml-auto sm:w-auto" title={en.purchases.reviewNow} />
+            </div>
+          </div>
+        </>
       )}
 
       <section className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4" aria-label={en.dashboard.summaryAriaLabel}>

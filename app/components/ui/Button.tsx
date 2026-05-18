@@ -86,10 +86,10 @@ export default function Button({
     const variants: Record<string, string> = {
 
         primary:
-            "border border-teal-400/70 bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-500 text-white shadow-lg shadow-teal-500/20 hover:border-teal-200 hover:from-teal-400 hover:via-emerald-400 hover:to-cyan-400 hover:shadow-teal-500/40 dark:border-teal-300/30 dark:text-white",
+            "border border-[color-mix(in_srgb,var(--accent)_56%,white_10%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow)] hover:border-[var(--accent-secondary,#8b5cf6)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_80%,white_20%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_82%,white_18%))] hover:shadow-[var(--button-shadow-hover)]",
 
         secondary:
-            "border border-blue-400/70 bg-gradient-to-br from-blue-500 via-sky-500 to-indigo-500 text-white shadow-lg shadow-blue-500/20 hover:border-blue-200 hover:from-blue-400 hover:via-sky-400 hover:to-indigo-400 hover:shadow-blue-500/40 dark:border-sky-300/30 dark:text-white",
+            "border border-[var(--border-card)] bg-[linear-gradient(145deg,var(--surface-primary),color-mix(in_srgb,var(--bg-card-strong)_84%,#020611_16%))] text-[var(--text-primary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[linear-gradient(145deg,color-mix(in_srgb,var(--surface-primary)_58%,var(--accent-soft)_42%),color-mix(in_srgb,var(--bg-card-strong)_76%,#020611_24%))] hover:shadow-[var(--button-shadow-hover)]",
 
         danger:
             "border border-rose-400/70 bg-gradient-to-br from-rose-500 via-pink-500 to-red-500 text-white shadow-lg shadow-rose-500/20 hover:border-rose-200 hover:from-rose-400 hover:via-pink-400 hover:to-red-400 hover:shadow-rose-500/40 dark:border-rose-300/30",
@@ -101,16 +101,16 @@ export default function Button({
             "border border-emerald-400/70 bg-gradient-to-br from-emerald-500 via-green-500 to-lime-500 text-white shadow-lg shadow-emerald-500/20 hover:border-emerald-200 hover:from-emerald-400 hover:via-green-400 hover:to-lime-400 hover:shadow-emerald-500/40 dark:border-emerald-300/30",
 
         black:
-            "border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-black text-white shadow-lg shadow-slate-900/30 hover:border-slate-500 hover:from-slate-700 hover:to-slate-950 hover:shadow-slate-900/50 dark:border-slate-500",
+            "border border-[var(--border-card)] bg-[linear-gradient(145deg,rgba(5,17,26,0.95),rgba(3,11,18,0.98))] text-[var(--text-primary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:shadow-[var(--button-shadow-hover)]",
 
         ghost:
-            "border border-transparent bg-white/5 text-[var(--text-primary)] backdrop-blur-md hover:border-white/10 hover:bg-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]",
+            "border border-transparent bg-[color-mix(in_srgb,var(--bg-card-strong)_62%,transparent)] text-[var(--text-primary)] backdrop-blur-md hover:border-[var(--border-card)] hover:bg-[var(--surface-subtle)]",
 
         outline:
-            "border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 hover:shadow-md dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-teal-400 dark:hover:bg-teal-500/10 dark:hover:text-teal-300",
+            "border border-[var(--border-input)] bg-[color-mix(in_srgb,var(--bg-card-strong)_84%,white_16%)] text-[var(--text-secondary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--text-primary)] hover:shadow-[var(--button-shadow-hover)]",
 
         dotBorder:
-            "border-2 border-dashed border-slate-400 bg-white text-slate-600 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-teal-400 dark:hover:bg-teal-500/10 dark:hover:text-teal-300",
+            "border-2 border-dashed border-[var(--border-input)] bg-[color-mix(in_srgb,var(--bg-card-strong)_72%,transparent)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--text-primary)]",
 
         delete:
             "border border-transparent bg-transparent text-rose-500 hover:border-rose-200 hover:bg-rose-50 hover:text-red-600 dark:text-rose-300 dark:hover:border-rose-500/20 dark:hover:bg-rose-500/10 dark:hover:text-rose-100 rounded-2xl",
@@ -119,10 +119,10 @@ export default function Button({
             "lg:hidden border border-transparent bg-transparent text-[var(--text-primary)] hover:border-slate-300 hover:bg-slate-100 dark:hover:border-slate-700 dark:hover:bg-slate-800",
 
         login:
-            "border border-fuchsia-400/60 bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/20 hover:border-fuchsia-200 hover:from-fuchsia-400 hover:via-pink-400 hover:to-rose-400 hover:shadow-pink-500/40",
+            "border border-[color-mix(in_srgb,var(--accent)_56%,white_10%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow)] hover:border-[var(--accent-secondary,#8b5cf6)] hover:shadow-[var(--button-shadow-hover)]",
 
         "soft-primary":
-            "border border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20",
+            "border border-[color-mix(in_srgb,var(--accent)_24%,white_14%)] bg-[color-mix(in_srgb,var(--accent-soft)_88%,white_12%)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent-soft)_96%,white_4%)]",
 
         "soft-danger":
             "border border-rose-300 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20",
@@ -156,7 +156,7 @@ export default function Button({
                 "relative inline-flex max-w-full min-w-0 items-center justify-center gap-2 overflow-hidden",
                 "min-h-11 rounded-2xl px-4 py-2.5 sm:px-5",
                 "font-semibold tracking-wide",
-                "backdrop-blur-md",
+                "backdrop-blur-xl",
                 "transition-all duration-300 ease-out",
                 "select-none motion-reduce:transform-none",
                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400/60",

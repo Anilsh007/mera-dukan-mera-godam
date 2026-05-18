@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import type { Metadata, Viewport } from "next"
+import { Manrope } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/app/components/theme/ThemeProvider"
 import LanguageTextRewriter from "@/app/components/layout/LanguageTextRewriter"
@@ -9,6 +10,12 @@ import NotificationToaster from "@/app/components/ui/NotificationToaster"
 import { APP_DESCRIPTION, APP_ICON_PATH, APP_NAME, APP_SHORT_NAME, DEFAULT_OG_IMAGE, SEO_KEYWORDS, SITE_URL, absoluteUrl, getPublicRobots } from "@/app/lib/seo/site"
 import { createBaseSchema } from "@/app/lib/seo/schema"
 import { en } from "@/app/messages/en"
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+})
 
 const themeInitScript = `
 (function(){
@@ -83,7 +90,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6faf8" },
-    { media: "(prefers-color-scheme: dark)", color: "#071312" },
+    { media: "(prefers-color-scheme: dark)", color: "#06131b" },
   ],
 }
 
@@ -93,7 +100,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <head>
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>
+      <body className={manrope.variable}>
         <a className="skip-link" href="#main-content" data-i18n-skip>{en.navigation.skipToMainContent}</a>
         <JsonLd id="base-structured-data" data={createBaseSchema()} />
         <ThemeProvider>

@@ -90,19 +90,19 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const navLinkClass = (active: boolean) =>
     `inline-flex min-h-11 items-center rounded-2xl border px-3 py-2 text-sm font-semibold transition ${active
-      ? "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent-soft),color-mix(in_srgb,var(--accent-soft)_70%,white_30%))] text-[var(--text-primary)] shadow-[var(--button-shadow)]"
-      : "border-[var(--border-card)] bg-[var(--bg-card-strong)] text-[var(--text-secondary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
+      ? "border-[color-mix(in_srgb,var(--accent)_54%,white_10%)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--surface-primary)_28%,var(--accent)_72%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_38%,var(--accent)_62%))] text-white shadow-[var(--button-shadow-hover)]"
+      : "border-[var(--border-card)] bg-[linear-gradient(145deg,var(--bg-card-strong),color-mix(in_srgb,var(--surface-primary)_82%,#020611_18%))] text-[var(--text-secondary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[linear-gradient(145deg,var(--surface-primary),color-mix(in_srgb,var(--accent-soft)_38%,transparent))] hover:text-[var(--text-primary)]"
     }`;
 
   const actionLinkClass = (active: boolean) =>
     `inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition ${active
-      ? "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_76%,#ec4899_24%))] text-white shadow-[var(--button-shadow-hover)]"
-      : "border-[var(--accent)] bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_76%,#ec4899_24%))] text-white shadow-[var(--button-shadow)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_92%,white_8%),color-mix(in_srgb,var(--accent)_72%,#ec4899_28%))] hover:shadow-[var(--button-shadow-hover)]"
+      ? "border-[color-mix(in_srgb,var(--accent)_58%,white_12%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow-hover)]"
+      : "border-[color-mix(in_srgb,var(--accent)_58%,white_12%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow)] hover:-translate-y-0.5 hover:border-[var(--accent-secondary,#8b5cf6)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_80%,white_20%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_82%,white_18%))] hover:shadow-[var(--button-shadow-hover)]"
     }`;
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 flex min-h-16 min-w-0 items-center justify-between gap-2 border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_88%,transparent)] px-3 py-2 shadow-[var(--shadow-header)] backdrop-blur-xl sm:gap-3 sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
+      <header className="fixed inset-x-0 top-0 z-40 flex min-h-16 min-w-0 items-center justify-between gap-2 border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_84%,transparent)] px-3 py-2 shadow-[var(--shadow-header)] backdrop-blur-2xl sm:gap-3 sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
         <div className="flex min-w-0 flex-1 items-center lg:justify-between gap-2">
           {isDashboardHeader ? (
             <button type="button" onClick={onMenuClick} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--bg-elevated)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] lg:hidden" aria-label={en.common.openMenu} aria-haspopup="true" aria-expanded={mobileNavOpen} aria-controls="dashboard-mobile-navigation"> <Menu size={22} aria-hidden="true" /> </button>
@@ -156,8 +156,8 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 {user?.photoURL ? (
                   <Image src={user.photoURL} unoptimized referrerPolicy="no-referrer" alt={en.common.profileAlt} width={32} height={32} className="h-8 w-8 rounded-2xl object-cover" />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[var(--accent-soft)]" aria-hidden="true">
-                    <UserIcon size={14} className="text-emerald-600" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--accent-soft),color-mix(in_srgb,var(--accent-secondary,#4fd1ff)_40%,transparent))]" aria-hidden="true">
+                    <UserIcon size={14} className="text-[var(--accent)]" />
                   </div>
                 )}
 
