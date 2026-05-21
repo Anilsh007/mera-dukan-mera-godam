@@ -1,6 +1,7 @@
 // lib/firebase.js
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { en } from "@/app/messages/en";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -43,11 +44,10 @@ if (isFirebaseConfigured) {
       prompt: "select_account",
     });
   } catch (error) {
-    firebaseConfigError = error instanceof Error ? error.message : "Firebase could not be initialized.";
+    firebaseConfigError = error instanceof Error ? error.message : en.auth.firebaseInitFailed;
   }
 } else {
-  firebaseConfigError =
-    "Firebase client configuration is missing or invalid. Please set real NEXT_PUBLIC_FIREBASE_* values in .env.local and restart the server. The API key should start with AIza.";
+  firebaseConfigError = en.auth.firebaseNotConfigured;
 }
 
 export const app = firebaseApp;
@@ -58,14 +58,14 @@ export const firebaseErrorMessage = firebaseConfigError;
 
 export function requireFirebaseAuth() {
   if (!auth) {
-    throw new Error(firebaseErrorMessage || "Firebase Auth is not available.");
+    throw new Error(firebaseErrorMessage || en.auth.firebaseAuthUnavailable);
   }
   return auth;
 }
 
 export function requireGoogleProvider() {
   if (!provider) {
-    throw new Error(firebaseErrorMessage || "Google sign-in is not available.");
+    throw new Error(firebaseErrorMessage || en.auth.googleProviderUnavailable);
   }
   return provider;
 }

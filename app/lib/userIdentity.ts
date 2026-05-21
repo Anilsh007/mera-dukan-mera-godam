@@ -1,3 +1,5 @@
+import { en } from "@/app/messages/en"
+
 type UserLike = {
   email?: string | null
 }
@@ -17,7 +19,7 @@ export function requireUserIdentityFromAuthUser(user: UserLike | null | undefine
   const userIdentity = getUserIdentityFromAuthUser(user)
 
   if (!userIdentity) {
-    throw new Error("Authenticated user is missing an email address")
+    throw new Error(en.profile.signInRequired)
   }
 
   return userIdentity

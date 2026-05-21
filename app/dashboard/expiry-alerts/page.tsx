@@ -1,5 +1,6 @@
 "use client"
 
+import InfoTile from "@/app/components/ui/InfoTile"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AlertTriangle, BadgePercent, PackageX, Search } from "lucide-react"
@@ -11,6 +12,7 @@ import { getDaysUntilExpiry } from "@/app/lib/inventory.utils"
 import { formatQuantity } from "@/app/lib/quantityUnit"
 import StockOutModal from "../all-inventory/StockOutModal"
 import { en } from "@/app/messages/en"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 
 type ExpiryAction =
   | { type: "discount"; product: Product }
@@ -169,9 +171,9 @@ export default function ExpiryAlertsPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 text-sm">
-                  <InfoBox label={en.expiry.remaining} value={formatQuantity(product.quantity, product.quantityUnit)} />
-                  <InfoBox label="Expiry" value={product.expiry || "-"} />
-                  <InfoBox label={en.inventory.rate} value={formatCurrency(product.price)} />
+                  <InfoTile variant="flat" labelClassName="text-xs uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 truncate font-semibold text-[var(--text-primary)]" label={en.expiry.remaining} value={formatQuantity(product.quantity, product.quantityUnit)} />
+                  <InfoTile variant="flat" labelClassName="text-xs uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 truncate font-semibold text-[var(--text-primary)]" label="Expiry" value={product.expiry || "-"} />
+                  <InfoTile variant="flat" labelClassName="text-xs uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 truncate font-semibold text-[var(--text-primary)]" label={en.inventory.rate} value={formatCurrency(product.price)} />
                 </div>
 
                 {!isExpired && (
@@ -202,7 +204,7 @@ export default function ExpiryAlertsPage() {
                   <Button
                     title={en.expiry.viewInInventory}
                     variant="outline"
-                    onClick={() => router.push("/dashboard/all-inventory")}
+                    onClick={() => router.push(DASHBOARD_ROUTES.inventory)}
                     className="flex-1"
                   />
                 </div>
@@ -241,15 +243,6 @@ function SummaryTile({ label, value, tone }: { label: string; value: number; ton
         {label}
       </div>
       <p className="mt-2 text-2xl font-bold">{value}</p>
-    </div>
-  )
-}
-
-function InfoBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-black/5 p-3 dark:bg-white/5">
-      <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 truncate font-semibold text-[var(--text-primary)]">{value}</p>
     </div>
   )
 }

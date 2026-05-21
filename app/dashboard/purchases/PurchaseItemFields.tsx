@@ -6,6 +6,7 @@ import Input from "@/app/components/ui/Input"
 import { QUANTITY_UNITS, formatQuantity } from "@/app/lib/quantityUnit"
 import { formatCurrency } from "./purchase.utils"
 import type { PurchaseRow } from "./purchase.types"
+import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
 import { en } from "@/app/messages/en"
 
 export function RequiredMark() {
@@ -25,6 +26,8 @@ export function PurchaseItemFields({
   onChange: (key: keyof PurchaseRow, value: string) => void
   onRemove: () => void
 }) {
+  const { locations } = useInventoryLocations()
+
   return (
     <>
       <datalist id="quantityUnits">
@@ -123,6 +126,30 @@ export function PurchaseItemFields({
             onChange={(event) => onChange("sku", event.target.value)}
             placeholder={en.purchases.skuPlaceholder}
           />
+
+          <Input
+            id={`purchase-item-${row.id}-batch`}
+            label={en.advancedInventory.batchNo}
+            value={row.batchNo}
+            onChange={(event) => onChange("batchNo", event.target.value)}
+            placeholder={en.advancedInventory.batchFieldHelp}
+          />
+
+          <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
+            <span>{en.advancedInventory.location}</span>
+            <select
+              value={row.locationId}
+              onChange={(event) => {
+                const selected = locations.find((location) => location.id === event.target.value)
+                onChange("locationId", event.target.value)
+                onChange("locationName", selected?.name || "")
+              }}
+              className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]"
+            >
+              <option value="">{en.advancedInventory.defaultGodownName}</option>
+              {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+            </select>
+          </label>
 
           <Input
             id={`purchase-item-${row.id}-hsn`}

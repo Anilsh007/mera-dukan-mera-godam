@@ -7,6 +7,12 @@ export type QuickPurchaseRow = {
     price: string
     quantity: string
     quantityUnit: string
+    category?: string
+    sku?: string
+    hsnCode?: string
+    batchNo?: string
+    locationId?: string
+    locationName?: string
     note: string
     supplierName?: string
 }
@@ -17,6 +23,12 @@ export const createEmptyRow = (): QuickPurchaseRow => ({
     price: "",
     quantity: "",
     quantityUnit: DEFAULT_QUANTITY_UNIT,
+    category: "",
+    sku: "",
+    hsnCode: "",
+    batchNo: "",
+    locationId: "",
+    locationName: "",
     note: "",
     supplierName: "",
 })

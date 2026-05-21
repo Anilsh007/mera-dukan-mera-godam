@@ -5,8 +5,8 @@ import { BankNotesProps } from "../types/ui.types";
 export default function NoteSection({ invoice, onChange }: BankNotesProps) {
     return (
         <section className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
-            <h3>Notes</h3>
-            <div className="flex gap-4">
+            <h3>{en.gstInvoice.notes}</h3>
+            <div className="flex flex-col gap-4 md:flex-row">
                 <div className="w-full">
                     <label className="ml-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500">
                         <StickyNote size={12} /> {en.gstInvoice.additionalNotes}

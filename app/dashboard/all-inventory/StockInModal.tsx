@@ -10,8 +10,10 @@ import Input from "@/app/components/ui/Input"
 import Button from "@/app/components/ui/Button"
 import Modal from "@/app/components/ui/Modal"
 import StatusBadge from "@/app/components/ui/StatusBadge"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import useProducts from "@/app/hooks/useProducts"
+import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
@@ -24,7 +26,7 @@ import { en } from "@/app/messages/en"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 type StockInForm = {
@@ -37,6 +39,8 @@ type StockInForm = {
   expiry: string
   sku: string
   note: string
+  batchNo: string
+  locationId: string
 }
 
 const initForm = (product: Product): StockInForm => ({
@@ -49,6 +53,8 @@ const initForm = (product: Product): StockInForm => ({
   expiry: product.expiry || "",
   sku: product.sku || "",
   note: "",
+  batchNo: product.batchNo || "",
+  locationId: "",
 })
 
 const fields = [
@@ -72,6 +78,7 @@ export default function StockInModal({
   const [showMore, setShowMore] = useState(false)
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const { products } = useProducts()
+  const { locations } = useInventoryLocations()
 
   const supplierSuggestions = useMemo(
     () => Array.from(new Set(products.map((item) => item.supplier?.trim()).filter(Boolean))) as string[],
@@ -86,14 +93,25 @@ export default function StockInModal({
   const profileWarnings = getProfileDocumentWarnings(sellerProfile)
 
   const handleSubmit = async () => {
-    if (!form.quantity || Number(form.quantity) <= 0) return toast.error(en.inventory.enterQuantity)
-    if (!form.price || Number(form.price) <= 0) return toast.error(en.inventory.enterRate)
-    if (!form.expiry) return toast.error(en.inventory.enterExpiry)
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) return toast.warning(optionValidation.message)
+    if (!form.quantity || Number(form.quantity) <= 0) {
+      toast.error(en.inventory.enterQuantity)
+      return
+    }
+    if (!form.price || Number(form.price) <= 0) {
+      toast.error(en.inventory.enterRate)
+      return
+    }
+    if (!form.expiry) {
+      toast.error(en.inventory.enterExpiry)
+      return
+    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     const userId = getUserIdentityFromAuthUser(auth?.currentUser)
-    if (!userId) return toast.error(en.inventory.loginMissing)
+    if (!userId) {
+      toast.error(en.inventory.loginMissing)
+      return
+    }
 
     try {
       setLoading(true)
@@ -108,6 +126,8 @@ export default function StockInModal({
         expiry: form.expiry,
         sku: form.sku,
         note: form.note,
+        batchNo: form.batchNo,
+        locationId: form.locationId || undefined,
         userId,
       }, {
         transaction: {
@@ -118,6 +138,9 @@ export default function StockInModal({
           taxableAmount: subtotal,
           gstAmount: 0,
           notes: form.note,
+          batchNo: form.batchNo,
+          locationId: form.locationId || undefined,
+          locationName: locations.find((location) => location.id === form.locationId)?.name,
         },
       })
       const documentData = buildStockInDocument({ form, seller: sellerProfile, total: subtotal, reference: receiptNo })
@@ -183,6 +206,32 @@ export default function StockInModal({
           </div>
           )
         ))}
+
+        {showMore && (
+          <>
+            <div className="basis-full sm:basis-[calc(50%-6px)]">
+              <Input
+                label={en.advancedInventory.batchNo}
+                placeholder={en.advancedInventory.batchFieldHelp}
+                value={form.batchNo}
+                onChange={(event) => set("batchNo", event.target.value)}
+              />
+            </div>
+            <label className="basis-full space-y-1 text-sm font-semibold text-[var(--text-secondary)] sm:basis-[calc(50%-6px)]">
+              <span>{en.advancedInventory.location}</span>
+              <select
+                value={form.locationId}
+                onChange={(event) => set("locationId", event.target.value)}
+                className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]"
+              >
+                <option value="">{en.advancedInventory.defaultGodownName}</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>{location.name}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
       </div>
 
       <Button
@@ -192,41 +241,23 @@ export default function StockInModal({
         className="mt-4 w-full sm:w-auto"
       />
 
-      <TransactionOptions
+      <TransactionActionPanel
         value={transactionOptions}
         onChange={setTransactionOptions}
-        allowPrint
-        allowDownloadPdf
-        allowShareWhatsApp
-        allowShareEmail
-        allowCopyDetails
+        profileWarnings={profileWarnings}
         disabled={loading}
         className="mt-4"
       />
 
-      {profileWarnings.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-          <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-          <p>{en.transaction.profileGuide}</p>
-          <ul className="mt-2 list-inside list-disc">
-            {profileWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-          </ul>
-        </div>
-      )}
-
       {subtotal > 0 && (
         <div className="mt-4 flex justify-end">
           <StatusBadge tone="success" className="rounded-2xl px-4 py-2 text-sm">
-            {en.inventory.totalValue}: {formatCurrencyLabel(subtotal)}
+            {en.inventory.totalValue}: {formatCurrency(subtotal)}
           </StatusBadge>
         </div>
       )}
     </Modal>
   )
-}
-
-function formatCurrencyLabel(value: number) {
-  return `${en.common.rupeeSymbol} ${value.toLocaleString("en-IN")}`
 }
 
 
@@ -245,13 +276,18 @@ function buildStockInDocument({
     type: "receipt",
     title: en.receipt.stockEntryReceipt,
     reference,
-    date: new Date().toLocaleString("en-IN"),
+    date: formatIndianDateTime(new Date()),
     seller,
     partyLabel: en.inventory.supplier,
     party: { name: form.supplier },
     items: [{
       name: form.name,
-      description: [form.category, form.sku ? `${en.inventory.sku}: ${form.sku}` : "", form.expiry ? `${en.inventory.expiry}: ${form.expiry}` : ""].filter(Boolean).join(" | "),
+      description: [
+        form.category,
+        form.sku ? `${en.inventory.sku}: ${form.sku}` : "",
+        form.batchNo ? `${en.advancedInventory.batchNo}: ${form.batchNo}` : "",
+        form.expiry ? `${en.inventory.expiry}: ${form.expiry}` : "",
+      ].filter(Boolean).join(" | "),
       quantity: Number(form.quantity),
       unit: form.quantityUnit,
       rate: Number(form.price),

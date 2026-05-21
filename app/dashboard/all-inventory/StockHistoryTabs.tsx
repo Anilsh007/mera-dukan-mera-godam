@@ -124,7 +124,7 @@ export default function StockHistoryTabs({
 
   const filteredRows = useMemo(() => {
     return allRows.filter((row) => {
-      const isSaleRow = row.logType === "out" && row.reason.toLowerCase() === "sold"
+      const isSaleRow = row.logType === "out" && row.reason.toLowerCase() === "sold" && row.paymentStatus !== "cancelled"
       const isOtherOutRow = row.logType === "out" && !isSaleRow
       const matchesTab = tab === "all" ? true : tab === "in" ? row.logType === "in" : tab === "sale" ? isSaleRow : isOtherOutRow
 
@@ -357,7 +357,7 @@ export default function StockHistoryTabs({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-wrap gap-4">
         <SummaryCard label={en.stockHistory.totalEntries} value={String(summary.total)} />
         <SummaryCard label={en.stockHistory.stockIn} value={String(summary.stockIn)} tone="emerald" />
         <SummaryCard label={en.stockHistory.sales} value={String(summary.saleOut)} tone="rose" />

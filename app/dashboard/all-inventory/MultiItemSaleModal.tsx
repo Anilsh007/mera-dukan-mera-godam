@@ -7,28 +7,32 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import StatusBadge from "@/app/components/ui/StatusBadge"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import type { Product } from "@/app/lib/db"
-import { stockOutMany } from "@/app/dashboard/quick-purchase/product.service"
 import { loadInvoicesFromDb } from "@/app/dashboard/gst-invoice/invoice.service"
 import { buildBuyerSuggestions, matchBuyerSuggestion } from "@/app/dashboard/gst-invoice/buyerSuggestions"
-import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import useProfile from "@/app/dashboard/profile/useProfile"
+import { formatCurrency } from "@/app/lib/formatters"
 import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
-import { calculateGstBreakup, isValidGstin } from "@/app/lib/gst.utils"
+import { isValidGstin } from "@/app/lib/gst.utils"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
-  type TransactionDocumentData,
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
+import { saveSale } from "@/app/lib/sales/sale.service"
+import { buildSaleInvoiceDraftFromRecord, buildSaleTransactionDocument } from "@/app/lib/sales/sale.documents"
+import { auth } from "@/app/lib/firebase"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import useParties from "@/app/hooks/useParties"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 
 type SaleLine = {
   productId: string
@@ -78,6 +82,7 @@ export default function MultiItemSaleModal({
 }) {
   const router = useRouter()
   const { profile } = useProfile()
+  const { parties: customerParties } = useParties("customer")
   const [lines, setLines] = useState<SaleLine[]>(
     products.map((product) => ({
       productId: product.id,
@@ -174,6 +179,25 @@ export default function MultiItemSaleModal({
     )
   }
 
+  const applyPartySelection = (value: string) => {
+    const selected = customerParties.find((party) => party.name === value)
+    if (!selected) {
+      applyBuyerSuggestion("name", value)
+      return
+    }
+    setBuyer({
+      name: selected.name,
+      gstin: selected.gstin || "",
+      phone: selected.mobile || "",
+      email: selected.email || "",
+      address: selected.address || "",
+      city: selected.city || "",
+      state: selected.state || "",
+      pincode: selected.pincode || "",
+      note: buyer.note,
+    })
+  }
+
   const handleConfirm = async () => {
     if (!buyer.name.trim()) {
       toast.error(en.inventory.enterBuyerNameForSale)
@@ -195,102 +219,61 @@ export default function MultiItemSaleModal({
       return
     }
 
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     try {
       setLoading(true)
-      const receiptNo = `SALE-${Date.now()}`
-
-      await stockOutMany(
-        validLines.map((line) => {
-          const quantity = Number(line.quantity)
-          const salePrice = Number(line.salePrice)
-          const gstRate = transactionOptions.generateGstInvoice ? Number(line.gstRate || 18) : 0
-          const gstBreakup = calculateGstBreakup({
-            quantity,
-            rate: salePrice,
-            gstRate,
-            sellerGstin: sellerProfile.gstin,
-            buyerGstin: buyer.gstin.trim(),
-            sellerState: sellerProfile.state,
-            buyerState: buyer.state.trim(),
-          })
-
-          return {
-            productId: line.productId,
-            quantity,
-            quantityUnit: line.quantityUnit,
-            salePrice,
-            reason: "Sold",
-            buyerName: buyer.name.trim(),
-            buyerPhone: buyer.phone.trim(),
-            buyerGstin: buyer.gstin.trim(),
-            note: buyer.note.trim() || undefined,
-            gstRate,
-            taxableAmount: gstBreakup.taxableAmount,
-            cgstAmount: gstBreakup.cgstAmount,
-            sgstAmount: gstBreakup.sgstAmount,
-            igstAmount: gstBreakup.igstAmount,
-            gstAmount: gstBreakup.totalGst,
-            paymentStatus: "paid",
-            invoiceReceiptNo: receiptNo,
-            transactionId: receiptNo,
-            transactionType: "multi-item-sale",
-          }
-        })
-      )
-
-      if (transactionOptions.generateGstInvoice) {
-        saveSaleInvoiceDraft({
-          buyer: {
-            name: buyer.name.trim(),
-            gstin: buyer.gstin.trim(),
-            phone: buyer.phone.trim(),
-            email: buyer.email.trim(),
-            address: buyer.address.trim(),
-            city: buyer.city.trim(),
-            state: buyer.state.trim(),
-            pincode: buyer.pincode.trim(),
-          },
-          items: validLines.map((line) => {
-            const item = createEmptyInvoiceItem()
-            item.name = toTitleCase(line.name)
-            item.description = toTitleCase(line.name)
-            item.hsnCode = line.hsnCode || ""
-            item.quantity = Number(line.quantity)
-            item.rate = Number(line.salePrice)
-            item.gstRate = Number(line.gstRate || 18)
-            item.unit = line.quantityUnit
-            return item
-          }),
-          notes: buyer.note.trim() || undefined,
-          createdAt: new Date().toISOString(),
-        })
-      }
-
-      const saleDocument = buildSaleDocument({
-        buyer,
-        lines: validLines,
-        seller: sellerProfile,
-        reference: receiptNo,
+      const saleRecord = await saveSale({
+        userId: requireUserIdentityFromAuthUser(auth?.currentUser),
+        items: validLines.map((line) => ({
+          productId: line.productId,
+          name: line.name,
+          category: line.category,
+          sku: line.sku,
+          hsnCode: line.hsnCode,
+          quantity: Number(line.quantity),
+          quantityUnit: line.quantityUnit,
+          salePrice: Number(line.salePrice),
+          discount: 0,
+          gstRate: Number(line.gstRate || 18),
+          note: buyer.note.trim() || undefined,
+        })),
+        customer: {
+          name: buyer.name.trim(),
+          gstin: buyer.gstin.trim(),
+          phone: buyer.phone.trim(),
+          email: buyer.email.trim(),
+          address: buyer.address.trim(),
+          city: buyer.city.trim(),
+          state: buyer.state.trim(),
+          pincode: buyer.pincode.trim(),
+        },
+        sellerGstin: sellerProfile.gstin,
+        sellerState: sellerProfile.state,
+        paymentMode: "Cash",
+        paymentStatus: "paid",
+        amountPaid: grandTotal,
+        note: buyer.note.trim() || undefined,
+        gstEnabled: transactionOptions.generateGstInvoice,
+        entryMode: "inventory-sale",
       })
 
-      await runTransactionDocumentActions(saleDocument, transactionOptions)
+      if (transactionOptions.generateGstInvoice) {
+        saveSaleInvoiceDraft(buildSaleInvoiceDraftFromRecord(saleRecord))
+      }
+
+      await runTransactionDocumentActions(buildSaleTransactionDocument(saleRecord, sellerProfile), transactionOptions)
 
       toast.success(`${en.inventory.saleSavedItemsPrefix} ${validLines.length} ${validLines.length > 1 ? en.inventory.saleSavedItemsPlural : en.inventory.saleSavedItemsSingular}`)
       onSuccess()
       onClose()
 
       if (transactionOptions.generateGstInvoice) {
-        router.push("/dashboard/gst-invoice")
+        router.push(DASHBOARD_ROUTES.gstInvoice)
       }
     } catch (error: unknown) {
       console.error("Multi item sale failed", error)
-      toast.error(en.inventory.saleSaveFailed)
+      toast.error(error instanceof Error ? error.message : en.inventory.saleSaveFailed)
     } finally {
       setLoading(false)
     }
@@ -314,6 +297,9 @@ export default function MultiItemSaleModal({
         {buyerSuggestions.map((suggestion) => (
           <option key={suggestion.key} value={suggestion.buyer.name} />
         ))}
+        {customerParties.map((party) => (
+          <option key={party.id} value={party.name} />
+        ))}
       </datalist>
       <datalist id="sale-buyer-gstin-suggestions">
         {buyerSuggestions.filter((s) => s.buyer.gstin).map((suggestion) => (
@@ -332,7 +318,7 @@ export default function MultiItemSaleModal({
       </datalist>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label={<>{en.inventory.buyerName} <span className="text-red-400">*</span></>} value={buyer.name} onChange={(e) => applyBuyerSuggestion("name", e.target.value)} datalist="sale-buyer-name-suggestions" />
+        <Input label={<>{en.parties.customerPartyLabel} <span className="text-red-400">*</span></>} value={buyer.name} onChange={(e) => applyPartySelection(e.target.value)} datalist="sale-buyer-name-suggestions" />
         <Input label={en.inventory.phone} value={buyer.phone} onChange={(e) => applyBuyerSuggestion("phone", e.target.value)} datalist="sale-buyer-phone-suggestions" />
         {showMore && (
           <>
@@ -377,7 +363,7 @@ export default function MultiItemSaleModal({
               <Input type="number" min={0} label={en.inventory.gstPercent} value={line.gstRate} onChange={(e) => updateLine(line.productId, "gstRate", e.target.value)} />
               <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] backdrop-blur-xl px-3 py-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">{en.gstInvoice.total}</p>
-                <p className="mt-1 font-semibold text-emerald-600">{en.common.rupeeSymbol} {(Number(line.quantity) * Number(line.salePrice)).toLocaleString("en-IN")}</p>
+                <p className="mt-1 font-semibold text-emerald-600">{formatCurrency(Number(line.quantity) * Number(line.salePrice))}</p>
               </div>
             </div>
           </div>
@@ -419,7 +405,7 @@ export default function MultiItemSaleModal({
                   <Input type="number" min={0} value={line.gstRate} onChange={(e) => updateLine(line.productId, "gstRate", e.target.value)} />
                 </td>
                 <td className="px-4 py-3 font-semibold text-emerald-600">
-                  {en.common.rupeeSymbol} {(Number(line.quantity) * Number(line.salePrice)).toLocaleString("en-IN")}
+                  {formatCurrency(Number(line.quantity) * Number(line.salePrice))}
                 </td>
               </tr>
             ))}
@@ -427,28 +413,14 @@ export default function MultiItemSaleModal({
         </table>
       </div>
 
-      <TransactionOptions
+      <TransactionActionPanel
         value={transactionOptions}
         onChange={setTransactionOptions}
+        profileWarnings={sellerWarnings}
         allowGstInvoice
-        allowPrint
-        allowDownloadPdf
-        allowShareWhatsApp
-        allowShareEmail
-        allowCopyDetails
         disabled={loading}
         className="mt-4"
       />
-
-      {sellerWarnings.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-          <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-          <p>{en.transaction.profileGuide}</p>
-          <ul className="mt-2 list-inside list-disc">
-            {sellerWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-          </ul>
-        </div>
-      )}
 
       <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/30 dark:bg-emerald-950/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -456,15 +428,11 @@ export default function MultiItemSaleModal({
           <p className="text-xs text-emerald-600 dark:text-emerald-400">{en.inventory.multiSaleHint}</p>
         </div>
         <StatusBadge tone="success" className="rounded-2xl px-4 py-2 text-sm">
-          {en.common.rupeeSymbol} {grandTotal.toLocaleString("en-IN")}
+          {formatCurrency(grandTotal)}
         </StatusBadge>
       </div>
     </Modal>
   )
-}
-
-function toTitleCase(value: string) {
-  return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1))
 }
 
 function QuantityWithUnitInput({
@@ -491,53 +459,4 @@ function QuantityWithUnitInput({
       rightAddon={unit}
     />
   )
-}
-
-function buildSaleDocument({
-  buyer,
-  lines,
-  seller,
-  reference,
-}: {
-  buyer: BuyerForm
-  lines: SaleLine[]
-  seller: ReturnType<typeof buildBusinessDocumentProfile>
-  reference: string
-}): TransactionDocumentData {
-  const activeLines = lines.filter((line) => Number(line.quantity) > 0 && Number(line.salePrice) > 0)
-  const grandTotal = activeLines.reduce(
-    (sum, line) => sum + Number(line.quantity) * Number(line.salePrice),
-    0
-  )
-
-  return {
-    type: "sale",
-    title: en.transaction.saleReceipt,
-    reference,
-    date: new Date().toLocaleString("en-IN"),
-    seller,
-    partyLabel: en.receipt.buyer,
-    party: {
-      name: buyer.name,
-      gstin: buyer.gstin,
-      phone: buyer.phone,
-      email: buyer.email,
-      address: buyer.address,
-      city: buyer.city,
-      state: buyer.state,
-      pincode: buyer.pincode,
-    },
-    items: activeLines.map((line) => ({
-      name: toTitleCase(line.name),
-      description: [line.category, line.sku ? `${en.inventory.sku}: ${line.sku}` : ""].filter(Boolean).join(" | "),
-      hsnCode: line.hsnCode,
-      quantity: Number(line.quantity),
-      unit: line.quantityUnit,
-      rate: Number(line.salePrice),
-      gstRate: Number(line.gstRate || 0),
-      total: Number(line.quantity) * Number(line.salePrice),
-    })),
-    totals: { grandTotal },
-    notes: buyer.note,
-  }
 }

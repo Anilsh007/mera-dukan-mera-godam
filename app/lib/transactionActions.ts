@@ -66,6 +66,20 @@ export function validateTransactionOptions(
   return { valid: true as const }
 }
 
+
+export function ensureValidTransactionOptions(
+  options: TransactionOptionFlags,
+  config?: Parameters<typeof validateTransactionOptions>[1]
+) {
+  const optionValidation = validateTransactionOptions(options, config)
+  if (!optionValidation.valid) {
+    notify.warning(optionValidation.message)
+    return false
+  }
+
+  return true
+}
+
 export async function runTransactionDocumentActions(
   document: TransactionDocumentData,
   options: TransactionOptionFlags

@@ -9,7 +9,6 @@ import InvoiceHistory from "./components/InvoiceHistory"
 import InvoicePreview, { buildGstInvoiceDocument } from "./Preview/InvoicePreview"
 
 import Modal from "@/app/components/ui/Modal"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
 import { notify as toast } from "@/app/lib/notifications"
 import { printTransactionDocument } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
@@ -26,7 +25,6 @@ export default function GstForm() {
     activeTab,
     previewMode,
     resetConfirmOpen,
-    transactionOptions,
     isInterState,
     buyerSuggestions,
 
@@ -34,7 +32,6 @@ export default function GstForm() {
     setActiveTab,
     setPreviewMode,
     setResetConfirmOpen,
-    setTransactionOptions,
 
     handleBuyerChange,
     handleShippingAddressChange,
@@ -62,8 +59,7 @@ export default function GstForm() {
             <InvoiceHeader invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} onSave={saveInvoice} onReset={resetInvoice} onPreview={() => setPreviewMode("preview")} onPrintPreview={() => setPreviewMode("print")} saving={saving} />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* SellerSection is declared as a function taking two params; call it directly to satisfy its signature */}
-              {SellerSection({ seller: invoice.seller }, { invoice, onChange: (field, value) => setInvoice({ ...invoice, [field]: value }) })}
+              <SellerSection seller={invoice.seller} />
               <BankNotesSection invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} />
             </div>
 
@@ -77,7 +73,6 @@ export default function GstForm() {
               <NoteSection invoice={invoice} onChange={(field, value) => setInvoice({ ...invoice, [field]: value })} />
             </div>
 
-            {/* <TransactionOptions value={transactionOptions} onChange={setTransactionOptions} allowPrint allowDownloadShare disabled={saving} /> */}
           </div>
 
           {/* <div className="min-w-0 space-y-6 2xl:sticky 2xl:top-4 2xl:self-start">
@@ -102,7 +97,6 @@ export default function GstForm() {
           onClose={() => setPreviewMode(null)}
           size="full"
           primaryLabel={previewMode === "print" ? en.gstInvoice.printInvoice : undefined}
-          primaryVariant="secondary"
           onPrimary={() => {
             if (printTransactionDocument(buildGstInvoiceDocument(invoice))) {
               toast.success(en.gstInvoice.printReady)

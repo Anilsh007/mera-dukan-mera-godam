@@ -26,12 +26,11 @@ export function buildGstInvoiceDocument(invoice: GSTInvoice): TransactionDocumen
     city: invoice.seller.city,
     state: invoice.seller.state,
     pincode: invoice.seller.pincode,
-    mobile: invoice.seller.phone,
+    phone: invoice.seller.phone,
     email: invoice.seller.email,
     gstin: invoice.seller.gstin,
     terms: invoice.terms,
     paymentDetails: {
-      accountName: invoice.bankDetails?.accountName,
       accountNumber: invoice.bankDetails?.accountNo,
       ifsc: invoice.bankDetails?.ifsc,
       bankName: invoice.bankDetails?.bankName,

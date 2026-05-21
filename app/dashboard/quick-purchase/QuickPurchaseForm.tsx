@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
 import useProducts from "@/app/hooks/useProducts"
+import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
 import Button from "@/app/components/ui/Button"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { MdOutlineAddchart, MdAdd, MdDeleteOutline } from "react-icons/md"
 import Input from "@/app/components/ui/Input"
+import { findProductByScannedCode } from "@/app/lib/barcode/barcode.utils"
 import { notify as toast } from "@/app/lib/notifications"
 import Suggestions from "@/app/components/inventory/ProductDatalists"
-import { QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { saveQuickPurchase } from "@/app/dashboard/purchases/purchase.service"
-import { formatCurrency } from "@/app/dashboard/purchases/purchase.utils"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import { en } from "@/app/messages/en"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
@@ -25,10 +28,12 @@ import {
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 import { QuickPurchaseRow, createEmptyRow, formatCurrentDateTime, getCurrentDateTime } from "@/app/dashboard/quick-purchase/supportFunction"
+
+const BarcodeScannerButton = dynamic(() => import("@/app/components/scanner/BarcodeScannerButton"), { ssr: false })
 
 function RequiredMark() {
     return <span className="text-red-500" >* </span>
@@ -37,6 +42,7 @@ function RequiredMark() {
 export default function AddProductForm() {
   const router = useRouter()
   const { products } = useProducts()
+  const { locations } = useInventoryLocations()
   const { profile } = useProfile()
   const [rows, setRows] = useState<QuickPurchaseRow[]>([createEmptyRow()])
   const [loading, setLoading] = useState(false)
@@ -56,6 +62,43 @@ export default function AddProductForm() {
   const handleChange = (id: string, key: keyof QuickPurchaseRow, value: string) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, [key]: value } : row)))
   }
+  const handleScannedCode = (code: string) => {
+    const product = findProductByScannedCode(products, code)
+    setRows((current) => {
+      const targetIndex = current.findIndex((row) => !row.name.trim() && !(row.sku || "").trim())
+      const next = [...current]
+      const index = targetIndex >= 0 ? targetIndex : next.length
+      const baseRow = next[index] || createEmptyRow()
+
+      next[index] = product
+        ? {
+          ...baseRow,
+          name: product.name,
+          price: String(product.price || ""),
+          quantity: baseRow.quantity || "1",
+          quantityUnit: normalizeQuantityUnit(product.quantityUnit),
+          supplierName: baseRow.supplierName || product.supplier || "",
+          category: product.category || "",
+          sku: product.sku || code,
+          hsnCode: product.hsnCode || "",
+          locationId: baseRow.locationId || locations.find((location) => location.isDefault)?.id || "",
+          locationName: baseRow.locationName || locations.find((location) => location.isDefault)?.name || "",
+        }
+        : {
+          ...baseRow,
+          sku: code,
+        }
+
+      return next
+    })
+
+    if (product) {
+      toast.success(en.scanner.productPreparedForStock.replace("{name}", product.name))
+    } else {
+      toast.warning(en.scanner.codeCapturedFillDetails.replace("{code}", code))
+    }
+  }
+
 
   const grandTotal = rows.reduce((sum, row) => sum + Number(row.price || 0) * Number(row.quantity || 0), 0)
   const sellerProfile = buildBusinessDocumentProfile(profile)
@@ -87,11 +130,7 @@ export default function AddProductForm() {
       return
     }
 
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     try {
       setLoading(true)
@@ -107,6 +146,12 @@ export default function AddProductForm() {
           price: Number(row.price),
           quantity: Number(row.quantity),
           quantityUnit: row.quantityUnit,
+          category: row.category,
+          sku: row.sku,
+          hsnCode: row.hsnCode,
+          batchNo: row.batchNo,
+          locationId: row.locationId,
+          locationName: locations.find((location) => location.id === row.locationId)?.name || row.locationName,
           note: row.note,
           supplierName: row.supplierName,
         })),
@@ -125,7 +170,7 @@ export default function AddProductForm() {
       resetForm()
     } catch (error) {
       console.error("Quick purchase save failed", error)
-      toast.error(en.quickPurchase.saveFailed)
+      toast.error(error instanceof Error ? error.message : en.quickPurchase.saveFailed)
     } finally {
       setLoading(false)
     }
@@ -134,14 +179,27 @@ export default function AddProductForm() {
   return (
     <form onSubmit={handleSubmit} className="min-w-0 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-4">
       <Suggestions products={products} type="product" />
+      <Suggestions products={products} type="category" />
+      <Suggestions products={products} type="supplier" />
       <datalist id="quantityUnits">
         {QUANTITY_UNITS.map((unit) => (
           <option key={unit.value} value={unit.value}>{unit.label}</option>
         ))}
       </datalist>
 
-      <div className="flex justify-end-safe">
-        <div className="rounded-xl border-b mb-3 px-3 py-2 border-[var(--border-card)]">
+      <div className="mb-4 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
+        <p className="font-bold text-[var(--text-primary)]">{en.quickPurchase.formGuideTitle}</p>
+        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{en.quickPurchase.formGuideDescription}</p>
+      </div>
+
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <BarcodeScannerButton
+          onDetected={handleScannedCode}
+          buttonTitle={en.scanner.scanForPurchase}
+          disabled={loading}
+          className="w-full sm:w-auto"
+        />
+        <div className="rounded-xl border-b px-3 py-2 border-[var(--border-card)]">
           <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">{en.quickPurchase.entryTime}</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--text-primary)]">{formatCurrentDateTime(currentDateTime)}</p>
         </div>
@@ -175,6 +233,20 @@ export default function AddProductForm() {
             <div className="grid grid-cols-1 gap-4  lg:grid-cols-4">
               <Input label={<>{en.quickPurchase.productName} <RequiredMark /></>} placeholder={en.quickPurchase.productNamePlaceholder} value={row.name} onChange={(event) => handleChange(row.id, "name", event.target.value)} datalist="productNames" containerClassName="lg:col-span-2" />
 
+              <Input label={en.scanner.barcodeSku} placeholder={en.scanner.manualCodePlaceholder} value={row.sku || ""} onChange={(event) => handleChange(row.id, "sku", event.target.value)} />
+
+              <Input label={en.advancedInventory.batchNo} placeholder={en.advancedInventory.batchFieldHelp} value={row.batchNo || ""} onChange={(event) => handleChange(row.id, "batchNo", event.target.value)} />
+
+              <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
+                <span>{en.advancedInventory.location}</span>
+                <select value={row.locationId || ""} onChange={(event) => { const selected = locations.find((location) => location.id === event.target.value); handleChange(row.id, "locationId", event.target.value); handleChange(row.id, "locationName", selected?.name || "") }} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
+                  <option value="">{en.advancedInventory.defaultGodownName}</option>
+                  {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+                </select>
+              </label>
+
+              <Input label={en.inventory.category} placeholder={en.inventory.category} value={row.category || ""} onChange={(event) => handleChange(row.id, "category", event.target.value)} datalist="categories" />
+
               <Input type="number" label={<>{en.quickPurchase.purchasePricePerUnit} <RequiredMark /></>} placeholder={en.quickPurchase.ratePlaceholder} value={row.price} onChange={(event) => handleChange(row.id, "price", event.target.value)} />
 
               <div>
@@ -187,7 +259,7 @@ export default function AddProductForm() {
                 </div>
               </div>
 
-              <Input label={<>{en.quickPurchase.supplierName} <RequiredMark /></>} placeholder={en.quickPurchase.supplierPlaceholder} value={row.supplierName} onChange={(event) => handleChange(row.id, "supplierName", event.target.value)} containerClassName="lg:col-span-2" />
+              <Input label={<>{en.quickPurchase.supplierName} <RequiredMark /></>} placeholder={en.quickPurchase.supplierPlaceholder} value={row.supplierName} onChange={(event) => handleChange(row.id, "supplierName", event.target.value)} datalist="suppliers" containerClassName="lg:col-span-2" />
 
               <Input label={en.quickPurchase.note} placeholder={en.quickPurchase.notePlaceholder}
                 value={row.note} onChange={(event) => handleChange(row.id, "note", event.target.value)} containerClassName="lg:col-span-2" />
@@ -197,27 +269,13 @@ export default function AddProductForm() {
         ))}
       </div>
 
-      <TransactionOptions
+      <TransactionActionPanel
         value={transactionOptions}
         onChange={setTransactionOptions}
-        allowPrint
-        allowDownloadPdf
-        allowShareWhatsApp
-        allowShareEmail
-        allowCopyDetails
+        profileWarnings={profileWarnings}
         disabled={loading}
         className="mt-5"
       />
-
-      {profileWarnings.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-          <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-          <p>{en.transaction.profileGuide}</p>
-          <ul className="mt-2 list-inside list-disc">
-            {profileWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-          </ul>
-        </div>
-      )}
 
       <div className="mt-6 flex flex-col gap-3 border-t border-[var(--border-card)] pt-4 sm:flex-row sm:items-center sm:justify-between">
         <Button type="button" onClick={addRow} title={en.quickPurchase.addProduct} variant="dotBorder" icon={<MdAdd />} />
@@ -227,7 +285,7 @@ export default function AddProductForm() {
             <p className="text-lg font-black text-emerald-600">{formatCurrency(grandTotal)}</p>
             <p className="text-xs text-amber-600">{en.quickPurchase.detailPending}</p>
           </div>
-          <Button type="submit" title={`${en.quickPurchase.saveQuickPurchase} (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
+          <Button type="submit" title={loading ? en.quickPurchase.savingQuickPurchase : `${en.quickPurchase.saveQuickPurchase} (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
         </div>
       </div>
     </form>
@@ -250,7 +308,7 @@ function buildQuickPurchaseDocument({
     type: "purchase",
     title: en.transaction.quickPurchaseReceipt,
     reference: `QP-${date.getTime()}`,
-    date: date.toLocaleString("en-IN"),
+    date: formatIndianDateTime(date),
     seller,
     partyLabel: en.transaction.purchasePartyLabel,
     party: { name: rows.map((row) => row.supplierName).filter(Boolean)[0] || "" },
@@ -260,7 +318,7 @@ function buildQuickPurchaseDocument({
       unit: row.quantityUnit,
       rate: Number(row.price),
       total: Number(row.quantity || 0) * Number(row.price || 0),
-      note: row.note,
+      note: [row.sku ? `${en.scanner.barcodeSku}: ${row.sku}` : "", row.batchNo ? `${en.advancedInventory.batchNo}: ${row.batchNo}` : "", row.note].filter(Boolean).join(" | ") || undefined,
     })),
     totals: { grandTotal: total, dueAmount: total },
   }

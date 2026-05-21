@@ -1,8 +1,8 @@
-import { Landmark, Gavel, StickyNote } from "lucide-react"
+import { Landmark } from "lucide-react"
 import type { BankNotesProps } from "../types/ui.types"
 import { en } from "@/app/messages/en"
 
-export default function BankNotesSection({ invoice, onChange }: BankNotesProps) {
+export default function BankNotesSection({ invoice }: BankNotesProps) {
   const bank = invoice.bankDetails
 
   return (

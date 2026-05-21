@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import type { Metadata, Viewport } from "next"
-import { Manrope } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/app/components/theme/ThemeProvider"
 import LanguageTextRewriter from "@/app/components/layout/LanguageTextRewriter"
@@ -11,11 +10,6 @@ import { APP_DESCRIPTION, APP_ICON_PATH, APP_NAME, APP_SHORT_NAME, DEFAULT_OG_IM
 import { createBaseSchema } from "@/app/lib/seo/schema"
 import { en } from "@/app/messages/en"
 
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-})
 
 const themeInitScript = `
 (function(){
@@ -100,7 +94,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <head>
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={manrope.variable}>
+      <body>
         <a className="skip-link" href="#main-content" data-i18n-skip>{en.navigation.skipToMainContent}</a>
         <JsonLd id="base-structured-data" data={createBaseSchema()} />
         <ThemeProvider>

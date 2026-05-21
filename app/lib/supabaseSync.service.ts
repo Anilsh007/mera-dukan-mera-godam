@@ -4,14 +4,15 @@ import { db } from "./db"
 import { auth } from "./firebase"
 import { authHeaders, isMissingTableError, readApiError } from "./apiClient"
 import { getUserIdentityFromAuthUser } from "./userIdentity"
+import { en } from "@/app/messages/en"
 
 export async function syncDexieToSupabase() {
   const user = auth?.currentUser
-  if (!user) throw new Error("User not logged in")
+  if (!user) throw new Error(en.profile.signInRequired)
 
   const token = await user.getIdToken()
   const userId = getUserIdentityFromAuthUser(user)
-  if (!userId) throw new Error("Authenticated user is missing an email address")
+  if (!userId) throw new Error(en.profile.signInRequired)
 
   const products = await db.products.where("userId").equals(userId).toArray()
   const productIds = products.map((product) => product.id)

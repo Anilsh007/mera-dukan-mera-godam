@@ -15,8 +15,8 @@ export default function DownloadPage() {
     setDownloading(true)
     try {
       await downloadAllData()
-    } catch {
-      toast.error(en.download.failed)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : en.download.failed)
     } finally {
       setDownloading(false)
     }
@@ -26,8 +26,8 @@ export default function DownloadPage() {
     setDownloading(true)
     try {
       await downloadByDateRange(fromDate, toDate)
-    } catch {
-      toast.error(en.download.failed)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : en.download.failed)
     } finally {
       setDownloading(false)
     }

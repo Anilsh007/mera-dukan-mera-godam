@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { BarChart3, PackagePlus, ReceiptText, Truck } from "lucide-react"
 import { onAuthStateChanged } from "firebase/auth"
 import { notify as toast } from "@/app/lib/notifications"
 import Suggestions from "@/app/components/inventory/ProductDatalists"
@@ -22,7 +23,9 @@ import {
 } from "./purchase.form"
 import type { PurchaseRow } from "./purchase.types"
 import { en } from "@/app/messages/en"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import useProfile from "@/app/dashboard/profile/useProfile"
+import useParties from "@/app/hooks/useParties"
 import {
   buildBusinessDocumentProfile,
   getProfileDocumentWarnings,
@@ -30,16 +33,19 @@ import {
   type TransactionOptionFlags,
 } from "@/app/lib/transactionDocument"
 import Button from "@/app/components/ui/Button"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import PageActionLinks from "@/app/components/ui/PageActionLinks"
+import PageHeader from "@/app/components/ui/PageHeader"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 export default function PurchasesPage() {
   const { products } = useProducts()
   const { profile } = useProfile()
+  const { parties: supplierParties } = useParties("supplier")
   const [rows, setRows] = useState<PurchaseRow[]>([createPurchaseRow()])
   const [billNo, setBillNo] = useState("")
   const [supplierName, setSupplierName] = useState("")
@@ -146,11 +152,7 @@ export default function PurchasesPage() {
     note: string
   }) => {
     if (!selectedPendingPurchase) return
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
     try {
       setDetailsLoading(true)
       const receiptDocument = buildPurchaseDocumentFromRecord(selectedPendingPurchase, {
@@ -175,7 +177,7 @@ export default function PurchasesPage() {
       await refreshPurchases()
     } catch (error) {
       console.error("Purchase details save failed", error)
-      toast.error(en.purchases.detailsSaveFailed)
+      toast.error(error instanceof Error ? error.message : en.purchases.detailsSaveFailed)
     } finally {
       setDetailsLoading(false)
     }
@@ -200,11 +202,7 @@ export default function PurchasesPage() {
       return
     }
 
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     try {
       setLoading(true)
@@ -240,6 +238,9 @@ export default function PurchasesPage() {
           quantity: Number(row.quantity),
           quantityUnit: row.quantityUnit,
           expiry: row.expiry,
+          batchNo: row.batchNo,
+          locationId: row.locationId,
+          locationName: row.locationName,
           note: row.note,
         })),
       })
@@ -250,7 +251,7 @@ export default function PurchasesPage() {
       await refreshPurchases()
     } catch (error) {
       console.error("Purchase save failed", error)
-      toast.error(en.purchases.saveFailed)
+      toast.error(error instanceof Error ? error.message : en.purchases.saveFailed)
     } finally {
       setLoading(false)
     }
@@ -258,19 +259,25 @@ export default function PurchasesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{en.pages.purchasesTitle}</h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          {en.pages.purchasesDescription}
-        </p>
-      </div>
+      <PageHeader title={en.pages.purchasesTitle} description={en.pages.purchasesDescription} />
+
+      <PageActionLinks
+        title={en.purchases.nextActionsTitle}
+        description={en.purchases.nextActionsDescription}
+        actions={[
+          { href: DASHBOARD_ROUTES.quickPurchase, label: en.navigation.quickPurchase, description: en.quickPurchase.formGuideDescription, icon: <PackagePlus size={18} /> },
+          { href: DASHBOARD_ROUTES.recentPurchases, label: en.purchases.goToRecentPurchases, description: en.purchases.goToRecentPurchasesHelp, icon: <ReceiptText size={18} /> },
+          { href: DASHBOARD_ROUTES.suppliers, label: en.purchases.goToSuppliers, description: en.purchases.goToSuppliersHelp, icon: <Truck size={18} /> },
+          { href: DASHBOARD_ROUTES.reports, label: en.purchases.goToReports, description: en.purchases.goToReportsHelp, icon: <BarChart3 size={18} /> },
+        ]}
+      />
 
       {pendingPurchases.length > 0 && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-bold">{pendingPurchases.length} {en.dashboard.qcnw} {pendingPurchases.length > 1 ? "s" : ""} {en.dashboard.ndqp}</p>
-              <p className="text-sm">{en.dashboard.QPwarningPara}</p>
+              <p className="font-bold">{en.purchases.pendingQuickPurchasesTitle.replace("{count}", String(pendingPurchases.length))}</p>
+              <p className="text-sm">{en.purchases.pendingQuickPurchasesHelp}</p>
             </div>
             <Button type="button" onClick={() => setSelectedPendingPurchase(pendingPurchases[0])} variant="warning" className="w-full sm:ml-auto sm:w-auto" title={en.purchases.reviewNow}/>
           </div>
@@ -278,14 +285,25 @@ export default function PurchasesPage() {
       )}
 
       <form onSubmit={handleSubmit} className="premium-surface min-w-0 rounded-2xl p-4 sm:p-5" >
+        <div className="mb-4 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
+          <p className="font-bold text-[var(--text-primary)]">{en.quickPurchase.formGuideTitle}</p>
+          <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{en.quickPurchase.formGuideDescription}</p>
+        </div>
+
         <Suggestions products={products} type="product" />
         <Suggestions products={products} type="category" />
         <Suggestions products={products} type="supplier" />
+        <datalist id="supplier-party-options">
+          {supplierParties.map((party) => (
+            <option key={party.id} value={party.name} />
+          ))}
+        </datalist>
         <PurchaseFields
           rows={rows}
           billNo={billNo}
           supplierName={supplierName}
           purchaseDate={purchaseDate}
+          supplierDatalistId="supplier-party-options"
           paymentStatus={paymentStatus}
           paymentMode={paymentMode}
           amountPaid={amountPaid}
@@ -328,27 +346,13 @@ export default function PurchasesPage() {
           onRemoveRow={removeRow}
         />
 
-        <TransactionOptions
-      value={transactionOptions}
-      onChange={setTransactionOptions}
-      allowPrint
-      allowDownloadPdf
-      allowShareWhatsApp
-      allowShareEmail
-      allowCopyDetails
-      disabled={loading || detailsLoading}
-      className="mt-5"
-    />
-
-        {profileWarnings.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-            <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-            <p>{en.transaction.profileGuide}</p>
-            <ul className="mt-2 list-inside list-disc">
-              {profileWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
-          </div>
-        )}
+        <TransactionActionPanel
+          value={transactionOptions}
+          onChange={setTransactionOptions}
+          profileWarnings={profileWarnings}
+          disabled={loading || detailsLoading}
+          className="mt-5"
+        />
       </form>
 
       <CompletePurchaseDetailsModal
@@ -398,7 +402,13 @@ function buildDetailedPurchaseDocument({
     paymentMode: `${paymentStatus}${paymentMode ? ` / ${paymentMode}` : ""}`,
     items: rows.map((row) => ({
       name: row.name,
-      description: [row.category, row.sku ? `${en.purchases.sku}: ${row.sku}` : "", row.hsnCode ? `${en.purchases.hsnCode}: ${row.hsnCode}` : ""].filter(Boolean).join(" | "),
+      description: [
+        row.category,
+        row.sku ? `${en.purchases.sku}: ${row.sku}` : "",
+        row.hsnCode ? `${en.purchases.hsnCode}: ${row.hsnCode}` : "",
+        row.batchNo ? `${en.advancedInventory.batchNo}: ${row.batchNo}` : "",
+        row.locationName ? `${en.advancedInventory.location}: ${row.locationName}` : "",
+      ].filter(Boolean).join(" | "),
       hsnCode: row.hsnCode,
       quantity: Number(row.quantity),
       unit: row.quantityUnit,

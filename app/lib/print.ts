@@ -30,3 +30,17 @@ export function printCurrentPage() {
     return false
   }
 }
+
+export function printHtmlDocument(html: string) {
+  if (typeof window === "undefined") return false
+
+  const printWindow = window.open("", "_blank", "width=900,height=700")
+  if (!printWindow) return false
+
+  printWindow.document.open()
+  printWindow.document.write(html)
+  printWindow.document.close()
+  printWindow.focus()
+  printWindow.print()
+  return true
+}

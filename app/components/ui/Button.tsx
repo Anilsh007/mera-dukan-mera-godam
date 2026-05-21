@@ -164,7 +164,7 @@ export default function Button({
 
                 isDisabled
                     ? "cursor-not-allowed opacity-50 pointer-events-none"
-                    : "cursor-pointer active:scale-[0.97] hover:-translate-y-0.5",
+                    : "cursor-pointer hover:-translate-y-0.5 hover:brightness-95 hover:saturate-[0.88] active:translate-y-px active:scale-[0.985] active:brightness-90 active:saturate-[0.82]",
 
                 className,
             ].join(" ")}

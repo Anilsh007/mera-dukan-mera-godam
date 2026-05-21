@@ -117,7 +117,6 @@ export default function AccountSettingsPage() {
         onPrimary={handleDelete}
         loading={saving}
         primaryDisabled={loading}
-        error={confirmationError || undefined}
       >
         <div className="space-y-4">
           <div className="rounded-2xl border border-rose-300/70 bg-rose-50 p-4 text-sm leading-6 text-rose-700 dark:border-rose-400/18 dark:bg-rose-500/8 dark:text-rose-200">

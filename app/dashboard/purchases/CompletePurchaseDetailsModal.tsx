@@ -104,7 +104,6 @@ export default function CompletePurchaseDetailsModal({
       size="xl"
       loading={loading}
       primaryLabel={en.purchases.saveDetails}
-      primaryType="submit"
       primaryVariant="primary"
       cancelLabel={en.common.cancel}
     >

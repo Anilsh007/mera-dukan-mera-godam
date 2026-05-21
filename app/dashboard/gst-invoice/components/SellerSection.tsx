@@ -1,8 +1,8 @@
-import { Mail, Phone, MapPin, Building2, Gavel } from "lucide-react"
-import { SellerSectionProps, type BankNotesProps } from "../types/ui.types"
+import { Mail, Phone, Building2 } from "lucide-react"
+import type { SellerSectionProps } from "../types/ui.types"
 import { en } from "@/app/messages/en"
 
-export default function SellerSection({ seller }: SellerSectionProps, { invoice, onChange }: BankNotesProps) {
+export default function SellerSection({ seller }: SellerSectionProps) {
   return (
     <section className="premium-surface min-w-0 rounded-2xl p-4 sm:p-6">
       <h3 className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">

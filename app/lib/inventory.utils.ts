@@ -31,9 +31,12 @@ export function getProductStockLevel(product: Product): StockLevel {
 }
 
 export function getProductThresholds(product: Product) {
+  const lowMax = product.lowStockThreshold ?? product.reorderLevel
+  const criticalMax = product.criticalStockThreshold ?? (lowMax !== undefined ? Math.max(Math.floor(lowMax / 2), 0) : undefined)
+
   return {
-    criticalMax: product.criticalStockThreshold,
-    lowMax: product.lowStockThreshold,
+    criticalMax,
+    lowMax,
   }
 }
 

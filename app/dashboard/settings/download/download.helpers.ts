@@ -3,6 +3,8 @@ import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { notify as toast } from "@/app/lib/notifications"
 import { en } from "@/app/messages/en"
+import { assertFeatureAccess, incrementUsage } from "@/app/lib/subscription/subscription.service"
+import { formatIndianDateTime } from "@/app/lib/formatters"
 
 type CsvValue = string | number | boolean | null | undefined
 type CsvRow = Record<string, CsvValue>
@@ -37,15 +39,7 @@ function downloadFile(content: string, filename: string) {
 }
 
 function formatDate(iso: string) {
-  if (!iso) return "-"
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })
+  return formatIndianDateTime(iso)
 }
 
 async function loadCurrentUserInventory() {
@@ -60,6 +54,8 @@ async function loadCurrentUserInventory() {
 }
 
 export async function downloadAllData() {
+  const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+  await assertFeatureAccess(userId, "exports", { operation: "export", scope: "basic", incrementBy: 1 })
   const { products, logs } = await loadCurrentUserInventory()
 
   const nameMap: Record<string, string> = {}
@@ -131,6 +127,7 @@ export async function downloadAllData() {
     downloadFile(toCSV(logRows, logHeaders), "logs_all.csv")
   }, 500)
 
+  await incrementUsage(userId, "exports")
   toast.success(`${en.download.allDownloaded}: ${products.length} products, ${logs.length} logs`)
 }
 
@@ -149,6 +146,8 @@ export async function downloadByDateRange(from: string, to: string) {
     return
   }
 
+  const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+  await assertFeatureAccess(userId, "exports", { operation: "export", scope: "basic", incrementBy: 1 })
   const { products, logs } = await loadCurrentUserInventory()
 
   const nameMap: Record<string, string> = {}
@@ -194,5 +193,6 @@ export async function downloadByDateRange(from: string, to: string) {
 
   const label = `${from}_to_${to}`
   downloadFile(toCSV(logRows, logHeaders), `logs_${label}.csv`)
+  await incrementUsage(userId, "exports")
   toast.success(`${filteredLogs.length} ${en.download.recordsDownloadedSuffix}`)
 }

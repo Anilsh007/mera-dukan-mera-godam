@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
 import {
     LayoutList,
     AlertTriangle,
@@ -28,6 +29,8 @@ import {
 } from "@/app/lib/inventory.utils"
 import { en } from "@/app/messages/en"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
+
+const BarcodeScannerButton = dynamic(() => import("@/app/components/scanner/BarcodeScannerButton"), { ssr: false })
 
 const stockFilters = [
     { key: "all", label: en.inventory.all, icon: LayoutList, active: "bg-[var(--all-inventory)] text-[var(--text-secondary)] border-[var(--all-inventory-border)] shadow", iconColor: "text-sky-500", activeIcon: "text-[var(--text-secondary)]", },
@@ -70,6 +73,16 @@ export default function ProductGrid({
     const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>("all")
     const [sortBy, setSortBy] = useState<ProductSortKey>("name")
     const debouncedSearch = useDebouncedValue(search, 180)
+
+    const allProducts = useMemo(() => groups.flatMap((group) => group.products), [groups])
+
+    const handleScannedCode = (code: string) => {
+        setSearch(code)
+        setCategory("all")
+        setStockFilter("all")
+        setExpiryFilter("all")
+        setSortBy("name")
+    }
 
     const categories = useMemo(() => {
         return groups.map((g) => g.label).sort()
@@ -191,9 +204,17 @@ export default function ProductGrid({
                             </p>
                         </div>
                     </div>
-                    {(search || category !== "all" || stockFilter !== "all" || expiryFilter !== "all" || sortBy !== "name") && (
-                        <Button type="button" variant="outline" title={en.inventory.clear} icon={<X size={14} />} onClick={resetFilters} />
-                    )}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <BarcodeScannerButton
+                            onDetected={handleScannedCode}
+                            buttonTitle={en.scanner.scanToFind}
+                            disabled={allProducts.length === 0}
+                            className="w-full sm:w-auto"
+                        />
+                        {(search || category !== "all" || stockFilter !== "all" || expiryFilter !== "all" || sortBy !== "name") && (
+                            <Button type="button" variant="outline" title={en.inventory.clear} icon={<X size={14} />} onClick={resetFilters} className="w-full sm:w-auto" />
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 p-4 sm:p-5 xl:grid-cols-[minmax(280px,1fr)_180px_180px_190px] xl:items-center">

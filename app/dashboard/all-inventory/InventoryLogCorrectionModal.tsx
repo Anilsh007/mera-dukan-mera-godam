@@ -6,10 +6,11 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { isValidGstin } from "@/app/lib/gst.utils"
 import { deleteProductLog, updateProductLog } from "@/app/dashboard/quick-purchase/product.service"
 import { en } from "@/app/messages/en"
+import { formatCurrency, formatIndianDate, formatIndianDateTime } from "@/app/lib/formatters"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
@@ -19,7 +20,7 @@ import {
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 const REASONS = [
@@ -119,8 +120,7 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
     if (!form.date) return toast.error(en.inventory.selectDateTime)
     if (isSaleFlow && !form.buyerName.trim()) return toast.error(en.inventory.enterBuyerNameForThisSale)
     if (isSaleFlow && form.buyerGstin.trim() && !isValidGstin(form.buyerGstin)) return toast.error(en.profile.invalidGstin)
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) return toast.warning(optionValidation.message)
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     try {
       setLoading(true)
@@ -265,21 +265,16 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
             className="w-full sm:w-auto"
           />
 
-          <TransactionOptions
+          <TransactionActionPanel
             value={transactionOptions}
             onChange={setTransactionOptions}
-            allowPrint
-            allowDownloadPdf
-            allowShareWhatsApp
-            allowShareEmail
-            allowCopyDetails
-            disabled={loading}
+                                disabled={loading}
           />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <SummaryCard label={en.inventory.entryType} value={row.logType === "in" ? en.stockHistory.typeLabels.stockIn : form.reason === "Sold" ? en.inventory.reasons.sold : en.stockHistory.typeLabels.stockOut} tone="default" />
-            <SummaryCard label={en.inventory.totalValueLabel} value={`${en.common.rupeeSymbol} ${totalValue.toLocaleString("en-IN")}`} tone="emerald" />
-            <SummaryCard label={en.inventory.originalDate} value={new Date(row.date).toLocaleDateString("en-IN")} tone="default" />
+            <SummaryCard label={en.inventory.totalValueLabel} value={formatCurrency(totalValue)} tone="emerald" />
+            <SummaryCard label={en.inventory.originalDate} value={formatIndianDate(row.date)} tone="default" />
           </div>
         </div>
       )}
@@ -309,10 +304,10 @@ function buildAdjustmentDocument({
   const isSale = row.logType === "out" && form.reason === "Sold"
 
   return {
-    type: "stock-adjustment",
+    type: "receipt",
     title: en.transaction.stockAdjustmentReceipt,
     reference: `ADJ-${Date.now()}`,
-    date: form.date ? new Date(form.date).toLocaleString("en-IN") : new Date().toLocaleString("en-IN"),
+    date: form.date ? formatIndianDateTime(form.date) : formatIndianDateTime(new Date()),
     seller,
     partyLabel: isSale ? en.receipt.buyer : en.inventory.reason,
     party: isSale ? { name: form.buyerName, phone: form.buyerPhone, gstin: form.buyerGstin } : { name: form.reason },

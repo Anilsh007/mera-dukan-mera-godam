@@ -1,8 +1,14 @@
-export default function StatPill({ label, value }:{ label: string, value: string }) {
+import InfoTile from "@/app/components/ui/InfoTile"
+
+export default function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border rounded-xl px-3 py-2">
-      <p className="text-xs text-[var(--text-muted)]">{label}</p>
-      <p className="font-semibold">{value}</p>
-    </div>
+    <InfoTile
+      label={label}
+      value={value}
+      variant="subtle"
+      className="border"
+      labelClassName="text-xs text-[var(--text-muted)]"
+      valueClassName="font-semibold text-[var(--text-primary)]"
+    />
   )
 }

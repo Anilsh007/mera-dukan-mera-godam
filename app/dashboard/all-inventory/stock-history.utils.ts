@@ -1,4 +1,5 @@
 import { formatQuantity } from "@/app/lib/quantityUnit"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import type { HistoryRow } from "./stock-history.types"
 import { en } from "@/app/messages/en"
 import {
@@ -10,15 +11,7 @@ import {
 export const HISTORY_PAGE_SIZES = [5, 10, 20, 50]
 
 export function formatDateTime(iso: string) {
-  if (!iso) return "-"
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })
+  return formatIndianDateTime(iso)
 }
 
 export function formatDateInput(value: string) {
@@ -135,16 +128,16 @@ export function buildGroupedPrintDocument(
       const first = group[0]
       const name = first?.buyerName?.trim() || en.stockHistory.labels.buyerUnavailable
       const groupTotal = group.reduce((sum, row) => sum + Number(row.amount || row.price * row.quantity), 0)
-      return `${name}: ${en.common.rupeeSymbol} ${groupTotal.toLocaleString("en-IN")}`
+      return `${name}: ${formatCurrency(groupTotal)}`
     })
     .join(" | ")
 
   return {
-    type: "stock-adjustment",
+    type: "stock-adjustment" as TransactionDocumentData["type"],
     title: en.stockHistory.labels.selectedStockHistory,
     reference: `HIS-${Date.now()}`,
-    date: new Date().toLocaleString("en-IN"),
-    seller,
+    date: formatIndianDateTime(new Date()),
+    seller: seller ?? ({} as BusinessDocumentProfile),
     partyLabel: en.stockHistory.labels.buyerSummary,
     party: {
       name:
@@ -166,7 +159,7 @@ export function buildGroupedPrintDocument(
       quantity: formatQuantity(row.quantity, row.quantityUnit),
       rate: row.price,
       total: row.amount || row.price * row.quantity,
-      note: [row.note, row.gstAmount ? `${en.transaction.totalGst}: ${en.common.rupeeSymbol} ${row.gstAmount.toLocaleString("en-IN")}` : ""]
+      note: [row.note, row.gstAmount ? `${en.transaction.totalGst}: ${formatCurrency(row.gstAmount)}` : ""]
         .filter(Boolean)
         .join(" | "),
     })),
@@ -175,7 +168,7 @@ export function buildGroupedPrintDocument(
       totalGst: rows.reduce((sum, row) => sum + Number(row.gstAmount || 0), 0),
     },
     notes: buyerSummary || undefined,
-    footerNote: `${en.stockHistory.labels.printedOn}: ${new Date().toLocaleString("en-IN")}`,
+    footerNote: `${en.stockHistory.labels.printedOn}: ${formatIndianDateTime(new Date())}`,
   }
 }
 

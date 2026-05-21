@@ -27,7 +27,7 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-DNS-Prefetch-Control", value: "on" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=(), payment=()" },
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), browsing-topics=(), payment=()" },
   { key: "Cross-Origin-Resource-Policy", value: "same-site" },
   ...(isHttpsProduction ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" }] : []),
 ]

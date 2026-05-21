@@ -9,6 +9,9 @@ import ShareActions from "@/app/components/ui/ShareActions"
 import { notify as toast } from "@/app/lib/notifications"
 import { buildReportShareMessage } from "@/app/lib/share"
 import { formatMoney, formatNumber } from "../lib/format"
+import { auth } from "@/app/lib/firebase"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import { assertFeatureAccess, incrementUsage } from "@/app/lib/subscription/subscription.service"
 
 type ReportsHeaderProps = {
   rangeKey: DateRangeKey
@@ -40,46 +43,57 @@ export default function ReportsHeader({ rangeKey, onRangeChange, report }: Repor
     [en.reports.expiryRisk, report.expiryRiskCount],
   ])
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     if (!hasReportData) {
       toast.warning(en.reports.noData)
       return
     }
     try {
+      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+      await assertFeatureAccess(userId, "exports", { operation: "export", scope: "premium", incrementBy: 1 })
       exportReportCsv(report)
+      await incrementUsage(userId, "exports")
       toast.success(en.notifications.exportCompleted)
     } catch (error) {
       console.error("Report CSV export failed", error)
-      toast.error(en.share.downloadFailed)
+      toast.error(error instanceof Error ? error.message : en.share.downloadFailed)
     }
   }
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!hasReportData) {
       toast.warning(en.reports.noData)
       return
     }
     try {
+      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+      await assertFeatureAccess(userId, "exports", { operation: "export", scope: "premium", incrementBy: 1 })
       exportReportExcel(report)
+      await incrementUsage(userId, "exports")
       toast.success(en.notifications.exportCompleted)
     } catch (error) {
       console.error("Report Excel export failed", error)
-      toast.error(en.share.downloadFailed)
+      toast.error(error instanceof Error ? error.message : en.share.downloadFailed)
     }
   }
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!hasReportData) {
       toast.warning(en.reports.noData)
       return
     }
     try {
+      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+      await assertFeatureAccess(userId, "exports", { operation: "export", scope: "premium", incrementBy: 1 })
       const printed = printReportSummary(report)
-      if (printed) toast.success(en.print.printStarted)
+      if (printed) {
+        await incrementUsage(userId, "exports")
+        toast.success(en.print.printStarted)
+      }
       else toast.error(en.print.popupBlocked)
     } catch (error) {
       console.error("Report print failed", error)
-      toast.error(en.print.printFailed)
+      toast.error(error instanceof Error ? error.message : en.print.printFailed)
     }
   }
 

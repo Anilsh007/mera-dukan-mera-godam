@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, type ReactNode } from "react"
+import { forwardRef, useId, type ReactNode } from "react"
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: ReactNode
@@ -12,7 +12,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     error?: ReactNode
 }
 
-export default function Input({
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input({
     label,
     containerClassName,
     className = "",
@@ -23,7 +23,7 @@ export default function Input({
     helperText,
     error,
     ...props
-}: InputProps) {
+}: InputProps, ref) {
     const generatedId = useId()
     const inputId = id || generatedId
     const helpId = helperText ? `${inputId}-help` : undefined
@@ -43,6 +43,7 @@ export default function Input({
             aria-invalid={Boolean(error) || undefined}
             aria-describedby={describedBy}
             {...props}
+            ref={ref}
             className={inputClass}
         />
     )
@@ -79,4 +80,8 @@ export default function Input({
             )}
         </div>
     )
-}
+})
+
+Input.displayName = "Input"
+
+export default Input

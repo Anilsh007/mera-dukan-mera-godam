@@ -7,6 +7,7 @@ import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity";
 import type { ProfileState } from "@/app/dashboard/profile/useProfile";
 import type { GSTInvoice, GSTInvoiceRecord } from "./types/gst.types";
 import { en } from "@/app/messages/en";
+import { assertFeatureAccess, incrementUsage } from "@/app/lib/subscription/subscription.service";
 
 function requireUserId(userId?: string): string {
   const uid = userId ?? getCurrentUserId();
@@ -31,6 +32,11 @@ export async function saveInvoiceToDb(invoice: GSTInvoice, userId?: string, sync
     typeof invoice === "object" && invoice && "id" in invoice && typeof invoice.id === "string"
       ? invoice.id
       : null;
+
+  await assertFeatureAccess(resolvedUserId, "gstInvoices", {
+    operation: existingRecordId ? "update" : "create",
+    incrementBy: existingRecordId ? 0 : 1,
+  })
 
   const existingWithInvoiceNo = await db.invoices
     .where("[userId+invoiceNo]")
@@ -59,6 +65,9 @@ export async function saveInvoiceToDb(invoice: GSTInvoice, userId?: string, sync
   };
 
   await db.invoices.put(record);
+  if (!existingRecordId) {
+    await incrementUsage(resolvedUserId, "gstInvoices")
+  }
   return record;
 }
 

@@ -36,7 +36,10 @@ type FormState = {
   quantityUnit: string
   sku: string
   hsnCode: string
+  batchNo: string
+  serialTrackingNote: string
   note: string
+  reorderLevel: string
   lowStockThreshold: string
   criticalStockThreshold: string
 }
@@ -62,7 +65,10 @@ const emptyForm: FormState = {
   quantityUnit: " ",
   sku: "",
   hsnCode: "",
+  batchNo: "",
+  serialTrackingNote: "",
   note: "",
+  reorderLevel: "",
   lowStockThreshold: "",
   criticalStockThreshold: "",
 }
@@ -107,7 +113,10 @@ export default function ProductManagementModal({
       quantityUnit: normalizeQuantityUnit(product.quantityUnit),
       sku: product.sku || "",
       hsnCode: product.hsnCode || "",
+      batchNo: product.batchNo || "",
+      serialTrackingNote: product.serialTrackingNote || "",
       note: product.note || "",
+      reorderLevel: product.reorderLevel !== undefined ? String(product.reorderLevel) : "",
       lowStockThreshold: product.lowStockThreshold !== undefined ? String(product.lowStockThreshold) : "",
       criticalStockThreshold: product.criticalStockThreshold !== undefined ? String(product.criticalStockThreshold) : "",
     })
@@ -154,35 +163,60 @@ export default function ProductManagementModal({
     setAdjustment((current) => ({ ...current, [key]: value }))
 
   const handleSave = async () => {
-    if (!form.name.trim()) return toast.error(en.inventory.productManagement.enterItemName)
-    if (!form.price || Number(form.price) < 0) return toast.error(en.inventory.enterRate)
-    if (!form.quantityUnit.trim()) return toast.error(en.inventory.productManagement.enterUnit)
+    if (!form.name.trim()) {
+      toast.error(en.inventory.productManagement.enterItemName)
+      return
+    }
+    if (!form.price || Number(form.price) < 0) {
+      toast.error(en.inventory.enterRate)
+      return
+    }
+    if (!form.quantityUnit.trim()) {
+      toast.error(en.inventory.productManagement.enterUnit)
+      return
+    }
     if (
       normalizeQuantityUnit(form.quantityUnit) !== normalizeQuantityUnit(product.quantityUnit) &&
       (Number(product.quantity || 0) > 0 || historyCount > 0)
     ) {
-      return toast.error(en.inventory.productManagement.unitChangeLocked)
+      toast.error(en.inventory.productManagement.unitChangeLocked)
+      return
     }
     if (form.categoryOption === NEW_CATEGORY_VALUE && !resolvedCategory) {
-      return toast.error(en.inventory.productManagement.enterNewCategory)
+      toast.error(en.inventory.productManagement.enterNewCategory)
+      return
     }
 
+    const reorderLevel = parseOptionalNumber(form.reorderLevel)
     const lowStockThreshold = parseOptionalNumber(form.lowStockThreshold)
     const criticalStockThreshold = parseOptionalNumber(form.criticalStockThreshold)
-    if (lowStockThreshold !== undefined && lowStockThreshold < 0) return toast.error(en.inventory.productManagement.lowStockInvalid)
-    if (criticalStockThreshold !== undefined && criticalStockThreshold < 0) return toast.error(en.inventory.productManagement.criticalStockInvalid)
+    if (reorderLevel !== undefined && reorderLevel < 0) {
+      toast.error(en.inventory.productManagement.lowStockInvalid)
+      return
+    }
+    if (lowStockThreshold !== undefined && lowStockThreshold < 0) {
+      toast.error(en.inventory.productManagement.lowStockInvalid)
+      return
+    }
+    if (criticalStockThreshold !== undefined && criticalStockThreshold < 0) {
+      toast.error(en.inventory.productManagement.criticalStockInvalid)
+      return
+    }
     if (
       lowStockThreshold !== undefined &&
       criticalStockThreshold !== undefined &&
       criticalStockThreshold > lowStockThreshold
     ) {
-      return toast.error(en.inventory.productManagement.thresholdOrderInvalid)
+      toast.error(en.inventory.productManagement.thresholdOrderInvalid)
+      return
     }
     if (hasStockAdjustment && (!Number.isFinite(adjustmentQuantity) || adjustmentQuantity <= 0)) {
-      return toast.error(en.inventory.productManagement.invalidAdjustmentQuantity)
+      toast.error(en.inventory.productManagement.invalidAdjustmentQuantity)
+      return
     }
     if (hasStockAdjustment && adjustment.type === "out" && adjustmentQuantity > Number(product.quantity || 0)) {
-      return toast.error(en.inventory.productManagement.adjustmentExceedsStock)
+      toast.error(en.inventory.productManagement.adjustmentExceedsStock)
+      return
     }
 
     try {
@@ -197,7 +231,10 @@ export default function ProductManagementModal({
         expiry: form.expiry,
         sku: form.sku,
         hsnCode: form.hsnCode,
+        batchNo: form.batchNo,
+        serialTrackingNote: form.serialTrackingNote,
         note: form.note,
+        reorderLevel,
         lowStockThreshold,
         criticalStockThreshold,
       })
@@ -213,6 +250,7 @@ export default function ProductManagementModal({
           price: Number(form.price),
           expiry: form.expiry || undefined,
           note: adjustment.note,
+          batchNo: form.batchNo,
         })
         successMessage = en.inventory.productManagement.adjustmentSaved
       }
@@ -222,7 +260,13 @@ export default function ProductManagementModal({
       onClose()
     } catch (error) {
       console.error("Product details save failed", error)
-      toast.error(hasStockAdjustment ? en.inventory.productManagement.adjustmentFailed : en.inventory.productManagement.detailsSaveFailed)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : hasStockAdjustment
+            ? en.inventory.productManagement.adjustmentFailed
+            : en.inventory.productManagement.detailsSaveFailed
+      )
     } finally {
       setLoading(false)
     }
@@ -243,7 +287,7 @@ export default function ProductManagementModal({
       onClose()
     } catch (error) {
       console.error("Product delete failed", error)
-      toast.error(en.inventory.productManagement.deleteFailed)
+      toast.error(error instanceof Error ? error.message : en.inventory.productManagement.deleteFailed)
     } finally {
       setLoading(false)
     }
@@ -295,6 +339,8 @@ export default function ProductManagementModal({
         <Input label={en.inventory.supplier} value={form.supplier} onChange={(e) => setField("supplier", e.target.value)} />
         <Input label={en.inventory.code} value={form.sku} onChange={(e) => setField("sku", e.target.value)} />
         <Input label={en.inventory.productManagement.hsnCode} value={form.hsnCode} onChange={(e) => setField("hsnCode", e.target.value)} />
+        <Input label={en.advancedInventory.batchNo} value={form.batchNo} placeholder={en.advancedInventory.batchFieldHelp} onChange={(e) => setField("batchNo", e.target.value)} />
+        <Input label={en.advancedInventory.serialImei} value={form.serialTrackingNote} placeholder={en.advancedInventory.serialImeiPlaceholder} onChange={(e) => setField("serialTrackingNote", e.target.value)} />
         <Input label={en.inventory.expiry} type="date" value={form.expiry} onChange={(e) => setField("expiry", e.target.value)} />
         <Input label={en.inventory.productManagement.sellingPrice} type="number" min={0} value={form.price} onChange={(e) => setField("price", e.target.value)} />
         <Input
@@ -330,6 +376,7 @@ export default function ProductManagementModal({
             product={product}
             criticalValue={form.criticalStockThreshold}
             lowValue={form.lowStockThreshold}
+            reorderValue={form.reorderLevel}
             onChange={setField}
           />
         )}
@@ -480,11 +527,13 @@ function StockWarningSection({
   product,
   criticalValue,
   lowValue,
+  reorderValue,
   onChange,
 }: {
   product: Product
   criticalValue: string
   lowValue: string
+  reorderValue: string
   onChange: (key: keyof FormState, value: string) => void
 }) {
   const unit = normalizeQuantityUnit(product.quantityUnit)
@@ -507,7 +556,19 @@ function StockWarningSection({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-emerald-200 bg-white p-3 shadow-sm dark:border-emerald-900/40 dark:bg-slate-950">
+          <Input
+            type="number"
+            min={0}
+            label={en.advancedInventory.reorderLevel}
+            helperText={en.advancedInventory.defaultLocationHelp}
+            value={reorderValue}
+            onChange={(e) => onChange("reorderLevel", e.target.value)}
+            placeholder={String(STOCK_THRESHOLDS.lowMax)}
+            rightAddon={unit}
+          />
+        </div>
         <div className="rounded-2xl border border-red-200 bg-white p-3 shadow-sm dark:border-red-900/40 dark:bg-slate-950">
           <Input
             type="number"

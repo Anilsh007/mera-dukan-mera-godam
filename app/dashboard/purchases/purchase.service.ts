@@ -4,9 +4,15 @@ import { v4 as uuidv4 } from "uuid"
 import { addProduct } from "@/app/dashboard/quick-purchase/product.service"
 import { db, type PurchaseDetailsStatus, type PurchaseEntryMode, type PurchaseItem, type PurchasePaymentStatus, type PurchaseRecord, type StockTransactionProduct } from "@/app/lib/db"
 import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
+import { ensurePartyRecord, syncPartyBalances } from "@/app/lib/parties/party.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { en } from "@/app/messages/en"
 import { makePurchaseBillNo } from "./purchase.form"
+import {
+  assertFeatureAccess,
+  ensureSupplierCapacity,
+  incrementUsage,
+} from "@/app/lib/subscription/subscription.service"
 
 export type PurchaseLineInput = {
   name: string
@@ -17,6 +23,9 @@ export type PurchaseLineInput = {
   expiry?: string
   sku?: string
   hsnCode?: string
+  batchNo?: string
+  locationId?: string
+  locationName?: string
   note?: string
 }
 
@@ -24,6 +33,7 @@ export type SavePurchaseInput = {
   userId: string
   billNo: string
   supplierName: string
+  supplierPartyId?: string
   purchaseDate: string
   purchaseDateTime?: string
   paymentStatus: PurchasePaymentStatus
@@ -68,17 +78,31 @@ export type ApplySupplierPaymentInput = {
 }
 
 export async function savePurchase(input: SavePurchaseInput) {
+  await assertFeatureAccess(input.userId, "purchases", { operation: "create", incrementBy: 1 })
+
   const billNo = input.billNo.trim() || makePurchaseBillNo()
   const supplierName = input.supplierName.trim()
   const purchaseDate = input.purchaseDate || new Date().toISOString().slice(0, 10)
   const purchaseDateTime = input.purchaseDateTime || buildDateTimeFromDate(purchaseDate)
 
-  if (!billNo) throw new Error("Purchase bill number is required.")
-  if (!supplierName) throw new Error("Supplier name is required.")
-  if (!input.items.length) throw new Error("Add at least one purchase item.")
+  if (!billNo) throw new Error(en.purchases.billNumberRequired)
+  if (!supplierName) throw new Error(en.purchases.validation.supplierRequired)
+  if (!input.items.length) throw new Error(en.purchases.validation.addAtLeastOneProduct)
+
+  const shouldCreateSupplierParty = supplierName.toLowerCase() !== "details pending"
+  let supplierPartyId: string | undefined
+  if (shouldCreateSupplierParty) {
+    await ensureSupplierCapacity(input.userId, supplierName)
+    const supplierParty = await ensurePartyRecord({
+      userId: input.userId,
+      name: supplierName,
+      type: "supplier",
+    })
+    supplierPartyId = supplierParty.id
+  }
 
   const existing = await db.purchases.where("[userId+billNo]").equals([input.userId, billNo]).first()
-  if (existing) throw new Error("A purchase with this bill number is already saved.")
+  if (existing) throw new Error(en.purchases.duplicateBillNo)
 
   const cleanLines = input.items.map((item) => {
     const name = item.name.trim()
@@ -86,9 +110,9 @@ export async function savePurchase(input: SavePurchaseInput) {
     const quantity = Number(item.quantity)
     const quantityUnit = normalizeQuantityUnit(item.quantityUnit)
 
-    if (!name) throw new Error("Product name is required.")
-    if (!Number.isFinite(price) || price < 0) throw new Error(`${name}: enter a valid price.`)
-    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(`${name}: quantity must be greater than 0.`)
+    if (!name) throw new Error(en.purchases.validation.productNameRequired)
+    if (!Number.isFinite(price) || price < 0) throw new Error(`${name}: ${en.purchases.validation.priceInvalid}`)
+    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(`${name}: ${en.purchases.validation.quantityInvalid}`)
 
     return {
       ...item,
@@ -117,6 +141,9 @@ export async function savePurchase(input: SavePurchaseInput) {
     category: line.category?.toLowerCase() || undefined,
     sku: line.sku,
     hsnCode: line.hsnCode,
+    batchNo: line.batchNo,
+    locationId: line.locationId,
+    locationName: line.locationName,
     quantity: line.quantity,
     quantityUnit: line.quantityUnit,
     rate: line.price,
@@ -125,7 +152,7 @@ export async function savePurchase(input: SavePurchaseInput) {
   }))
   const savedItems: PurchaseItem[] = []
 
-  await db.transaction("rw", db.products, db.productLogs, db.purchases, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.purchases, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches, db.subscriptions], async () => {
     for (const line of cleanLines) {
       const before = await db.products
         .where("[userId+name+category+quantityUnit]")
@@ -148,6 +175,8 @@ export async function savePurchase(input: SavePurchaseInput) {
           expiry: line.expiry,
           sku: line.sku,
           hsnCode: line.hsnCode,
+          batchNo: line.batchNo,
+          locationId: line.locationId,
           note: line.note,
           userId: input.userId,
         },
@@ -164,6 +193,9 @@ export async function savePurchase(input: SavePurchaseInput) {
             paymentMode: input.paymentMode?.trim() || undefined,
             paymentStatus: input.paymentStatus,
             invoiceReceiptNo: billNo,
+            locationId: line.locationId,
+            locationName: line.locationName,
+            batchNo: line.batchNo,
             notes: buildPurchaseLogNote(billNo, purchaseId, line.note),
           },
         }
@@ -188,7 +220,7 @@ export async function savePurchase(input: SavePurchaseInput) {
           )
           .first())
 
-      if (!product) throw new Error(`${line.name}: product save failed`)
+      if (!product) throw new Error(en.purchases.productSaveFailed.replace("{name}", line.name))
 
       savedItems.push({
         id: uuidv4(),
@@ -201,6 +233,9 @@ export async function savePurchase(input: SavePurchaseInput) {
         expiry: line.expiry,
         sku: line.sku,
         hsnCode: line.hsnCode,
+        batchNo: line.batchNo,
+        locationId: line.locationId,
+        locationName: line.locationName,
         note: line.note,
         lineTotal: line.price * line.quantity,
       })
@@ -211,6 +246,7 @@ export async function savePurchase(input: SavePurchaseInput) {
       userId: input.userId,
       billNo,
       supplierName,
+      partyId: supplierPartyId,
       purchaseDate,
       purchaseDateTime,
       paymentStatus: input.paymentStatus,
@@ -230,17 +266,19 @@ export async function savePurchase(input: SavePurchaseInput) {
     await db.purchases.add(record)
   })
 
+  if (supplierPartyId) await syncPartyBalances(input.userId, supplierPartyId)
   await autoSyncToSupabase()
+  await incrementUsage(input.userId, "purchases")
   return purchaseId
 }
 
 export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
-  if (!input.items.length) throw new Error("Add at least one quick purchase item.")
+  if (!input.items.length) throw new Error(en.purchases.validation.addAtLeastOneProduct)
 
   const purchaseDate = input.purchaseDate || new Date().toISOString().slice(0, 10)
   const baseRef = `QP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Date.now()}`
   const groupedItems = input.items.reduce((groups, item) => {
-    const supplierName = item.supplierName?.trim() || "Details Pending"
+    const supplierName = item.supplierName?.trim() || en.purchases.detailsPending
     const current = groups.get(supplierName) || []
     current.push(item)
     groups.set(supplierName, current)
@@ -261,7 +299,7 @@ export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
       paymentStatus: "unpaid",
       paymentMode: undefined,
       amountPaid: 0,
-      note: "Created from Quick Purchase. Bill and payment details pending.",
+      note: en.purchases.quickPurchasePendingNote,
       entryMode: "quick",
       detailsStatus: "pending",
       items: items.map((item) => ({
@@ -273,6 +311,9 @@ export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
         expiry: item.expiry,
         sku: item.sku,
         hsnCode: item.hsnCode,
+        batchNo: item.batchNo,
+        locationId: item.locationId,
+        locationName: item.locationName,
         note: item.note,
       })),
     })
@@ -283,18 +324,24 @@ export async function saveQuickPurchase(input: SaveQuickPurchaseInput) {
 }
 
 export async function completeQuickPurchaseDetails(input: CompletePurchaseDetailsInput) {
+  await assertFeatureAccess(input.userId, "purchases", { operation: "update" })
   const purchase = await db.purchases.get(input.purchaseId)
-  if (!purchase || purchase.userId !== input.userId) throw new Error("Purchase record not found.")
-  if (purchase.entryMode !== "quick") throw new Error("Only quick purchases can be completed here.")
+  if (!purchase || purchase.userId !== input.userId) throw new Error(en.purchases.purchaseRecordNotFound)
+  if (purchase.entryMode !== "quick") throw new Error(en.purchases.onlyQuickPurchasesCanComplete)
 
   const billNo = input.billNo.trim()
   const supplierName = input.supplierName.trim()
   const purchaseDate = input.purchaseDate || purchase.purchaseDate
 
-  if (!supplierName) throw new Error("Supplier name is required.")
+  if (!supplierName) throw new Error(en.purchases.validation.supplierRequired)
+  const supplierParty = await ensurePartyRecord({
+    userId: input.userId,
+    name: supplierName,
+    type: "supplier",
+  })
 
   const duplicate = await db.purchases.where("[userId+billNo]").equals([input.userId, billNo]).first()
-  if (duplicate && duplicate.id !== purchase.id) throw new Error("A purchase with this bill number is already saved.")
+  if (duplicate && duplicate.id !== purchase.id) throw new Error(en.purchases.duplicateBillNo)
 
   const normalizedPaid =
     input.paymentStatus === "unpaid" ? 0 : Math.min(Math.max(Number(input.amountPaid || 0), 0), purchase.totalAmount)
@@ -306,6 +353,7 @@ export async function completeQuickPurchaseDetails(input: CompletePurchaseDetail
     await db.purchases.update(purchase.id, {
       billNo,
       supplierName,
+      partyId: supplierParty.id,
       purchaseDate,
       paymentStatus: input.paymentStatus,
       paymentMode: input.paymentMode?.trim() || undefined,
@@ -325,6 +373,7 @@ export async function completeQuickPurchaseDetails(input: CompletePurchaseDetail
     })
   })
 
+  await syncPartyBalances(input.userId, supplierParty.id)
   await autoSyncToSupabase()
   return purchase.id
 }
@@ -337,8 +386,14 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
   const supplierName = input.supplierName.trim()
   const amount = Number(input.amount)
 
-  if (!supplierName) throw new Error("Supplier name is required.")
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Payment amount must be greater than 0.")
+  if (!supplierName) throw new Error(en.purchases.validation.supplierRequired)
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error(en.purchases.paymentAmountInvalid)
+
+  const supplierParty = await ensurePartyRecord({
+    userId: input.userId,
+    name: supplierName,
+    type: "supplier",
+  })
 
   const duePurchases = (await db.purchases
     .where("userId")
@@ -356,7 +411,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
     })
 
   const totalDue = duePurchases.reduce((sum, purchase) => sum + purchase.dueAmount, 0)
-  if (!duePurchases.length || totalDue <= 0) throw new Error("No due amount is pending for this supplier.")
+  if (!duePurchases.length || totalDue <= 0) throw new Error(en.purchases.noSupplierDue)
 
   let remaining = Math.min(amount, totalDue)
   const now = new Date().toISOString()
@@ -367,7 +422,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
     paidAt: now,
   })
 
-  await db.transaction("rw", db.purchases, async () => {
+  await db.transaction("rw", db.purchases, db.partyLedger, async () => {
     for (const purchase of duePurchases) {
       if (remaining <= 0) break
 
@@ -378,6 +433,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
         nextDue === 0 ? "paid" : nextPaid > 0 ? "partial" : "unpaid"
 
       await db.purchases.update(purchase.id, {
+        partyId: supplierParty.id,
         amountPaid: nextPaid,
         dueAmount: nextDue,
         paymentStatus: nextStatus,
@@ -388,8 +444,23 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
 
       remaining -= applied
     }
+
+    await db.partyLedger.add({
+      id: uuidv4(),
+      userId: input.userId,
+      partyId: supplierParty.id,
+      type: "payment-paid",
+      amount: Math.min(amount, totalDue),
+      paymentMode: input.paymentMode?.trim() || undefined,
+      note: input.note?.trim() || undefined,
+      reference: `PAY-${Date.now()}`,
+      entryDate: now,
+      createdAt: now,
+      updatedAt: now,
+    })
   })
 
+  await syncPartyBalances(input.userId, supplierParty.id)
   await autoSyncToSupabase()
   return {
     paidAmount: Math.min(amount, totalDue),

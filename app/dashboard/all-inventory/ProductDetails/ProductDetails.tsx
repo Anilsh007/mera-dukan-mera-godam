@@ -95,7 +95,7 @@ export default function ProductDetails({
   const productShareDocument = useMemo<TransactionDocumentData | undefined>(() => {
     if (!activeProduct) return undefined
     return {
-      type: "stock-adjustment",
+      type: "report",
       title: activeProduct.name,
       reference: activeProduct.sku || activeProduct.id || activeProduct.name,
       date: new Date().toLocaleString("en-IN"),
@@ -276,26 +276,26 @@ export default function ProductDetails({
   return (
     <>
       <div className="space-y-4 sm:space-y-6">
-        <div className="overflow-hidden rounded-[24px] sm:rounded-[28px] shadow-[var(--shadow-card)]">
+        <div className="overflow-hidden border border-[var(--border-card)] rounded-[24px] sm:rounded-[28px] shadow-[var(--shadow-card)]">
           <div className="flex flex-col gap-4 bg-[var(--bg-card-strong)] backdrop-blur-xl p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex w-full items-start gap-3 sm:gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--btn-primary)]/10 text-[var(--btn-primary)] sm:h-14 sm:w-14">
                 <LayoutGrid size={22} />
               </div>
 
-              <div className="min-w-0">
+              <div>
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] truncate">
                   {group.label}
                 </h2>
 
-                <div className="mt-2 flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm text-[var(--text-secondary)]">
-                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
+                <div className="mt-2 flex flex-wrap gap-1 sm:gap-2 text-[var(--text-secondary)]">
+                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1 text-sm">
                     {group.products.length} {en.inventory.itemsSuffix}
                   </span>
-                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
+                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1 text-sm">
                     {en.inventory.remainingPrefix} {formatQuantityBreakdown(group.products)}
                   </span>
-                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1">
+                  <span className="rounded-lg border border-[var(--border-card)] px-3 py-1 text-sm">
                     {en.inventory.valuePrefix} {en.common.rupeeSymbol} {group.totalValue.toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -303,21 +303,10 @@ export default function ProductDetails({
             </div>
 
             <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
-              <ShareActions
-                document={productShareDocument}
-                subject={activeProduct.name}
-                showPrint={false}
-                showDownload
-                compact
-              />
-            {onBack && (
-                <Button
-                  onClick={onBack}
-                  title={en.common.back}
-                  variant="black"
-                  icon={<ArrowLeft size={16} />}
-                />
+              {onBack && (
+                <Button onClick={onBack} title={en.common.back} variant="black" icon={<ArrowLeft size={16} />} />
             )}
+              <ShareActions document={productShareDocument} subject={activeProduct.name} showPrint={false} showDownload compact />
               </div>
           </div>
 

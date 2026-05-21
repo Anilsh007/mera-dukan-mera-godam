@@ -16,6 +16,11 @@ import { useReportsData } from "./reports/lib/useReportsData"
 import { buildReport } from "./reports/lib/reportBuilder"
 import type { ProductLog } from "@/app/lib/db"
 import Button from "../components/ui/Button"
+import useSubscription from "@/app/hooks/useSubscription"
+import DashboardTrialBanner from "@/app/components/subscription/DashboardTrialBanner"
+import CurrentPlanCard from "@/app/components/subscription/CurrentPlanCard"
+import SubscriptionRequiredModal from "@/app/components/subscription/SubscriptionRequiredModal"
+import DashboardOverviewAutoCharts from "./components/DashboardOverviewAutoCharts"
 
 function buildSevenDaySales(logs: ProductLog[]) {
   const today = new Date()
@@ -28,7 +33,7 @@ function buildSevenDaySales(logs: ProductLog[]) {
   const totals = new Map(dayKeys.map((key) => [key, 0]))
 
   logs.forEach((log) => {
-    if (log.type !== "out") return
+    if (log.type !== "out" || log.paymentStatus === "cancelled") return
     const key = new Date(log.date).toISOString().slice(0, 10)
     if (!totals.has(key)) return
     totals.set(key, (totals.get(key) || 0) + Math.abs(Number(log.quantityAdded || log.quantity || 0)) * Number(log.price || 0))
@@ -41,12 +46,16 @@ export default function DashboardHome() {
   const router = useRouter()
   const { data, loading } = useReportsData()
   const [userName, setUserName] = useState("")
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const { effectivePlan, trialDaysLeft, subscriptionExpired, subscriptionActive, trialActive } = useSubscription()
 
   useEffect(() => {
     [
       "/dashboard/all-inventory",
       "/dashboard/quick-purchase",
+      "/dashboard/quick-sale",
       "/dashboard/purchases",
+      "/dashboard/sales",
       "/dashboard/stock-history",
       "/dashboard/expiry-alerts",
       "/dashboard/reports",
@@ -159,8 +168,21 @@ export default function DashboardHome() {
     },
   ]
 
+  const subscriptionStatusLabel = subscriptionActive
+    ? en.subscription.activeStatus
+    : trialActive
+      ? en.subscription.trialStatus
+      : en.subscription.expiredStatus
+
   return (
     <div className="dashboard-page space-y-6 pb-8">
+      <DashboardOverviewAutoCharts />
+      <DashboardTrialBanner
+        trialDaysLeft={trialDaysLeft}
+        subscriptionExpired={subscriptionExpired}
+        onOpenUpgrade={() => setUpgradeOpen(true)}
+      />
+
       <section className="dashboard-hero-panel rounded-[28px] p-4 sm:p-6" aria-labelledby="dashboard-title">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="text-[var(--text-secondary)]">
@@ -178,6 +200,15 @@ export default function DashboardHome() {
           </div>
         </div>
       </section>
+
+      <CurrentPlanCard
+        plan={effectivePlan}
+        statusLabel={subscriptionStatusLabel}
+        trialDaysLeft={trialDaysLeft}
+        subscriptionExpired={subscriptionExpired}
+        onManage={() => router.push("/dashboard/settings/subscription")}
+        onUpgrade={() => setUpgradeOpen(true)}
+      />
 
       {stats.pendingPurchaseDetails > 0 && (
         <>
@@ -240,6 +271,13 @@ export default function DashboardHome() {
               onClick={() => router.push("/dashboard/quick-purchase")}
             />
             <QuickActionCard
+              title={en.dashboard.quickSaleAction}
+              description={en.dashboard.quickSaleDescription}
+              icon={<IndianRupee size={18} aria-hidden="true" />}
+              accentClass="bg-cyan-500"
+              onClick={() => router.push("/dashboard/quick-sale")}
+            />
+            <QuickActionCard
               title={en.dashboard.reviewHistory}
               description={en.dashboard.reviewHistoryDescription}
               icon={<TrendingUp size={18} aria-hidden="true" />}
@@ -249,6 +287,8 @@ export default function DashboardHome() {
           </div>
         </div>
       </section>
+
+      <SubscriptionRequiredModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   )
 }

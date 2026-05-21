@@ -2,7 +2,9 @@
 
 import Button from "@/app/components/ui/Button"
 import StatusBadge from "@/app/components/ui/StatusBadge"
+import SimpleEmptyState from "@/app/components/ui/SimpleEmptyState"
 import { getStockLevel } from "@/app/lib/inventory.utils"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import { en } from "@/app/messages/en"
 
 export interface TableItem {
@@ -16,6 +18,7 @@ export interface TableItem {
     quantityUnit?: string
     lowStockThreshold?: number
     criticalStockThreshold?: number
+    reorderLevel?: number
     createdAt?: string
     note?: string
 }
@@ -40,16 +43,7 @@ function getRowId(item: TableItem, index: number) {
 
 function smartDate(val?: string) {
     if (!val || val === "-") return "-"
-    const d = new Date(val)
-    if (Number.isNaN(d.getTime())) return val
-    return d.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-    })
+    return formatIndianDateTime(val, val)
 }
 
 function ExpiryCell({ val }: { val?: string }) {
@@ -68,15 +62,17 @@ function QtyCell({
     unit,
     lowStockThreshold,
     criticalStockThreshold,
+    reorderLevel,
 }: {
     qty?: number
     unit?: string
     lowStockThreshold?: number
     criticalStockThreshold?: number
+    reorderLevel?: number
 }) {
     const q = qty ?? 0
     const stockLevel = getStockLevel(q, {
-        lowMax: lowStockThreshold,
+        lowMax: lowStockThreshold ?? reorderLevel,
         criticalMax: criticalStockThreshold,
     })
     const dot = stockLevel === "out" ? "bg-red-500" : stockLevel === "critical" ? "bg-red-400" : stockLevel === "low" ? "bg-amber-400" : "bg-emerald-500"
@@ -117,11 +113,7 @@ export default function TableComponent({
     minWidth = 780,
 }: Props) {
     if (data.length === 0) {
-        return (
-            <div className="py-14 text-center text-[var(--text-muted)]">
-                <p className="text-sm">{en.emptyStates.noEntries}</p>
-            </div>
-        )
+        return <SimpleEmptyState title={en.emptyStates.noEntries} className="py-10" />
     }
 
     return (
@@ -178,7 +170,7 @@ export default function TableComponent({
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 font-medium text-[var(--text-primary)]">
-                                        {en.common.rupeeSymbol} {Number(item.price ?? 0).toLocaleString("en-IN")}
+                                        {formatCurrency(item.price)}
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3">
@@ -187,11 +179,12 @@ export default function TableComponent({
                                             unit={item.quantityUnit}
                                             lowStockThreshold={item.lowStockThreshold}
                                             criticalStockThreshold={item.criticalStockThreshold}
+                                            reorderLevel={item.reorderLevel}
                                         />
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-300">
-                                        {en.common.rupeeSymbol} {total.toLocaleString("en-IN")}
+                                        {formatCurrency(total)}
                                     </td>
 
                                     <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--text-muted)]">

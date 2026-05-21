@@ -5,6 +5,9 @@ export type PurchaseRow = {
   sku: string
   hsnCode: string
   expiry: string
+  batchNo: string
+  locationId: string
+  locationName: string
   price: string
   quantity: string
   quantityUnit: string

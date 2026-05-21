@@ -1,3 +1,5 @@
+import InfoTile from "@/app/components/ui/InfoTile"
+import ResponsiveDataTable from "@/app/components/ui/ResponsiveDataTable"
 import type { GSTInvoiceRecord } from "@/app/dashboard/gst-invoice/types/gst.types"
 import { formatDate, formatMoney, safeNumber } from "../lib/format"
 import EmptyState from "./EmptyState"
@@ -25,48 +27,27 @@ export default function InvoiceSummaryTable({ invoices }: { invoices: GSTInvoice
               <p className="shrink-0 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(invoice.totals?.grandTotal || 0)}</p>
             </div>
             <div className="mt-3 grid grid-cols-1 gap-2 text-sm min-[420px]:grid-cols-2">
-              <MiniStat label={en.reports.taxable} value={formatMoney(invoice.totals?.taxableValue || 0)} />
-              <MiniStat label={en.reports.gst} value={formatMoney(gstTotal)} />
+              <InfoTile variant="subtle" labelClassName="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 break-words font-semibold text-[var(--text-primary)]" label={en.reports.taxable} value={formatMoney(invoice.totals?.taxableValue || 0)} />
+              <InfoTile variant="subtle" labelClassName="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 break-words font-semibold text-[var(--text-primary)]" label={en.reports.gst} value={formatMoney(gstTotal)} />
             </div>
           </article>
         ))}
       </div>
 
-      <div className="mobile-safe-table hidden sm:block">
-        <table className="min-w-[720px] w-full text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
-            <tr className="border-b border-[var(--border-card)]">
-              <th className="py-3 pr-4">{en.reports.invoiceNo}</th>
-              <th className="py-3 pr-4">{en.reports.buyer}</th>
-              <th className="py-3 pr-4">{en.reports.date}</th>
-              <th className="py-3 pr-4 text-right">{en.reports.taxable}</th>
-              <th className="py-3 pr-4 text-right">{en.reports.gst}</th>
-              <th className="py-3 text-right">{en.reports.total}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-card)]">
-            {rows.map(({ invoice, gstTotal }) => (
-              <tr key={invoice.id}>
-                <td className="py-3 pr-4 font-semibold text-[var(--text-primary)]">{invoice.invoiceNo}</td>
-                <td className="py-3 pr-4 capitalize text-[var(--text-secondary)]">{invoice.buyerName || invoice.buyer?.name || "-"}</td>
-                <td className="py-3 pr-4 text-[var(--text-secondary)]">{formatDate(invoice.invoiceDate)}</td>
-                <td className="py-3 pr-4 text-right text-[var(--text-secondary)]">{formatMoney(invoice.totals?.taxableValue || 0)}</td>
-                <td className="py-3 pr-4 text-right text-[var(--text-secondary)]">{formatMoney(gstTotal)}</td>
-                <td className="py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(invoice.totals?.grandTotal || 0)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ResponsiveDataTable
+        rows={rows}
+        getRowKey={({ invoice }) => invoice.id}
+        minWidth={720}
+        className="hidden sm:block"
+        columns={[
+          { key: "invoiceNo", header: en.reports.invoiceNo, render: ({ invoice }) => invoice.invoiceNo, className: "font-semibold text-[var(--text-primary)]" },
+          { key: "buyer", header: en.reports.buyer, render: ({ invoice }) => invoice.buyerName || invoice.buyer?.name || "-", className: "capitalize text-[var(--text-secondary)]" },
+          { key: "date", header: en.reports.date, render: ({ invoice }) => formatDate(invoice.invoiceDate), className: "text-[var(--text-secondary)]" },
+          { key: "taxable", header: en.reports.taxable, align: "right", render: ({ invoice }) => formatMoney(invoice.totals?.taxableValue || 0), className: "text-[var(--text-secondary)]" },
+          { key: "gst", header: en.reports.gst, align: "right", render: ({ gstTotal }) => formatMoney(gstTotal), className: "text-[var(--text-secondary)]" },
+          { key: "total", header: en.reports.total, align: "right", render: ({ invoice }) => formatMoney(invoice.totals?.grandTotal || 0), className: "font-bold text-emerald-600 dark:text-emerald-400" },
+        ]}
+      />
     </>
-  )
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 break-words font-semibold text-[var(--text-primary)]">{value}</p>
-    </div>
   )
 }

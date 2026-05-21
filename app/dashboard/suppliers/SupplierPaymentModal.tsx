@@ -6,12 +6,12 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { applySupplierPayment } from "@/app/dashboard/purchases/purchase.service"
 import { DEFAULT_PAYMENT_MODE, PAYMENT_MODES } from "@/app/dashboard/purchases/purchase.constants"
-import { formatCurrency } from "@/app/dashboard/purchases/purchase.utils"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
@@ -23,7 +23,7 @@ import { en } from "@/app/messages/en"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 export type SupplierPaymentSummary = {
@@ -63,11 +63,7 @@ export default function SupplierPaymentModal({
       return
     }
 
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     try {
       setLoading(true)
@@ -109,19 +105,10 @@ export default function SupplierPaymentModal({
       onClose={onClose}
       loading={loading}
       size="lg"
-      footer={
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" variant="ghost" title={en.common.cancel} onClick={onClose} disabled={loading} className="flex-1" />
-          <Button
-            type="submit"
-            variant="primary"
-            title={en.suppliers.savePayment}
-            loading={loading}
-            disabled={payableAmount <= 0}
-            className="flex-1"
-          />
-        </div>
-      }
+      cancelLabel={en.common.cancel}
+      primaryLabel={en.suppliers.savePayment}
+      primaryDisabled={payableAmount <= 0}
+      closeOnOutsideClick={!loading}
     >
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
@@ -183,26 +170,12 @@ export default function SupplierPaymentModal({
           disabled={loading}
         />
 
-        <TransactionOptions
+        <TransactionActionPanel
           value={transactionOptions}
           onChange={setTransactionOptions}
-          allowPrint
-          allowDownloadPdf
-          allowShareWhatsApp
-          allowShareEmail
-          allowCopyDetails
-          disabled={loading}
+          profileWarnings={profileWarnings}
+                    disabled={loading}
         />
-
-        {profileWarnings.length > 0 && (
-          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-            <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-            <p>{en.transaction.profileGuide}</p>
-            <ul className="mt-2 list-inside list-disc">
-              {profileWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
-          </div>
-        )}
       </div>
     </Modal>
   )
@@ -224,10 +197,10 @@ function buildSupplierPaymentDocument({
   note: string
 }): TransactionDocumentData {
   return {
-    type: "supplier-payment",
+    type: "supplier-payment" as TransactionDocumentData["type"],
     title: en.transaction.supplierPaymentReceipt,
     reference: `PAY-${Date.now()}`,
-    date: new Date().toLocaleString("en-IN"),
+    date: formatIndianDateTime(new Date()),
     seller,
     partyLabel: en.transaction.paymentPartyLabel,
     party: { name: supplier.name },

@@ -9,11 +9,11 @@ import Input from "@/app/components/ui/Input"
 import Button from "@/app/components/ui/Button"
 import Modal from "@/app/components/ui/Modal"
 import StatusBadge from "@/app/components/ui/StatusBadge"
-import TransactionOptions from "@/app/components/ui/TransactionOptions"
-import { createEmptyInvoiceItem } from "@/app/dashboard/gst-invoice/types/gst.types"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
+import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import { formatQuantity, normalizeQuantityUnit } from "@/app/lib/quantityUnit"
-import { calculateGstBreakup, isValidGstin } from "@/app/lib/gst.utils"
+import { isValidGstin } from "@/app/lib/gst.utils"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import {
   buildBusinessDocumentProfile,
@@ -25,8 +25,15 @@ import { en } from "@/app/messages/en"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
+import { buildSaleInvoiceDraftFromRecord, buildSaleTransactionDocument } from "@/app/lib/sales/sale.documents"
+import { saveSale } from "@/app/lib/sales/sale.service"
+import { auth } from "@/app/lib/firebase"
+import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import useParties from "@/app/hooks/useParties"
+import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 
 const REASONS = [
   { value: "Sold", label: en.inventory.reasons.sold },
@@ -56,6 +63,7 @@ export default function StockOutModal({
 }) {
   const router = useRouter()
   const { profile } = useProfile()
+  const { parties: customerParties } = useParties("customer")
   const [quantity, setQuantity] = useState(String(defaultQuantity || ""))
   const [salePrice, setSalePrice] = useState(String(defaultSalePrice ?? product.price))
   const [reason, setReason] = useState(defaultReason)
@@ -64,11 +72,13 @@ export default function StockOutModal({
   const [buyerPhone, setBuyerPhone] = useState("")
   const [buyerGstin, setBuyerGstin] = useState("")
   const [selectedExpiry, setSelectedExpiry] = useState(defaultExpiry)
+  const [locationId, setLocationId] = useState("")
   const [expiryOptions, setExpiryOptions] = useState<Array<{ expiry: string; quantity: number }>>([])
   const [loading, setLoading] = useState(false)
   const [logsLoading, setLogsLoading] = useState(true)
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const [showMore, setShowMore] = useState(false)
+  const { locations } = useInventoryLocations()
   const isSoldFlow = reason === "Sold"
   const quantityUnit = normalizeQuantityUnit(product.quantityUnit)
   const sellerProfile = buildBusinessDocumentProfile(profile)
@@ -112,19 +122,40 @@ export default function StockOutModal({
     const qty = Number(quantity)
     const price = Number(salePrice)
 
-    if (!qty || qty <= 0) return toast.error(en.inventory.enterValidQuantity)
-    if (qty > product.quantity) return toast.error(`${en.inventory.onlyRemainingPrefix} ${formatQuantity(product.quantity, quantityUnit)} ${en.inventory.onlyRemainingSuffix}`)
-    if (isSoldFlow && (!price || price <= 0)) return toast.error(en.inventory.enterSaleRate)
-    if (isSoldFlow && !buyerName.trim()) return toast.error(en.inventory.enterBuyerName)
-    if (isSoldFlow && buyerGstin.trim() && !isValidGstin(buyerGstin)) return toast.error(en.profile.invalidGstin)
-    if (!isSoldFlow && price < 0) return toast.error(en.inventory.negativeRate)
-    if (expiryOptions.length > 0 && !selectedExpiry) return toast.error(en.inventory.selectExpiry)
+    if (!qty || qty <= 0) {
+      toast.error(en.inventory.enterValidQuantity)
+      return
+    }
+    if (qty > product.quantity) {
+      toast.error(`${en.inventory.onlyRemainingPrefix} ${formatQuantity(product.quantity, quantityUnit)} ${en.inventory.onlyRemainingSuffix}`)
+      return
+    }
+    if (isSoldFlow && (!price || price <= 0)) {
+      toast.error(en.inventory.enterSaleRate)
+      return
+    }
+    if (isSoldFlow && !buyerName.trim()) {
+      toast.error(en.inventory.enterBuyerName)
+      return
+    }
+    if (isSoldFlow && buyerGstin.trim() && !isValidGstin(buyerGstin)) {
+      toast.error(en.profile.invalidGstin)
+      return
+    }
+    if (!isSoldFlow && price < 0) {
+      toast.error(en.inventory.negativeRate)
+      return
+    }
+    if (expiryOptions.length > 0 && !selectedExpiry) {
+      toast.error(en.inventory.selectExpiry)
+      return
+    }
     const selectedBatch = expiryOptions.find((batch) => batch.expiry === selectedExpiry)
     if (selectedBatch && qty > selectedBatch.quantity) {
-      return toast.error(`${en.inventory.onlyRemainingPrefix} ${formatQuantity(selectedBatch.quantity, quantityUnit)} ${en.inventory.batchRemainingSuffix}`)
+      toast.error(`${en.inventory.onlyRemainingPrefix} ${formatQuantity(selectedBatch.quantity, quantityUnit)} ${en.inventory.batchRemainingSuffix}`)
+      return
     }
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) return toast.warning(optionValidation.message)
+    if (!ensureValidTransactionOptions(transactionOptions)) return
     if (!product.id) {
       toast.error(en.inventory.somethingWentWrong)
       return
@@ -138,74 +169,83 @@ export default function StockOutModal({
       setLoading(true)
       const receiptNo = `${isSoldFlow ? "SALE" : "ADJ"}-${Date.now()}`
       const effectivePrice = isSoldFlow ? price : Math.max(price || 0, 0)
-      const gstRate = isSoldFlow && transactionOptions.generateGstInvoice ? 18 : 0
-      const gstBreakup = calculateGstBreakup({
-        quantity: qty,
-        rate: effectivePrice,
-        gstRate,
-        sellerGstin: sellerProfile.gstin,
-        buyerGstin: buyerGstin.trim(),
-      })
+      let documentData: TransactionDocumentData
 
-      await stockOut({
-        productId: product.id,
-        quantity: qty,
-        quantityUnit,
-        salePrice: effectivePrice,
-        expiry: selectedExpiry || undefined,
-        reason,
-        buyerName: buyerName.trim(),
-        buyerPhone: buyerPhone.trim(),
-        buyerGstin: buyerGstin.trim(),
-        note,
-        gstRate,
-        taxableAmount: gstBreakup.taxableAmount,
-        cgstAmount: gstBreakup.cgstAmount,
-        sgstAmount: gstBreakup.sgstAmount,
-        igstAmount: gstBreakup.igstAmount,
-        gstAmount: gstBreakup.totalGst,
-        paymentStatus: isSoldFlow ? "paid" : undefined,
-        invoiceReceiptNo: receiptNo,
-        transactionId: receiptNo,
-        transactionType: isSoldFlow ? "sale" : "stock-adjustment",
-      })
+      if (isSoldFlow) {
+        const saleRecord = await saveSale({
+          userId: requireUserIdentityFromAuthUser(auth?.currentUser),
+          items: [
+            {
+              productId: product.id,
+              name: product.name,
+              category: product.category,
+              sku: product.sku,
+              hsnCode: product.hsnCode,
+              quantity: qty,
+              quantityUnit,
+              salePrice: effectivePrice,
+              discount: 0,
+              gstRate: transactionOptions.generateGstInvoice ? 18 : 0,
+              note,
+              batchNo: product.batchNo,
+              locationId: locationId || undefined,
+              locationName: locations.find((location) => location.id === locationId)?.name,
+            },
+          ],
+              customer: {
+                name: buyerName.trim(),
+                phone: buyerPhone.trim(),
+                gstin: buyerGstin.trim(),
+              },
+              sellerGstin: sellerProfile.gstin,
+              sellerState: sellerProfile.state,
+              paymentMode: "Cash",
+          paymentStatus: "paid",
+          amountPaid: effectivePrice * qty,
+          note,
+          reference: receiptNo,
+          gstEnabled: transactionOptions.generateGstInvoice,
+          entryMode: "inventory-sale",
+        })
+        documentData = buildSaleTransactionDocument(saleRecord, sellerProfile)
 
-      if (isSoldFlow && transactionOptions.generateGstInvoice) {
-        const invoiceItem = createEmptyInvoiceItem()
-        invoiceItem.name = toTitleCase(product.name)
-        invoiceItem.description = toTitleCase(product.name)
-        invoiceItem.hsnCode = product.hsnCode || ""
-        invoiceItem.quantity = qty
-        invoiceItem.rate = price
-        invoiceItem.unit = quantityUnit
+        if (transactionOptions.generateGstInvoice) {
+          saveSaleInvoiceDraft(buildSaleInvoiceDraftFromRecord(saleRecord))
+        }
+      } else {
+        await stockOut({
+          productId: product.id,
+          quantity: qty,
+          quantityUnit,
+          salePrice: effectivePrice,
+          expiry: selectedExpiry || undefined,
+          reason,
+          buyerName: buyerName.trim(),
+          buyerPhone: buyerPhone.trim(),
+          buyerGstin: buyerGstin.trim(),
+          note,
+          batchNo: product.batchNo,
+          locationId: locationId || undefined,
+          paymentStatus: undefined,
+          invoiceReceiptNo: receiptNo,
+          transactionId: receiptNo,
+          transactionType: "stock-adjustment",
+        })
 
-        saveSaleInvoiceDraft({
-          buyer: {
-            name: buyerName.trim(),
-            phone: buyerPhone.trim(),
-            gstin: buyerGstin.trim(),
-          },
-          items: [invoiceItem],
-          notes: note || `${en.inventory.saleDraftNotePrefix} ${toTitleCase(product.name)}`,
-          sourceProductId: product.id,
-          sourceProductName: product.name,
-          createdAt: new Date().toISOString(),
+        documentData = buildStockOutDocument({
+          product,
+          quantity: qty,
+          quantityUnit,
+          salePrice: effectivePrice,
+          reason,
+          buyerName,
+          buyerPhone,
+          buyerGstin,
+          note,
+          seller: sellerProfile,
+          reference: receiptNo,
         })
       }
-
-      const documentData = buildStockOutDocument({
-        product,
-        quantity: qty,
-        quantityUnit,
-        salePrice: effectivePrice,
-        reason,
-        buyerName,
-        buyerPhone,
-        buyerGstin,
-        note,
-        seller: sellerProfile,
-        reference: receiptNo,
-      })
 
       await runTransactionDocumentActions(documentData, transactionOptions)
 
@@ -213,11 +253,11 @@ export default function StockOutModal({
       onClose()
 
       if (isSoldFlow && transactionOptions.generateGstInvoice) {
-        router.push("/dashboard/gst-invoice")
+        router.push(DASHBOARD_ROUTES.gstInvoice)
       }
     } catch (err: unknown) {
       console.error("Stock out failed", err)
-      toast.error(en.inventory.somethingWentWrong)
+      toast.error(err instanceof Error ? err.message : en.inventory.somethingWentWrong)
     } finally {
       setLoading(false)
     }
@@ -236,6 +276,11 @@ export default function StockOutModal({
       cancelLabel={en.common.cancel}
     >
       <div className="flex flex-col gap-3">
+        <datalist id="stock-out-customer-parties">
+          {customerParties.map((party) => (
+            <option key={party.id} value={party.name} />
+          ))}
+        </datalist>
         <div>
           <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">{en.inventory.actionPrompt}</label>
           <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-5">
@@ -300,10 +345,27 @@ export default function StockOutModal({
           onChange={(e) => setSalePrice(e.target.value)}
         />
 
+        {showMore && (
+          <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
+            <span>{en.advancedInventory.location}</span>
+            <select
+              value={locationId}
+              onChange={(event) => setLocationId(event.target.value)}
+              className={selectClass}
+            >
+              <option value="">{en.advancedInventory.defaultGodownName}</option>
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>{location.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+
         {Number(quantity) > 0 && Number(salePrice) > 0 && (
           <div className="flex justify-start sm:justify-end">
             <StatusBadge tone="success" className="rounded-2xl px-4 py-2 text-sm">
-              {isSoldFlow ? en.inventory.totalSale : en.inventory.totalRecovery}: {en.common.rupeeSymbol} {(Number(quantity) * Number(salePrice)).toLocaleString("en-IN")}
+              {isSoldFlow ? en.inventory.totalSale : en.inventory.totalRecovery}: {formatCurrency(Number(quantity) * Number(salePrice))}
             </StatusBadge>
           </div>
         )}
@@ -311,11 +373,12 @@ export default function StockOutModal({
         {isSoldFlow && (
           <>
             <Input
-              label={<>{en.inventory.buyerName} <span className="text-red-400">*</span></>}
+              label={<>{en.parties.customerPartyLabel} <span className="text-red-400">*</span></>}
               type="text"
               placeholder={en.inventory.buyerName}
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
+              datalist="stock-out-customer-parties"
             />
 
             {showMore && (
@@ -352,27 +415,13 @@ export default function StockOutModal({
           />
         )}
       </div>
-        <TransactionOptions
+        <TransactionActionPanel
           value={transactionOptions}
           onChange={setTransactionOptions}
+          profileWarnings={profileWarnings}
           allowGstInvoice={isSoldFlow}
-          allowPrint
-          allowDownloadPdf
-          allowShareWhatsApp
-          allowShareEmail
-          allowCopyDetails
-          disabled={loading}
+                    disabled={loading}
         />
-
-        {profileWarnings.length > 0 && (
-          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-            <p className="font-bold">{en.transaction.profileWarningTitle}</p>
-            <p>{en.transaction.profileGuide}</p>
-            <ul className="mt-2 list-inside list-disc">
-              {profileWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
-          </div>
-        )}
 
 
       <Button
@@ -417,16 +466,21 @@ function buildStockOutDocument({
 }): TransactionDocumentData {
   const isSale = reason === "Sold"
   return {
-    type: isSale ? "sale" : "stock-adjustment",
+    type: isSale ? "sale" : "receipt",
     title: isSale ? en.transaction.saleReceipt : en.transaction.stockAdjustmentReceipt,
     reference,
-    date: new Date().toLocaleString("en-IN"),
+    date: formatIndianDateTime(new Date()),
     seller,
     partyLabel: isSale ? en.receipt.buyer : en.inventory.reason,
     party: isSale ? { name: buyerName, phone: buyerPhone, gstin: buyerGstin } : { name: reason },
     items: [{
       name: toTitleCase(product.name),
-      description: [product.category, product.sku ? `${en.inventory.sku}: ${product.sku}` : "", note].filter(Boolean).join(" | "),
+      description: [
+        product.category,
+        product.sku ? `${en.inventory.sku}: ${product.sku}` : "",
+        product.batchNo ? `${en.advancedInventory.batchNo}: ${product.batchNo}` : "",
+        note,
+      ].filter(Boolean).join(" | "),
       hsnCode: product.hsnCode,
       quantity,
       unit: quantityUnit,

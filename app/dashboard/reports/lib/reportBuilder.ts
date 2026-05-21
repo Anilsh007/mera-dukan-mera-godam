@@ -66,8 +66,9 @@ export function buildReport(data: ReportsData, rangeKey: DateRangeKey) {
     const gstAmount = safeNumber(log.gstAmount) || (safeNumber(log.cgstAmount) + safeNumber(log.sgstAmount) + safeNumber(log.igstAmount))
     const product = productById.get(log.productId)
     const productName = log.productName || product?.name || en.reports.product
+    const isCancelledSale = log.type === "out" && log.paymentStatus === "cancelled"
 
-    if (log.type === "out") {
+    if (log.type === "out" && !isCancelledSale) {
       const existing = salesByProduct.get(log.productId || productName) || { name: productName, quantity: 0, value: 0 }
       existing.quantity += quantity
       existing.value += amount
@@ -79,7 +80,7 @@ export function buildReport(data: ReportsData, rangeKey: DateRangeKey) {
     }
 
     if (logDate && isOnOrAfter(logDate, rangeStart)) {
-      if (log.type === "out") {
+      if (log.type === "out" && !isCancelledSale) {
         periodOutLogs.push(log)
         periodSales += amount
         periodUnitsSold += quantity
@@ -94,14 +95,14 @@ export function buildReport(data: ReportsData, rangeKey: DateRangeKey) {
     }
 
     if (logDate && isOnOrAfter(logDate, todayStart)) {
-      if (log.type === "out") {
+      if (log.type === "out" && !isCancelledSale) {
         todaySales += amount
         todayUnitsSold += quantity
       }
     }
 
     if (logDate && isOnOrAfter(logDate, monthStart)) {
-      if (log.type === "out") monthlySales += amount
+      if (log.type === "out" && !isCancelledSale) monthlySales += amount
     }
 
     recentTransactions.push({

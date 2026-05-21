@@ -2,15 +2,19 @@
 
 import Link from "next/link"
 import SurfaceCard from "@/app/components/ui/SurfaceCard"
+import InfoTile from "@/app/components/ui/InfoTile"
 import StatusBadge from "@/app/components/ui/StatusBadge"
 import ShareActions from "@/app/components/ui/ShareActions"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { en } from "@/app/messages/en"
+import { formatIndianDateTime } from "@/app/lib/formatters"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import {
   buildBusinessDocumentProfile,
   formatMoney,
   getAddressLine,
   getProfileDocumentWarnings,
+  getPartyDocumentWarnings,
   type BusinessDocumentProfile,
   type TransactionDocumentData,
 } from "@/app/lib/transactionDocument"
@@ -36,8 +40,13 @@ export default function TransactionDocument({
   const seller = document.seller || profile || buildBusinessDocumentProfile(liveProfile)
   const documentData: TransactionDocumentData = { ...document, seller }
   const warnings = getProfileDocumentWarnings(seller, { requireGstin })
+  const partyWarnings = getPartyDocumentWarnings(document.party, {
+    requireName: document.type === "gst-invoice",
+    requireGstin: false,
+    requireAddress: document.type === "gst-invoice",
+  })
   const grandTotal = document.totals?.grandTotal ?? document.items.reduce((sum, item) => sum + Number(item.total || 0), 0)
-  const date = document.date || new Date().toLocaleString("en-IN")
+  const date = document.date || formatIndianDateTime(new Date())
   const showNotes = Boolean(document.notes?.trim())
   const showTerms = Boolean((document.terms || seller.terms)?.trim())
   const showSecondaryParty = Boolean(document.secondaryParty && Object.values(document.secondaryParty).some(Boolean))
@@ -55,8 +64,25 @@ export default function TransactionDocument({
                 {warnings.map((warning) => <li key={warning}>{warning}</li>)}
               </ul>
             </div>
-            <Link href="/dashboard/profile" className="inline-flex rounded-xl border border-amber-300 px-3 py-2 font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-400/50 dark:text-amber-100 dark:hover:bg-amber-400/10">
+            <Link href={DASHBOARD_ROUTES.profile} className="inline-flex rounded-xl border border-amber-300 px-3 py-2 font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-400/50 dark:text-amber-100 dark:hover:bg-amber-400/10">
               {en.profile.completeAction}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showProfileWarning && partyWarnings.length > 0 && (
+        <div className="rounded-2xl border border-sky-300 bg-sky-50 p-4 text-sm text-sky-800 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-100">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-bold">{en.transaction.partyWarningTitle}</p>
+              <p className="mt-1">{en.transaction.partyWarningDescription}</p>
+              <ul className="mt-2 list-inside list-disc">
+                {partyWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+              </ul>
+            </div>
+            <Link href={DASHBOARD_ROUTES.parties} className="inline-flex rounded-xl border border-sky-300 px-3 py-2 font-semibold text-sky-800 transition hover:bg-sky-100 dark:border-sky-400/50 dark:text-sky-100 dark:hover:bg-sky-400/10">
+              {en.navigation.parties}
             </Link>
           </div>
         </div>
@@ -76,13 +102,14 @@ export default function TransactionDocument({
             <div className="min-w-0">
               <h2 className="break-words text-xl font-black text-[var(--text-primary)]">{seller.businessName || en.common.appName}</h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">{getAddressLine(seller) || en.transaction.addressNotAdded}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{[seller.mobile, seller.email].filter(Boolean).join(" | ") || en.transaction.contactNotAdded}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{[seller.phone, seller.email].filter(Boolean).join(" | ") || en.transaction.contactNotAdded}</p>
               {seller.gstin && <p className="text-sm font-semibold text-[var(--text-primary)]">{en.gstInvoice.gstin}: {seller.gstin}</p>}
             </div>
           </div>
 
           <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-input)] p-3 text-sm sm:min-w-60">
-            <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">{document.title}</p>
+            {document.copyLabel && <StatusBadge tone="info">{document.copyLabel}</StatusBadge>}
+            <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">{document.title}</p>
             <MetaRow label={en.receipt.ref} value={document.reference || "-"} />
             <MetaRow label={en.receipt.date} value={date} />
             {document.dueDate && <MetaRow label={en.gstInvoice.dueDate} value={document.dueDate} />}
@@ -92,7 +119,7 @@ export default function TransactionDocument({
 
         <div className={`grid gap-3 border-b border-[var(--border-card)] p-4 sm:p-5 ${showSecondaryParty ? "sm:grid-cols-2" : showSellerPanel ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
           {showSellerPanel ? (
-            <PartyPanel title={en.receipt.seller} lines={[seller.businessName, getAddressLine(seller), seller.mobile, seller.email, seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : ""]} />
+            <PartyPanel title={en.receipt.seller} lines={[seller.businessName, getAddressLine(seller), seller.phone, seller.email, seller.gstin ? `${en.gstInvoice.gstin}: ${seller.gstin}` : ""]} />
           ) : null}
           <PartyPanel
             title={document.partyLabel || en.receipt.buyer}
@@ -132,9 +159,9 @@ export default function TransactionDocument({
                   <p className="shrink-0 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatMoney(item.total)}</p>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-[var(--text-secondary)] min-[420px]:grid-cols-3">
-                  <MiniMeta label={en.receipt.qty} value={[item.quantity, item.unit].filter(Boolean).join(" ") || "-"} />
-                  <MiniMeta label={en.receipt.rate} value={typeof item.rate === "number" ? formatMoney(item.rate) : "-"} />
-                  <MiniMeta label={en.gstInvoice.gst} value={item.gstRate !== undefined ? `${Number(item.gstRate).toFixed(2)}%` : "-"} />
+                  <InfoTile variant="subtle" labelClassName="text-[10px] uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 break-words font-semibold text-[var(--text-primary)]" label={en.receipt.qty} value={[item.quantity, item.unit].filter(Boolean).join(" ") || "-"} />
+                  <InfoTile variant="subtle" labelClassName="text-[10px] uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 break-words font-semibold text-[var(--text-primary)]" label={en.receipt.rate} value={typeof item.rate === "number" ? formatMoney(item.rate) : "-"} />
+                  <InfoTile variant="subtle" labelClassName="text-[10px] uppercase tracking-wide text-[var(--text-muted)]" valueClassName="mt-1 break-words font-semibold text-[var(--text-primary)]" label={en.gstInvoice.gst} value={item.gstRate !== undefined ? `${Number(item.gstRate).toFixed(2)}%` : "-"} />
                 </div>
               </article>
             ))}
@@ -201,22 +228,13 @@ export default function TransactionDocument({
         </div>
 
         <div className="border-t border-[var(--border-card)] px-4 py-3 text-xs text-[var(--text-muted)] sm:px-5">
-          {document.footerNote || `${en.receipt.printedOn}: ${new Date().toLocaleString("en-IN")}`}
+          {document.footerNote || `${en.receipt.printedOn}: ${formatIndianDateTime(new Date())}`}
         </div>
       </SurfaceCard>
     </div>
   )
 }
 
-
-function MiniMeta({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-2 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 break-words font-semibold text-[var(--text-primary)]">{value}</p>
-    </div>
-  )
-}
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (

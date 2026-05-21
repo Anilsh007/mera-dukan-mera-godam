@@ -5,6 +5,7 @@ import { auth } from "./firebase"
 import { authHeaders, isMissingTableError, readApiError } from "./apiClient"
 import { normalizeQuantityUnit } from "./quantityUnit"
 import { getUserIdentityFromAuthUser } from "./userIdentity"
+import { en } from "@/app/messages/en"
 import type { PurchaseRecord, StockTransactionProduct, StockTransactionType } from "./db"
 
 type ProductSyncRow = {
@@ -67,11 +68,11 @@ type PurchaseSyncResponse = {
 
 export async function syncSupabaseToDexie() {
   const user = auth?.currentUser
-  if (!user) throw new Error("User not logged in")
+  if (!user) throw new Error(en.profile.signInRequired)
 
   const token = await user.getIdToken()
   const userId = getUserIdentityFromAuthUser(user)
-  if (!userId) throw new Error("Authenticated user is missing an email address")
+  if (!userId) throw new Error(en.profile.signInRequired)
 
   const response = await fetch("/api/products/sync", {
     method: "GET",

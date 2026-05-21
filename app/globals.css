@@ -29,6 +29,8 @@ html {
   --shadow-lifted: 0 24px 50px rgba(15, 23, 42, 0.12), 0 10px 22px rgba(15, 23, 42, 0.06);
   --button-shadow: 0 10px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.48);
   --button-shadow-hover: 0 16px 30px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --button-hover-filter: saturate(0.88) brightness(0.94);
+  --button-active-filter: saturate(0.82) brightness(0.9);
   --surface-highlight: rgba(255, 255, 255, 0.92);
   --surface-outline: rgba(16, 32, 38, 0.06);
   --surface-subtle: rgba(16, 32, 38, 0.035);
@@ -104,6 +106,8 @@ html[data-theme="dark"] {
   --shadow-lifted: 0 38px 96px rgba(0, 3, 10, 0.68), 0 18px 48px rgba(8, 37, 69, 0.28), 0 0 30px rgba(59, 130, 246, 0.16);
   --button-shadow: 0 16px 34px rgba(0, 8, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --button-shadow-hover: 0 24px 48px rgba(0, 8, 18, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 28px rgba(59, 130, 246, 0.22);
+  --button-hover-filter: saturate(0.9) brightness(0.95);
+  --button-active-filter: saturate(0.84) brightness(0.9);
   --surface-highlight: rgba(255, 255, 255, 0.08);
   --surface-outline: rgba(255, 255, 255, 0.03);
   --surface-subtle: rgba(115, 166, 204, 0.11);
@@ -198,6 +202,31 @@ button {
 
 button {
   touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    transition:
+      transform 180ms ease,
+      filter 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  button:not(:disabled):hover,
+  [role="button"]:not([aria-disabled="true"]):hover {
+    filter: var(--button-hover-filter);
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: translateY(1px) scale(0.985);
+    filter: var(--button-active-filter);
+  }
 }
 
 

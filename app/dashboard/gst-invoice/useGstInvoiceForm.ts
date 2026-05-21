@@ -34,10 +34,11 @@ import { warmHsnSacLookup } from "./lib/hsnSacLookup"
 import { isInterStateSupply, sanitizeInvoiceForSave, validateInvoice } from "./lib/invoiceValidation"
 import { consumeSaleInvoiceDraft } from "./invoiceDraft.service"
 import { buildInvoiceFromSaleDraft, calculateInvoiceItem } from "./gstInvoiceForm.helpers"
+import { buildGstInvoiceCopyDocuments, type GstInvoiceCopyMode } from "./lib/invoiceCopy"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
-  validateTransactionOptions,
+  ensureValidTransactionOptions,
 } from "@/app/lib/transactionActions"
 
 const today = new Date().toISOString().slice(0, 10)
@@ -53,6 +54,7 @@ export function useGstInvoiceForm() {
   const [hsnLookupVersion, setHsnLookupVersion] = useState(0)
 
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
+  const [invoiceCopyMode, setInvoiceCopyMode] = useState<GstInvoiceCopyMode>("customer")
 
   const { profile } = useProfile()
 
@@ -260,11 +262,7 @@ export function useGstInvoiceForm() {
       return
     }
 
-    const optionValidation = validateTransactionOptions(transactionOptions)
-    if (!optionValidation.valid) {
-      toast.warning(optionValidation.message)
-      return
-    }
+    if (!ensureValidTransactionOptions(transactionOptions)) return
 
     setSaving(true)
 
@@ -288,13 +286,16 @@ export function useGstInvoiceForm() {
         return [finalSaved, ...withoutCurrent]
       })
 
-      await runTransactionDocumentActions(buildGstInvoiceDocument(invoiceToSave), transactionOptions)
+      const invoiceDocuments = buildGstInvoiceCopyDocuments(buildGstInvoiceDocument(invoiceToSave), invoiceCopyMode)
+      for (const invoiceDocument of invoiceDocuments) {
+        await runTransactionDocumentActions(invoiceDocument, transactionOptions)
+      }
 
       toast.success(en.gstInvoice.saved)
       completeInvoiceReset()
     } catch (err) {
       console.error("GST invoice save failed", err)
-      toast.error(en.gstInvoice.saveFailed)
+      toast.error(err instanceof Error ? err.message : en.gstInvoice.saveFailed)
     } finally {
       setSaving(false)
     }
@@ -325,6 +326,7 @@ export function useGstInvoiceForm() {
     previewMode,
     resetConfirmOpen,
     transactionOptions,
+    invoiceCopyMode,
     isInterState,
     buyerSuggestions,
 
@@ -333,6 +335,7 @@ export function useGstInvoiceForm() {
     setPreviewMode,
     setResetConfirmOpen,
     setTransactionOptions,
+    setInvoiceCopyMode,
 
     handleBuyerChange,
     handleShippingAddressChange,

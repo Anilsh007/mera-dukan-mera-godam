@@ -1,46 +1,74 @@
 "use client"
 
-import { useCallback, useEffect, useId, useRef, type FormEvent, type ReactNode } from "react"
-import { AlertCircle, X } from "lucide-react"
-import Button from "@/app/components/ui/Button"
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  type FormEventHandler,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react"
+import { createPortal } from "react-dom"
+import { X } from "lucide-react"
 import { en } from "@/app/messages/en"
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "full"
+type ModalVariant = "default" | "form" | "confirmation" | "detail" | "warning"
+type ModalActionVariant = "primary" | "success" | "danger" | "warning" | "outline" | "ghost"
 
 type ModalProps = {
   open?: boolean
+  as?: "div" | "form"
+  onSubmit?: FormEventHandler<HTMLFormElement>
   title: ReactNode
+  titleIcon?: ReactNode
   description?: ReactNode
   children?: ReactNode
   footer?: ReactNode
   onClose: () => void
-  onSubmit?: (event: FormEvent<HTMLFormElement>) => void
-  as?: "div" | "form"
   size?: ModalSize
-  primaryLabel?: ReactNode
-  cancelLabel?: ReactNode
-  onPrimary?: () => void
-  primaryType?: "button" | "submit"
-  primaryVariant?: "primary" | "secondary" | "danger" | "warning" | "success"
-  primaryDisabled?: boolean
+  variant?: ModalVariant
   loading?: boolean
-  error?: ReactNode
-  showCloseButton?: boolean
-  closeOnEsc?: boolean
   closeOnOutsideClick?: boolean
-  preventCloseWhileLoading?: boolean
-  className?: string
-  bodyClassName?: string
-  footerClassName?: string
-  titleIcon?: ReactNode
+  closeOnEscape?: boolean
+  showCloseButton?: boolean
+  cancelLabel?: string | null
+  primaryLabel?: string
+  primaryLoadingLabel?: string
+  primaryVariant?: ModalActionVariant
+  primaryDisabled?: boolean
+  onPrimary?: () => void | Promise<void>
 }
 
-const sizeClass: Record<ModalSize, string> = {
-  sm: "sm:max-w-md",
-  md: "sm:max-w-lg",
-  lg: "sm:max-w-2xl",
-  xl: "sm:max-w-5xl",
-  full: "sm:max-w-[min(1120px,calc(100vw-2rem))]",
+type ConfirmationModalProps = Omit<ModalProps, "variant" | "children"> & {
+  confirmMessage?: ReactNode
+}
+
+const sizeClassName: Record<ModalSize, string> = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-2xl",
+  xl: "max-w-5xl",
+  full: "max-w-[min(96vw,72rem)]",
+}
+
+const variantClassName: Record<ModalVariant, string> = {
+  default: "border-[var(--border-card)]",
+  form: "border-[var(--border-card)]",
+  confirmation: "border-amber-300/70 dark:border-amber-400/30",
+  detail: "border-[var(--border-card)]",
+  warning: "border-amber-300/70 dark:border-amber-400/30",
+}
+
+const actionClassName: Record<ModalActionVariant, string> = {
+  primary: "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:brightness-95 focus-visible:ring-[var(--focus-ring)]",
+  success: "border-emerald-600 bg-emerald-600 text-white hover:brightness-95 focus-visible:ring-emerald-600",
+  danger: "border-rose-600 bg-rose-600 text-white hover:brightness-95 focus-visible:ring-rose-600",
+  warning: "border-amber-500 bg-amber-500 text-white hover:brightness-95 focus-visible:ring-amber-500",
+  outline: "border-[var(--border-card)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] focus-visible:ring-[var(--focus-ring)]",
+  ghost: "border-transparent bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] focus-visible:ring-[var(--focus-ring)]",
 }
 
 const focusableSelector = [
@@ -54,196 +82,223 @@ const focusableSelector = [
 
 export default function Modal({
   open = true,
+  as = "div",
+  onSubmit,
   title,
+  titleIcon,
   description,
   children,
   footer,
   onClose,
-  onSubmit,
-  as = "div",
   size = "md",
-  primaryLabel,
-  cancelLabel = en.common.cancel,
-  onPrimary,
-  primaryType = "button",
-  primaryVariant = "primary",
-  primaryDisabled,
+  variant = as === "form" ? "form" : "default",
   loading = false,
-  error,
-  showCloseButton = true,
-  closeOnEsc = true,
   closeOnOutsideClick = true,
-  preventCloseWhileLoading = true,
-  className = "",
-  bodyClassName = "",
-  footerClassName = "",
-  titleIcon,
+  closeOnEscape = true,
+  showCloseButton = true,
+  cancelLabel = en.common.cancel,
+  primaryLabel,
+  primaryLoadingLabel = en.common.processing,
+  primaryVariant = "primary",
+  primaryDisabled = false,
+  onPrimary,
 }: ModalProps) {
-  const dialogRef = useRef<HTMLElement | null>(null)
-  const setDialogRef = (element: HTMLDivElement | HTMLFormElement | null) => {
-    dialogRef.current = element
-  }
   const titleId = useId()
   const descriptionId = useId()
-  const errorId = useId()
+  const dialogRef = useRef<HTMLDivElement | HTMLFormElement | null>(null)
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null)
 
-  const canClose = !loading || !preventCloseWhileLoading
-
-  const requestClose = useCallback(() => {
-    if (canClose) onClose()
-  }, [canClose, onClose])
+  const canClose = !loading
+  const visiblePrimaryLabel = loading && primaryLabel ? primaryLoadingLabel : primaryLabel
+  const shellClassName = useMemo(
+    () => [
+      "relative flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-[24px] border bg-[var(--surface-primary)] shadow-2xl outline-none transition-all sm:max-h-[calc(100dvh-3rem)] sm:rounded-[28px]",
+      sizeClassName[size],
+      variantClassName[variant],
+    ].join(" "),
+    [size, variant],
+  )
 
   useEffect(() => {
-    if (!open) return
+    if (!open || typeof document === "undefined") return
 
-    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    previouslyFocusedElement.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
 
-    const focusFirst = window.setTimeout(() => {
+    const frame = window.requestAnimationFrame(() => {
       const dialog = dialogRef.current
       if (!dialog) return
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        (element) => !element.hasAttribute("disabled") && element.tabIndex !== -1
-      )
-      ;(focusable[0] || dialog).focus()
-    }, 0)
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const dialog = dialogRef.current
-      if (!dialog) return
-
-      if (event.key === "Escape" && closeOnEsc) {
-        event.stopPropagation()
-        requestClose()
-        return
-      }
-
-      if (event.key !== "Tab") return
-
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        (element) => !element.hasAttribute("disabled") && element.tabIndex !== -1
-      )
-
-      if (!focusable.length) {
-        event.preventDefault()
-        dialog.focus()
-        return
-      }
-
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      const active = document.activeElement
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
+      const firstFocusable = dialog.querySelector<HTMLElement>(focusableSelector)
+      ;(firstFocusable || dialog).focus({ preventScroll: true })
+    })
 
     return () => {
-      window.clearTimeout(focusFirst)
-      document.removeEventListener("keydown", handleKeyDown)
+      window.cancelAnimationFrame(frame)
       document.body.style.overflow = previousOverflow
-      previousActive?.focus()
+      previouslyFocusedElement.current?.focus?.({ preventScroll: true })
     }
-  }, [open, closeOnEsc, requestClose])
+  }, [open])
 
-  if (!open) return null
+  if (!open || typeof document === "undefined") return null
 
-  const dialogProps = {
+  const handleOverlayClick = () => {
+    if (!closeOnOutsideClick || !canClose) return
+    onClose()
+  }
+
+  const handleShellClick = (event: MouseEvent) => {
+    event.stopPropagation()
+  }
+
+  const setDialogRef = (node: HTMLDivElement | HTMLFormElement | null) => {
+    dialogRef.current = node
+  }
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape" && closeOnEscape && canClose) {
+      event.preventDefault()
+      onClose()
+      return
+    }
+
+    if (event.key !== "Tab") return
+
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const focusableElements = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+      (element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true",
+    )
+
+    if (!focusableElements.length) {
+      event.preventDefault()
+      dialog.focus()
+      return
+    }
+
+    const first = focusableElements[0]
+    const last = focusableElements[focusableElements.length - 1]
+    const active = document.activeElement
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  const header = (
+    <div className="flex items-start justify-between gap-4 border-b border-[var(--border-card)] px-4 py-4 sm:px-6">
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          {titleIcon ? (
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-secondary)] text-[var(--accent)]">
+              {titleIcon}
+            </span>
+          ) : null}
+          <h2 id={titleId} className="min-w-0 text-lg font-semibold text-[var(--text-primary)] sm:text-xl">
+            {title}
+          </h2>
+        </div>
+        {description ? (
+          <p id={descriptionId} className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {showCloseButton ? (
+        <button
+          type="button"
+          aria-label={en.modals.close}
+          title={en.modals.close}
+          onClick={onClose}
+          disabled={!canClose}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border-card)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+      ) : null}
+    </div>
+  )
+
+  const defaultFooter = primaryLabel || cancelLabel ? (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      {cancelLabel ? (
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={!canClose}
+          className={`${actionClassName.outline} inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`}
+        >
+          {cancelLabel}
+        </button>
+      ) : null}
+      {primaryLabel ? (
+        <button
+          type={as === "form" && !onPrimary ? "submit" : "button"}
+          onClick={onPrimary}
+          disabled={primaryDisabled || loading}
+          className={`${actionClassName[primaryVariant]} inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`}
+        >
+          {visiblePrimaryLabel}
+        </button>
+      ) : null}
+    </div>
+  ) : null
+
+  const shellProps = {
     role: "dialog",
     "aria-modal": true,
     "aria-labelledby": titleId,
     "aria-describedby": description ? descriptionId : undefined,
-    "aria-busy": loading || undefined,
     tabIndex: -1,
-    className: [
-      "premium-surface flex max-h-[96dvh] w-full flex-col overflow-hidden rounded-t-3xl outline-none sm:max-h-[92vh] sm:rounded-2xl",
-      sizeClass[size],
-      className,
-    ].join(" "),
+    className: shellClassName,
+    onClick: handleShellClick,
+    onKeyDown: handleKeyDown,
   }
 
   const content = (
-    <>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border-card)] p-4 sm:p-5">
-        <div className="min-w-0">
-          <div className="flex items-start gap-3">
-            {titleIcon && <span className="mt-0.5 shrink-0 text-[var(--accent)]">{titleIcon}</span>}
-            <div className="min-w-0">
-              <h2 id={titleId} className="text-lg font-bold leading-tight text-[var(--text-primary)] sm:text-xl">
-                {title}
-              </h2>
-              {description && (
-                <p id={descriptionId} className="mt-1 text-xs leading-5 text-[var(--text-secondary)] sm:text-sm">
-                  {description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {showCloseButton && (
-          <Button
-            type="button"
-            variant="ghost"
-            ariaLabel={en.common.close}
-            icon={<X size={18} />}
-            onClick={requestClose}
-            disabled={!canClose}
-            className="min-h-9 shrink-0 rounded-full px-2 py-2 sm:px-2"
-          />
-        )}
-      </div>
-
-      {error && (
-        <div id={errorId} className="mx-4 mt-4 flex gap-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300 sm:mx-5" role="alert">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className={`min-h-0 flex-1 overscroll-contain overflow-y-auto p-4 sm:p-5 ${bodyClassName}`}>{children}</div>
-
-      {(footer || primaryLabel) && (
-        <div className={`shrink-0 border-t border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 sm:p-5 ${footerClassName}`}>
-          {footer || (
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" title={cancelLabel} onClick={requestClose} disabled={!canClose} className="w-full sm:w-auto" />
-              <Button
-                type={primaryType}
-                variant={primaryVariant}
-                title={primaryLabel}
-                loading={loading}
-                disabled={primaryDisabled || loading}
-                onClick={primaryType === "button" ? onPrimary : undefined}
-                className="w-full sm:w-auto"
-              />
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  )
-
-  return (
     <div
-      className="fixed inset-0 z-[100] flex min-h-dvh items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      onMouseDown={(event) => {
-        if (closeOnOutsideClick && event.target === event.currentTarget) requestClose()
-      }}
+      className="fixed inset-0 z-[100] flex min-h-[100dvh] items-center justify-center bg-black/55 p-3 backdrop-blur-sm sm:p-6"
+      onClick={handleOverlayClick}
     >
       {as === "form" ? (
-        <form ref={setDialogRef} {...dialogProps} onSubmit={onSubmit}>{content}</form>
+        <form {...shellProps} ref={setDialogRef} onSubmit={onSubmit}>
+          {header}
+          {children ? <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">{children}</div> : null}
+          {footer || defaultFooter ? (
+            <div className="border-t border-[var(--border-card)] bg-[var(--surface-secondary)] px-4 py-4 sm:px-6">
+              {footer || defaultFooter}
+            </div>
+          ) : null}
+        </form>
       ) : (
-        <div ref={setDialogRef} {...dialogProps}>{content}</div>
+        <div {...shellProps} ref={setDialogRef}>
+          {header}
+          {children ? <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">{children}</div> : null}
+          {footer || defaultFooter ? (
+            <div className="border-t border-[var(--border-card)] bg-[var(--surface-secondary)] px-4 py-4 sm:px-6">
+              {footer || defaultFooter}
+            </div>
+          ) : null}
+        </div>
       )}
     </div>
+  )
+
+  return createPortal(content, document.body)
+}
+
+export function ConfirmationModal({ confirmMessage, ...props }: ConfirmationModalProps) {
+  return (
+    <Modal {...props} variant={props.primaryVariant === "danger" ? "warning" : "confirmation"}>
+      {confirmMessage ? (
+        <div className="rounded-2xl border border-amber-300/70 bg-amber-50 p-3 text-sm leading-6 text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
+          {confirmMessage}
+        </div>
+      ) : null}
+    </Modal>
   )
 }

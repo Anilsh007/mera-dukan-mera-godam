@@ -12,6 +12,9 @@ import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service";
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit";
 import { buildSaleLogNote } from "@/app/lib/saleMetadata";
 import { roundCurrency } from "@/app/lib/gst.utils";
+import { assertFeatureAccess } from "@/app/lib/subscription/subscription.service";
+import { adjustAdvancedInventoryStock } from "@/app/lib/advancedInventory/advancedInventory.service";
+import { en } from "@/app/messages/en";
 
 async function ensureCloudSync(context: string) {
   const runSync = () => {
@@ -48,6 +51,9 @@ type StockTransactionMetadata = {
   invoiceReceiptNo?: string;
   notes?: string;
   allowNegativeStock?: boolean;
+  locationId?: string;
+  locationName?: string;
+  batchNo?: string;
 };
 
 type ServiceOptions = {
@@ -66,6 +72,10 @@ export type AddProductInput = {
   note?: string;
   sku?: string;
   hsnCode?: string;
+  batchNo?: string;
+  locationId?: string;
+  serialTrackingNote?: string;
+  reorderLevel?: number;
   lowStockThreshold?: number;
   criticalStockThreshold?: number;
   userId: string;
@@ -95,6 +105,8 @@ type StockOutInput = {
   transactionType?: StockTransactionType;
   transactionProducts?: StockTransactionProduct[];
   allowNegativeStock?: boolean;
+  batchNo?: string;
+  locationId?: string;
 };
 
 type UpdateProductInput = {
@@ -108,6 +120,10 @@ type UpdateProductInput = {
   note?: string;
   sku?: string;
   hsnCode?: string;
+  batchNo?: string;
+  locationId?: string;
+  serialTrackingNote?: string;
+  reorderLevel?: number;
   lowStockThreshold?: number;
   criticalStockThreshold?: number;
 };
@@ -121,6 +137,8 @@ type AdjustProductStockInput = {
   reason?: string;
   note?: string;
   expiry?: string;
+  batchNo?: string;
+  locationId?: string;
 };
 
 type UpdateProductLogInput = {
@@ -148,11 +166,11 @@ export async function addProduct(
   const quantity = Number(data.quantity);
   const price = Number(data.price);
 
-  if (!normalizedName) throw new Error("Product name is required");
+  if (!normalizedName) throw new Error(en.quickPurchase.validation.productNameRequired);
   if (!Number.isFinite(quantity) || quantity <= 0)
-    throw new Error("Quantity should be greater than 0");
+    throw new Error(en.sales.quantityGreaterThanZero);
   if (!Number.isFinite(price) || price < 0)
-    throw new Error("Price cannot be negative");
+    throw new Error(en.sales.priceCannotBeNegative);
 
   const existing = await findProductByIdentity(
     data.userId,
@@ -164,6 +182,7 @@ export async function addProduct(
   const date = transaction?.date || new Date().toISOString();
 
   if (existing) {
+    await assertFeatureAccess(data.userId, "products", { operation: "update" });
     const oldStock = Number(existing.quantity || 0);
     const newStock = roundCurrency(oldStock + quantity);
 
@@ -175,8 +194,11 @@ export async function addProduct(
       supplier: data.supplier?.trim() || existing.supplier,
       sku: data.sku?.trim() || existing.sku,
       hsnCode: data.hsnCode?.trim() || existing.hsnCode,
+      batchNo: data.batchNo?.trim() || existing.batchNo,
+      reorderLevel: data.reorderLevel ?? data.lowStockThreshold ?? existing.reorderLevel,
+      serialTrackingNote: data.serialTrackingNote?.trim() || existing.serialTrackingNote,
       note: data.note?.trim() || existing.note,
-      lowStockThreshold: data.lowStockThreshold ?? existing.lowStockThreshold,
+      lowStockThreshold: data.lowStockThreshold ?? data.reorderLevel ?? existing.lowStockThreshold,
       criticalStockThreshold:
         data.criticalStockThreshold ?? existing.criticalStockThreshold,
     });
@@ -190,6 +212,9 @@ export async function addProduct(
           supplier: data.supplier?.trim() || existing.supplier,
           sku: data.sku?.trim() || existing.sku,
           hsnCode: data.hsnCode?.trim() || existing.hsnCode,
+          batchNo: data.batchNo?.trim() || existing.batchNo,
+          reorderLevel: data.reorderLevel ?? data.lowStockThreshold ?? existing.reorderLevel,
+          serialTrackingNote: data.serialTrackingNote?.trim() || existing.serialTrackingNote,
           note: data.note?.trim() || existing.note,
         },
         quantity,
@@ -208,9 +233,26 @@ export async function addProduct(
       }),
     );
 
+    await adjustAdvancedInventoryStock({
+      userId: existing.userId,
+      product: existing,
+      locationId: data.locationId || transaction?.locationId,
+      locationName: transaction?.locationName,
+      quantityDelta: quantity,
+      quantityUnit,
+      oldProductStock: oldStock,
+      batchNo: data.batchNo || transaction?.batchNo,
+      expiry: data.expiry || undefined,
+    });
+
     if (!options?.skipImmediateSync) await ensureCloudSync("Stock update");
     return "updated";
   }
+
+  await assertFeatureAccess(data.userId, "products", {
+    operation: "create",
+    incrementBy: 1,
+  });
 
   const newId = uuidv4();
   const newStock = roundCurrency(quantity);
@@ -225,8 +267,11 @@ export async function addProduct(
     expiry: data.expiry || undefined,
     sku: data.sku?.trim() || undefined,
     hsnCode: data.hsnCode?.trim() || undefined,
+    batchNo: data.batchNo?.trim() || undefined,
+    reorderLevel: data.reorderLevel ?? data.lowStockThreshold,
+    serialTrackingNote: data.serialTrackingNote?.trim() || undefined,
     note: data.note?.trim() || undefined,
-    lowStockThreshold: data.lowStockThreshold,
+    lowStockThreshold: data.lowStockThreshold ?? data.reorderLevel,
     criticalStockThreshold: data.criticalStockThreshold,
     userId: data.userId,
     createdAt: date,
@@ -252,16 +297,28 @@ export async function addProduct(
     }),
   );
 
+  await adjustAdvancedInventoryStock({
+    userId: data.userId,
+    product: newProduct,
+    locationId: data.locationId || transaction?.locationId,
+    locationName: transaction?.locationName,
+    quantityDelta: quantity,
+    quantityUnit,
+    oldProductStock: 0,
+    batchNo: data.batchNo || transaction?.batchNo,
+    expiry: data.expiry || undefined,
+  });
+
   if (!options?.skipImmediateSync) await ensureCloudSync("Product creation");
   return "created";
 }
 
 export async function stockOut(data: StockOutInput, options?: ServiceOptions) {
   const product = await db.products.get(data.productId);
-  if (!product) throw new Error("Product not found");
+  if (!product) throw new Error(en.sales.productNotFound);
 
   const quantity = Number(data.quantity);
-  const normalizedReason = data.reason || "Sold";
+  const normalizedReason = data.reason || en.inventory.reasons.sold;
   const normalizedSalePrice = Number(data.salePrice || 0);
   const quantityUnit = normalizeQuantityUnit(
     data.quantityUnit || product.quantityUnit,
@@ -271,12 +328,15 @@ export async function stockOut(data: StockOutInput, options?: ServiceOptions) {
   );
 
   if (!Number.isFinite(quantity) || quantity <= 0)
-    throw new Error("Quantity should be greater than 0");
+    throw new Error(en.sales.quantityGreaterThanZero);
   if (!Number.isFinite(normalizedSalePrice) || normalizedSalePrice < 0)
-    throw new Error("Price cannot be negative");
+    throw new Error(en.sales.priceCannotBeNegative);
   if (!allowNegativeStock && quantity > product.quantity) {
     throw new Error(
-      `Only ${product.quantity} ${quantityUnit} available, cannot stock out ${quantity} ${quantityUnit}`,
+      en.sales.availableForProduct
+        .replace("{quantity}", String(product.quantity))
+        .replace("{unit}", quantityUnit)
+        .replace("{name}", product.name),
     );
   }
 
@@ -299,10 +359,12 @@ export async function stockOut(data: StockOutInput, options?: ServiceOptions) {
       paymentStatus: data.paymentStatus || options?.transaction?.paymentStatus,
       invoiceReceiptNo:
         data.invoiceReceiptNo || options?.transaction?.invoiceReceiptNo,
+      locationId: data.locationId || options?.transaction?.locationId,
+      batchNo: data.batchNo || options?.transaction?.batchNo,
     },
     {
       transactionType:
-        normalizedReason === "Sold" ? "sale" : "stock-adjustment",
+        normalizedReason === en.inventory.reasons.sold ? "sale" : "stock-adjustment",
       amount: normalizedSalePrice * quantity,
     },
   );
@@ -333,12 +395,24 @@ export async function stockOut(data: StockOutInput, options?: ServiceOptions) {
     }),
   );
 
+  await adjustAdvancedInventoryStock({
+    userId: product.userId,
+    product,
+    locationId: data.locationId || transaction.locationId,
+    locationName: transaction.locationName,
+    quantityDelta: -quantity,
+    quantityUnit,
+    oldProductStock: oldStock,
+    batchNo: data.batchNo || transaction.batchNo,
+    expiry: data.expiry || undefined,
+  });
+
   if (!options?.skipImmediateSync) await ensureCloudSync("Stock out");
   return "stocked-out";
 }
 
 export async function stockOutMany(entries: StockOutInput[]) {
-  if (!entries.length) throw new Error("Select at least one item to sell");
+  if (!entries.length) throw new Error(en.sales.addAtLeastOneItem);
 
   const productsById = new Map<string, Product>();
   const totalsByProductId = new Map<string, number>();
@@ -346,7 +420,7 @@ export async function stockOutMany(entries: StockOutInput[]) {
   for (const entry of entries) {
     const quantity = Number(entry.quantity);
     if (!Number.isFinite(quantity) || quantity <= 0)
-      throw new Error("Quantity should be greater than 0");
+      throw new Error(en.sales.quantityGreaterThanZero);
     totalsByProductId.set(
       entry.productId,
       (totalsByProductId.get(entry.productId) || 0) + quantity,
@@ -355,14 +429,17 @@ export async function stockOutMany(entries: StockOutInput[]) {
 
   for (const [productId, requestedQty] of totalsByProductId.entries()) {
     const product = await db.products.get(productId);
-    if (!product) throw new Error("Product not found");
+    if (!product) throw new Error(en.sales.productNotFound);
     productsById.set(productId, product);
     const allowNegative = entries.some(
       (entry) => entry.productId === productId && entry.allowNegativeStock,
     );
     if (!allowNegative && requestedQty > product.quantity) {
       throw new Error(
-        `Only ${product.quantity} ${normalizeQuantityUnit(product.quantityUnit)} available for ${product.name}`,
+        en.sales.availableForProduct
+          .replace("{quantity}", String(product.quantity))
+          .replace("{unit}", normalizeQuantityUnit(product.quantityUnit))
+          .replace("{name}", product.name),
       );
     }
   }
@@ -393,10 +470,13 @@ export async function stockOutMany(entries: StockOutInput[]) {
       amount: roundCurrency(rate * quantity),
       gstRate: entry.gstRate,
       gstAmount,
+      batchNo: entry.batchNo,
+      locationId: entry.locationId,
+      locationName: entry.locationId,
     };
   });
 
-  await db.transaction("rw", db.products, db.productLogs, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches], async () => {
     for (const entry of entries) {
       await stockOut(
         {
@@ -427,7 +507,8 @@ export async function stockOutMany(entries: StockOutInput[]) {
 
 export async function updateProductDetails(data: UpdateProductInput) {
   const product = await db.products.get(data.productId);
-  if (!product) throw new Error("Product not found");
+  if (!product) throw new Error(en.sales.productNotFound);
+  await assertFeatureAccess(product.userId, "products", { operation: "update" });
 
   const normalizedName = data.name.trim().toLowerCase();
   const normalizedCategory = (data.category || "").trim().toLowerCase();
@@ -438,9 +519,9 @@ export async function updateProductDetails(data: UpdateProductInput) {
   const quantityUnitChanged =
     quantityUnit !== normalizeQuantityUnit(product.quantityUnit);
 
-  if (!normalizedName) throw new Error("Product name is required");
+  if (!normalizedName) throw new Error(en.quickPurchase.validation.productNameRequired);
   if (!Number.isFinite(price) || price < 0)
-    throw new Error("Price cannot be negative");
+    throw new Error(en.sales.priceCannotBeNegative);
 
   if (quantityUnitChanged) {
     const historyCount = await db.productLogs
@@ -450,7 +531,7 @@ export async function updateProductDetails(data: UpdateProductInput) {
 
     if (Number(product.quantity || 0) > 0 || historyCount > 0) {
       throw new Error(
-        "Unit cannot be changed after stock or history already exists for this item",
+        en.inventory.productManagement.unitChangeLocked,
       );
     }
   }
@@ -462,7 +543,7 @@ export async function updateProductDetails(data: UpdateProductInput) {
 
   if (duplicate && duplicate.id !== product.id) {
     throw new Error(
-      "Another product already exists with same name and category",
+      en.inventory.productManagement.duplicateProductIdentity,
     );
   }
 
@@ -475,8 +556,11 @@ export async function updateProductDetails(data: UpdateProductInput) {
     expiry: data.expiry || undefined,
     sku: data.sku?.trim() || undefined,
     hsnCode: data.hsnCode?.trim() || undefined,
+    batchNo: data.batchNo?.trim() || undefined,
+    reorderLevel: data.reorderLevel ?? data.lowStockThreshold,
+    serialTrackingNote: data.serialTrackingNote?.trim() || undefined,
     note: data.note?.trim() || undefined,
-    lowStockThreshold: data.lowStockThreshold,
+    lowStockThreshold: data.lowStockThreshold ?? data.reorderLevel,
     criticalStockThreshold: data.criticalStockThreshold,
   });
 
@@ -486,7 +570,8 @@ export async function updateProductDetails(data: UpdateProductInput) {
 
 export async function adjustProductStock(data: AdjustProductStockInput) {
   const product = await db.products.get(data.productId);
-  if (!product) throw new Error("Product not found");
+  if (!product) throw new Error(en.sales.productNotFound);
+  await assertFeatureAccess(product.userId, "products", { operation: "update" });
 
   const quantity = Number(data.quantity);
   const price = Number(data.price ?? product.price ?? 0);
@@ -495,15 +580,15 @@ export async function adjustProductStock(data: AdjustProductStockInput) {
   );
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
-    throw new Error("Quantity should be greater than 0");
+    throw new Error(en.sales.quantityGreaterThanZero);
   }
 
   if (!Number.isFinite(price) || price < 0) {
-    throw new Error("Price cannot be negative");
+    throw new Error(en.sales.priceCannotBeNegative);
   }
 
   if (data.direction === "out" && quantity > Number(product.quantity || 0)) {
-    throw new Error("Adjustment would make stock negative");
+    throw new Error(en.inventory.productManagement.adjustmentExceedsStock);
   }
 
   const oldStock = Number(product.quantity || 0);
@@ -511,9 +596,9 @@ export async function adjustProductStock(data: AdjustProductStockInput) {
     data.direction === "in" ? oldStock + quantity : oldStock - quantity,
   );
   const date = new Date().toISOString();
-  const reason = data.reason?.trim() || "Adjustment";
+  const reason = data.reason?.trim() || en.accounting.manualAdjustment;
 
-  await db.transaction("rw", db.products, db.productLogs, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches], async () => {
     await db.products.update(product.id, {
       quantity: newStock,
     });
@@ -543,6 +628,17 @@ export async function adjustProductStock(data: AdjustProductStockInput) {
         ),
       }),
     );
+
+    await adjustAdvancedInventoryStock({
+      userId: product.userId,
+      product,
+      locationId: data.locationId,
+      quantityDelta: data.direction === "in" ? quantity : -quantity,
+      quantityUnit,
+      oldProductStock: oldStock,
+      batchNo: data.batchNo,
+      expiry: data.expiry || product.expiry,
+    });
   });
 
   await ensureCloudSync("Stock adjustment");
@@ -551,10 +647,13 @@ export async function adjustProductStock(data: AdjustProductStockInput) {
 
 export async function deleteProductWithLogs(productId: string) {
   const product = await db.products.get(productId);
-  if (!product) throw new Error("Product not found");
+  if (!product) throw new Error(en.sales.productNotFound);
+  await assertFeatureAccess(product.userId, "products", { operation: "update" });
 
-  await db.transaction("rw", db.products, db.productLogs, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches, db.stockTransfers], async () => {
     await db.productLogs.where("productId").equals(productId).delete();
+    await db.productLocationStocks.where("productId").equals(productId).delete();
+    await db.inventoryBatches.where("productId").equals(productId).delete();
     await db.products.delete(productId);
   });
 
@@ -564,10 +663,11 @@ export async function deleteProductWithLogs(productId: string) {
 
 export async function updateProductLog(data: UpdateProductLogInput) {
   const log = await db.productLogs.get(data.logId);
-  if (!log) throw new Error("History entry not found");
+  if (!log) throw new Error(en.stockHistory.historyEntryNotFound);
 
   const product = await db.products.get(log.productId);
-  if (!product) throw new Error("Related product not found");
+  if (!product) throw new Error(en.stockHistory.relatedProductNotFound);
+  await assertFeatureAccess(product.userId, "products", { operation: "update" });
 
   const nextType =
     data.type || log.type || (log.quantityAdded < 0 ? "out" : "in");
@@ -578,9 +678,9 @@ export async function updateProductLog(data: UpdateProductLogInput) {
   );
 
   if (!Number.isFinite(nextQuantity) || nextQuantity <= 0)
-    throw new Error("Quantity should be greater than 0");
+    throw new Error(en.sales.quantityGreaterThanZero);
   if (!Number.isFinite(nextPrice) || nextPrice < 0)
-    throw new Error("Price cannot be negative");
+    throw new Error(en.sales.priceCannotBeNegative);
 
   const nextSignedQuantity = nextType === "out" ? -nextQuantity : nextQuantity;
   const nextProductQuantity = roundCurrency(
@@ -588,7 +688,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
   );
 
   if (nextProductQuantity < 0)
-    throw new Error("Correction would make stock negative");
+    throw new Error(en.stockHistory.correctionNegativeStock);
 
   const now = new Date().toISOString();
   const updatedTransaction = normalizeTransactionMetadata(
@@ -614,7 +714,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
     },
   );
 
-  await db.transaction("rw", db.products, db.productLogs, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches], async () => {
     await db.products.update(product.id, {
       quantity: nextProductQuantity,
     });
@@ -631,7 +731,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
       newStock: nextProductQuantity,
       type: nextType,
       reason:
-        nextType === "out" ? data.reason || log.reason || "Sold" : undefined,
+        nextType === "out" ? data.reason || log.reason || en.inventory.reasons.sold : undefined,
       price: nextPrice,
       amount: roundCurrency(nextPrice * nextQuantity),
       taxableAmount: updatedTransaction.taxableAmount,
@@ -669,20 +769,21 @@ export async function updateProductLog(data: UpdateProductLogInput) {
 
 export async function deleteProductLog(logId: string) {
   const log = await db.productLogs.get(logId);
-  if (!log) throw new Error("History entry not found");
+  if (!log) throw new Error(en.stockHistory.historyEntryNotFound);
 
   const product = await db.products.get(log.productId);
-  if (!product) throw new Error("Related product not found");
+  if (!product) throw new Error(en.stockHistory.relatedProductNotFound);
+  await assertFeatureAccess(product.userId, "products", { operation: "update" });
 
   const nextProductQuantity = roundCurrency(
     product.quantity - log.quantityAdded,
   );
   if (nextProductQuantity < 0)
     throw new Error(
-      "Cannot delete this entry because stock would become negative",
+      en.stockHistory.deleteNegativeStockBlocked,
     );
 
-  await db.transaction("rw", db.products, db.productLogs, async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches], async () => {
     await db.products.update(product.id, {
       quantity: nextProductQuantity,
     });
@@ -821,6 +922,9 @@ function buildProductLog({
     category: product.category,
     sku: product.sku,
     hsnCode: product.hsnCode,
+    batchNo: transaction.batchNo || product.batchNo,
+    locationId: transaction.locationId,
+    locationName: transaction.locationName,
     quantity,
     quantityUnit,
     oldStock,
@@ -859,6 +963,9 @@ function buildProductLog({
     productCategory: product.category,
     productSku: product.sku,
     productHsnCode: product.hsnCode,
+    batchNo: transaction.batchNo || product.batchNo,
+    locationId: transaction.locationId,
+    locationName: transaction.locationName,
     quantityAdded: type === "out" ? -quantity : quantity,
     quantity,
     quantityUnit,
@@ -917,8 +1024,10 @@ function transactionPrefix(type: StockTransactionType) {
   if (type === "purchase") return "PUR";
   if (type === "quick-purchase") return "QP";
   if (type === "sale" || type === "multi-item-sale") return "SALE";
+  if (type === "sale-cancellation") return "SCN";
   if (type === "stock-correction") return "CORR";
   if (type === "stock-adjustment") return "ADJ";
+  if (type === "stock-transfer") return "TRF";
   return "STK";
 }
 

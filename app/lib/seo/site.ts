@@ -60,7 +60,7 @@ export const SEO_LANGUAGES = [
   { code: "pa", locale: "pa-IN", label: "Punjabi" },
 ] as const
 
-export type SeoSearchParams = { lang?: string | string[] } | Promise<{ lang?: string | string[] } | undefined> | undefined
+export type SeoSearchParams = Promise<{ lang?: string | string[] } | undefined> | undefined
 export type SeoLanguageCode = (typeof SEO_LANGUAGES)[number]["code"]
 
 export function normalizeSeoLanguage(language?: string | string[]) {

@@ -15,6 +15,7 @@ type Props = {
   billNo: string
   supplierName: string
   purchaseDate: string
+  supplierDatalistId?: string
   paymentStatus: PurchasePaymentStatus
   paymentMode: string
   amountPaid: string
@@ -41,6 +42,7 @@ export default function PurchaseFields({
   billNo,
   supplierName,
   purchaseDate,
+  supplierDatalistId = "suppliers",
   paymentStatus,
   paymentMode,
   amountPaid,
@@ -78,7 +80,7 @@ export default function PurchaseFields({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <Input label={en.purchases.billNo} value={billNo} onChange={(event) => onBillNoChange(event.target.value)} placeholder={en.purchases.billNoPlaceholder} />
 
-        <Input id="purchase-supplier" label={<>{en.purchases.supplierNameRequired.replace(" *", "")} <RequiredMark /> </>} value={supplierName} onChange={(event) => onSupplierChange(event.target.value)} datalist="suppliers" placeholder={en.purchases.supplierPlaceholder} />
+        <Input id="purchase-supplier" label={<>{en.purchases.supplierNameRequired.replace(" *", "")} <RequiredMark /> </>} value={supplierName} onChange={(event) => onSupplierChange(event.target.value)} datalist={supplierDatalistId} placeholder={en.purchases.supplierPlaceholder} />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.purchases.payment} <RequiredMark /></label>

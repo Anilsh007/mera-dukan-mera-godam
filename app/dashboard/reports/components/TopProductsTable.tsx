@@ -1,8 +1,11 @@
+import ResponsiveDataTable from "@/app/components/ui/ResponsiveDataTable"
 import { formatMoney, formatNumber } from "../lib/format"
 import EmptyState from "./EmptyState"
 import { en } from "@/app/messages/en"
 
-export default function TopProductsTable({ items }: { items: Array<{ name: string; quantity: number; value: number }> }) {
+type TopProduct = { name: string; quantity: number; value: number }
+
+export default function TopProductsTable({ items }: { items: TopProduct[] }) {
   if (!items.length) return <EmptyState text={en.reports.noSalesData} />
 
   return (
@@ -21,26 +24,17 @@ export default function TopProductsTable({ items }: { items: Array<{ name: strin
         ))}
       </div>
 
-      <div className="mobile-safe-table hidden sm:block">
-        <table className="min-w-[520px] w-full text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
-            <tr className="border-b border-[var(--border-card)]">
-              <th className="py-3 pr-4">{en.reports.product}</th>
-              <th className="py-3 pr-4 text-right">{en.reports.units}</th>
-              <th className="py-3 text-right">{en.reports.sales}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-card)]">
-            {items.map((item) => (
-              <tr key={item.name}>
-                <td className="py-3 pr-4 font-medium capitalize text-[var(--text-primary)]">{item.name}</td>
-                <td className="py-3 pr-4 text-right text-[var(--text-secondary)]">{formatNumber(item.quantity)}</td>
-                <td className="py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(item.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ResponsiveDataTable
+        rows={items}
+        getRowKey={(item) => item.name}
+        minWidth={520}
+        className="hidden sm:block"
+        columns={[
+          { key: "product", header: en.reports.product, render: (item) => item.name, className: "font-medium capitalize text-[var(--text-primary)]" },
+          { key: "units", header: en.reports.units, align: "right", render: (item) => formatNumber(item.quantity), className: "text-[var(--text-secondary)]" },
+          { key: "sales", header: en.reports.sales, align: "right", render: (item) => formatMoney(item.value), className: "font-semibold text-emerald-600 dark:text-emerald-400" },
+        ]}
+      />
     </>
   )
 }
