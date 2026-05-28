@@ -10,7 +10,9 @@ type CurrentPlanCardProps = {
   statusLabel: string
   trialDaysLeft: number
   subscriptionExpired: boolean
-  onManage: () => void
+  secondaryLabel: string
+  onSecondary: () => void
+  primaryLabel?: string
   onUpgrade: () => void
 }
 
@@ -19,12 +21,20 @@ function getPlanLabel(plan: SubscriptionPlanId) {
   return en.subscription.planLabels[plan]
 }
 
+function getAccessBadgeLabel(subscriptionExpired: boolean, trialDaysLeft: number) {
+  if (subscriptionExpired) return en.subscription.expiredBadge
+  if (trialDaysLeft > 0) return en.subscription.trialBadge
+  return en.subscription.activeAccessBadge
+}
+
 export default function CurrentPlanCard({
   plan,
   statusLabel,
   trialDaysLeft,
   subscriptionExpired,
-  onManage,
+  secondaryLabel,
+  onSecondary,
+  primaryLabel = en.subscription.upgradeNow,
   onUpgrade,
 }: CurrentPlanCardProps) {
   return (
@@ -43,18 +53,20 @@ export default function CurrentPlanCard({
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--text-secondary)]">
-            <span className="rounded-full border border-[var(--border-card)] px-3 py-1.5">
-              {en.subscription.daysLeft.replace("{days}", String(Math.max(trialDaysLeft, 0)))}
-            </span>
-            <span className="rounded-full border border-[var(--border-card)] px-3 py-1.5">
-              {subscriptionExpired ? en.subscription.expiredBadge : en.subscription.activeAccessBadge}
+            {trialDaysLeft > 0 ? (
+              <span className="rounded-full border border-[var(--border-card)] bg-[var(--surface-primary)] px-3 py-1.5">
+                {en.subscription.daysLeft.replace("{days}", String(Math.max(trialDaysLeft, 0)))}
+              </span>
+            ) : null}
+            <span className="rounded-full border border-[var(--border-card)] bg-[var(--surface-primary)] px-3 py-1.5">
+              {getAccessBadgeLabel(subscriptionExpired, trialDaysLeft)}
             </span>
           </div>
         </div>
 
         <div className="flex w-full flex-col gap-2 lg:w-auto">
-          <Button type="button" variant="outline" title={en.subscription.manageSubscription} onClick={onManage} className="w-full lg:w-auto" />
-          <Button type="button" variant="primary" title={en.subscription.upgradeNow} onClick={onUpgrade} className="w-full lg:w-auto" />
+          <Button type="button" variant="outline" title={secondaryLabel} onClick={onSecondary} className="w-full lg:w-auto" />
+          <Button type="button" variant="primary" title={primaryLabel} onClick={onUpgrade} className="w-full lg:w-auto" />
         </div>
       </div>
 

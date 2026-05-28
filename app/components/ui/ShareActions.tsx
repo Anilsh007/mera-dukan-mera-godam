@@ -133,16 +133,7 @@ export default function ShareActions({
       {actions
         .filter((action) => action.visible)
         .map((action) => (
-          <ActionChip
-            key={action.key}
-            disabled={disabled}
-            icon={action.icon}
-            label={action.label}
-            onClick={action.onClick}
-            tone={action.tone}
-            className={compact ? "min-h-10 rounded-[16px] px-3 py-2" : ""}
-            title={action.label}
-          />
+          <ActionChip key={action.key} disabled={disabled} icon={action.icon} label={action.label} onClick={action.onClick} tone={action.tone} className={compact ? "min-h-10 rounded-[16px] " : ""} title={action.label} />
         ))}
     </div>
   )

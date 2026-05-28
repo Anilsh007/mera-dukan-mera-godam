@@ -1,7 +1,10 @@
 "use client"
 
 import { db, type SubscriptionPlanId, type SubscriptionRecord, type UsageTrackedFeature } from "@/app/lib/db"
+import { auth } from "@/app/lib/firebase"
 import { en } from "@/app/messages/en"
+import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import { syncSubscriptionFromServer } from "./billing.client"
 import { PLAN_LIMITS, PREMIUM_PLANS, TRIAL_DAYS, type SubscriptionFeatureKey, type SubscriptionFeatureLimit } from "./plans"
 
 export type FeatureAccessScope = "basic" | "premium"
@@ -63,6 +66,10 @@ function isPaidPlan(plan: SubscriptionPlanId) {
   return PREMIUM_PLANS.includes(plan)
 }
 
+const SUBSCRIPTION_SYNC_TTL_MS = 5 * 60 * 1000
+const syncTimestamps = new Map<string, number>()
+const syncInFlight = new Map<string, Promise<void>>()
+
 function buildTrialRecord(userId: string): SubscriptionRecord {
   const createdAt = nowIso()
   return {
@@ -78,6 +85,8 @@ function buildTrialRecord(userId: string): SubscriptionRecord {
 }
 
 export async function ensureSubscriptionRecord(userId: string): Promise<SubscriptionRecord> {
+  await syncSubscriptionWithServerIfNeeded(userId)
+
   const existing = await db.subscriptions.where("userId").equals(userId).first()
   if (!existing) {
     const created = buildTrialRecord(userId)
@@ -96,28 +105,37 @@ export async function getSubscriptionRecord(userId: string) {
   return ensureSubscriptionRecord(userId)
 }
 
-export function isTrialActive(subscription: SubscriptionRecord | null | undefined) {
-  if (!subscription) return false
-  return subscription.status === "trialing" && new Date(subscription.trialEndsAt).getTime() > Date.now()
+export async function refreshSubscriptionFromServer(userId: string) {
+  const currentAuthUserId = getUserIdentityFromAuthUser(auth?.currentUser)
+  if (!currentAuthUserId || currentAuthUserId !== userId) return null
+
+  const response = await syncSubscriptionFromServer(userId)
+  syncTimestamps.set(userId, Date.now())
+  return response
 }
 
-export function getTrialDaysLeft(subscription: SubscriptionRecord | null | undefined) {
-  if (!subscription || !isTrialActive(subscription)) return 0
-  const diff = new Date(subscription.trialEndsAt).getTime() - Date.now()
+export function isTrialActive(subscription: SubscriptionRecord | null | undefined, nowMs = Date.now()) {
+  if (!subscription) return false
+  return subscription.status === "trialing" && new Date(subscription.trialEndsAt).getTime() > nowMs
+}
+
+export function getTrialDaysLeft(subscription: SubscriptionRecord | null | undefined, nowMs = Date.now()) {
+  if (!subscription || !isTrialActive(subscription, nowMs)) return 0
+  const diff = new Date(subscription.trialEndsAt).getTime() - nowMs
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
 }
 
-export function isSubscriptionActive(subscription: SubscriptionRecord | null | undefined) {
+export function isSubscriptionActive(subscription: SubscriptionRecord | null | undefined, nowMs = Date.now()) {
   if (!subscription) return false
   if (subscription.status === "manual") return true
   if (subscription.status !== "active") return false
   if (!subscription.subscriptionEndsAt) return true
-  return new Date(subscription.subscriptionEndsAt).getTime() > Date.now()
+  return new Date(subscription.subscriptionEndsAt).getTime() > nowMs
 }
 
-export function isSubscriptionExpired(subscription: SubscriptionRecord | null | undefined) {
+export function isSubscriptionExpired(subscription: SubscriptionRecord | null | undefined, nowMs = Date.now()) {
   if (!subscription) return false
-  return !isTrialActive(subscription) && !isSubscriptionActive(subscription)
+  return !isTrialActive(subscription, nowMs) && !isSubscriptionActive(subscription, nowMs)
 }
 
 export function getEffectivePlan(subscription: SubscriptionRecord | null | undefined): SubscriptionPlanId {
@@ -365,4 +383,35 @@ function normalizeSubscriptionRecord(subscription: SubscriptionRecord): Subscrip
   }
 
   return normalized
+}
+
+async function syncSubscriptionWithServerIfNeeded(userId: string) {
+  if (typeof window === "undefined") return
+  if (!window.navigator.onLine) return
+
+  const currentAuthUserId = getUserIdentityFromAuthUser(auth?.currentUser)
+  if (!currentAuthUserId || currentAuthUserId !== userId) return
+
+  const lastSyncedAt = syncTimestamps.get(userId) || 0
+  if (Date.now() - lastSyncedAt < SUBSCRIPTION_SYNC_TTL_MS) return
+
+  const existing = syncInFlight.get(userId)
+  if (existing) {
+    await existing
+    return
+  }
+
+  const task = (async () => {
+    try {
+      await syncSubscriptionFromServer(userId)
+      syncTimestamps.set(userId, Date.now())
+    } catch (error) {
+      console.warn("Subscription server sync failed", error)
+    } finally {
+      syncInFlight.delete(userId)
+    }
+  })()
+
+  syncInFlight.set(userId, task)
+  await task
 }

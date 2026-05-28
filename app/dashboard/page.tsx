@@ -173,6 +173,8 @@ export default function DashboardHome() {
     : trialActive
       ? en.subscription.trialStatus
       : en.subscription.expiredStatus
+  const secondaryLabel = subscriptionActive ? "Open Billing" : trialActive ? "View Billing" : "View Plans"
+  const primaryLabel = subscriptionActive ? "Change Plan" : en.subscription.upgradeNow
 
   return (
     <div className="dashboard-page space-y-6 pb-8">
@@ -206,7 +208,9 @@ export default function DashboardHome() {
         statusLabel={subscriptionStatusLabel}
         trialDaysLeft={trialDaysLeft}
         subscriptionExpired={subscriptionExpired}
-        onManage={() => router.push("/dashboard/settings/subscription")}
+        secondaryLabel={secondaryLabel}
+        onSecondary={() => router.push("/dashboard/settings/subscription")}
+        primaryLabel={primaryLabel}
         onUpgrade={() => setUpgradeOpen(true)}
       />
 

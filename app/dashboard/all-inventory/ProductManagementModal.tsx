@@ -8,7 +8,7 @@ import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import { Product } from "@/app/lib/db"
 import { STOCK_THRESHOLDS } from "@/app/lib/inventory.utils"
-import { formatQuantity, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { DEFAULT_QUANTITY_UNIT, formatQuantity, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import {
   adjustProductStock,
   deleteProductWithLogs,
@@ -62,7 +62,7 @@ const emptyForm: FormState = {
   supplier: "",
   expiry: "",
   price: "",
-  quantityUnit: " ",
+  quantityUnit: DEFAULT_QUANTITY_UNIT,
   sku: "",
   hsnCode: "",
   batchNo: "",
@@ -296,12 +296,6 @@ export default function ProductManagementModal({
   const body = mode === "edit" ? (
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <datalist id="product-management-quantity-units">
-          {QUANTITY_UNITS.map((unit) => (
-            <option key={unit.value} value={unit.value}>{unit.label}</option>
-          ))}
-        </datalist>
-
         <Input
           label={en.inventory.productManagement.itemName}
           value={form.name}
@@ -343,12 +337,22 @@ export default function ProductManagementModal({
         <Input label={en.advancedInventory.serialImei} value={form.serialTrackingNote} placeholder={en.advancedInventory.serialImeiPlaceholder} onChange={(e) => setField("serialTrackingNote", e.target.value)} />
         <Input label={en.inventory.expiry} type="date" value={form.expiry} onChange={(e) => setField("expiry", e.target.value)} />
         <Input label={en.inventory.productManagement.sellingPrice} type="number" min={0} value={form.price} onChange={(e) => setField("price", e.target.value)} />
-        <Input
-          label={<>{en.inventory.unit} <span className="text-red-400">*</span></>}
-          value={form.quantityUnit}
-          onChange={(e) => setField("quantityUnit", e.target.value)}
-          datalist="product-management-quantity-units"
-        />
+        <div className="min-w-0">
+          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
+            {en.inventory.unit} <span className="text-red-400">*</span>
+          </label>
+          <select
+            value={form.quantityUnit || DEFAULT_QUANTITY_UNIT}
+            onChange={(event) => setField("quantityUnit", event.target.value)}
+            className={selectClass}
+          >
+            {QUANTITY_UNITS.map((unit) => (
+              <option key={unit.value} value={unit.value}>
+                {unit.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <Input
           label={en.inventory.note}
           value={form.note}

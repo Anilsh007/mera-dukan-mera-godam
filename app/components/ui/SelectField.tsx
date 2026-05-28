@@ -42,7 +42,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function Sel
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={describedBy}
         {...props}
-        className={`min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2 text-[var(--text-primary)] shadow-[var(--button-shadow)] outline-none transition-all focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--focus-ring)] ${error ? "border-red-400 focus:ring-red-300" : ""} ${className}`}
+        className={`min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2 text-[var(--text-primary)] shadow-[var(--button-shadow)] outline-none transition-all disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--text-primary)] disabled:opacity-100 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--focus-ring)] ${error ? "border-red-400 focus:ring-red-300" : ""} ${className}`}
       >
         {options ? options.map((option) => <option key={String(option.value)} value={option.value}>{option.label}</option>) : children}
       </select>

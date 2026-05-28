@@ -101,26 +101,10 @@ export default function ActionChip({
   const toneStyles = toneClassName[tone]
 
   return (
-    <button
-      type={type}
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      className={[
-        "group relative inline-flex min-h-12 min-w-0 items-center gap-2.5 rounded-[18px] border px-4 py-3 text-left backdrop-blur-md",
-        "transition-all duration-200",
-        active ? toneStyles.active : toneStyles.idle,
-        disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5",
-        className,
-      ].join(" ")}
-    >
+    <button type={type} disabled={disabled} onClick={onClick} title={title}
+      className={["group relative inline-flex min-h-12 min-w-0 items-center gap-2.5 rounded-[18px] border px-4 py-3 text-left backdrop-blur-md", "transition-all duration-200", active ? toneStyles.active : toneStyles.idle, disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5", className,].join(" ")} >
       {icon ? (
-        <span
-          className={[
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-            active ? "border-white/20 bg-white/15 text-current" : `border-[var(--border-card)] bg-[var(--surface-secondary)] ${toneStyles.icon}`,
-          ].join(" ")}
-        >
+        <span className={["flex h-8 w-8 shrink-0 items-center justify-center rounded-full border", active ? "border-white/20 bg-white/15 text-current" : `border-[var(--border-card)] bg-[var(--surface-secondary)] ${toneStyles.icon}`,].join(" ")} >
           {icon}
         </span>
       ) : null}

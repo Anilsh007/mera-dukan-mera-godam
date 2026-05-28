@@ -389,7 +389,7 @@ export default function PosPage() {
     <div className="dashboard-page space-y-5 pb-8">
       <PageHeader eyebrow={en.navigation.pos} title={en.pages.posTitle} description={en.pages.posDescription} />
 
-      <PageActionLinks
+      {/* <PageActionLinks
         title={en.common.nextActions}
         description={en.common.nextActionsDescription}
         actions={[
@@ -398,7 +398,7 @@ export default function PosPage() {
           { href: DASHBOARD_ROUTES.inventory, label: en.pos.goToInventory, description: en.pos.goToInventoryHelp, icon: <Boxes size={18} /> },
           { href: DASHBOARD_ROUTES.reports, label: en.sales.goToReports, description: en.sales.goToReportsHelp, icon: <BarChart3 size={18} /> },
         ]}
-      />
+      /> */}
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <SummaryCard label={en.pos.cartItems} value={String(cart.length)} />

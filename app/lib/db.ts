@@ -445,6 +445,8 @@ export interface SubscriptionRecord {
   provider?: string
   providerCustomerId?: string
   providerSubscriptionId?: string
+  providerPaymentId?: string
+  billingCycle?: "monthly" | "quarterly" | "yearly"
   note?: string
   createdAt: string
   updatedAt: string

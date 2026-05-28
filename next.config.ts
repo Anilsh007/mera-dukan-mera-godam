@@ -5,12 +5,12 @@ const isHttpsProduction = !isDevelopment && siteUrl.startsWith("https://")
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${isDevelopment ? "'unsafe-eval'" : ""} https://www.gstatic.com https://apis.google.com https://accounts.google.com https://*.google.com`.trim(),
+  `script-src 'self' 'unsafe-inline' ${isDevelopment ? "'unsafe-eval'" : ""} https://www.gstatic.com https://apis.google.com https://accounts.google.com https://*.google.com https://checkout.razorpay.com https://cdn.razorpay.com`.trim(),
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.supabase.co wss://*.supabase.co https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
-  "frame-src https://accounts.google.com https://*.firebaseapp.com",
+  "connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.supabase.co wss://*.supabase.co https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://cdn.razorpay.com https://lumberjack.razorpay.com",
+  "frame-src https://accounts.google.com https://*.firebaseapp.com https://checkout.razorpay.com https://api.razorpay.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -27,7 +27,7 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-DNS-Prefetch-Control", value: "on" },
-  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), browsing-topics=(), payment=()" },
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), browsing-topics=(), payment=(self)" },
   { key: "Cross-Origin-Resource-Policy", value: "same-site" },
   ...(isHttpsProduction ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" }] : []),
 ]

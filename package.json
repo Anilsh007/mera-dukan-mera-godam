@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "export": "next export",
+    "razorpay:create-test-plans": "node scripts/create-razorpay-test-plans.mjs",
     "typecheck": "tsc --noEmit",
     "audit:ci": "npm run lint && npm run typecheck && npm run build"
   },

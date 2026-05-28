@@ -7,6 +7,7 @@ import { auth } from "@/app/lib/firebase"
 import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import {
   ensureSubscriptionRecord,
+  refreshSubscriptionFromServer,
   getEffectivePlan,
   getTrialDaysLeft,
   isSubscriptionActive,
@@ -28,6 +29,17 @@ export default function useSubscription(): UseSubscriptionState & {
 } {
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [])
 
   useEffect(() => {
     let dexieSubscription: { unsubscribe: () => void } | null = null
@@ -55,6 +67,11 @@ export default function useSubscription(): UseSubscriptionState & {
       }
 
       setLoading(true)
+      try {
+        await refreshSubscriptionFromServer(userId)
+      } catch (error) {
+        console.warn("Subscription server sync skipped", error)
+      }
       await ensureSubscriptionRecord(userId)
       dexieSubscription = liveQuery(() => db.subscriptions.where("userId").equals(userId).first()).subscribe({
         next: (value) => {
@@ -75,17 +92,17 @@ export default function useSubscription(): UseSubscriptionState & {
   }, [])
 
   return useMemo(() => {
-    const trialActive = isTrialActive(subscription)
-    const subscriptionActive = isSubscriptionActive(subscription)
-    const subscriptionExpired = isSubscriptionExpired(subscription)
+    const trialActive = isTrialActive(subscription, nowMs)
+    const subscriptionActive = isSubscriptionActive(subscription, nowMs)
+    const subscriptionExpired = isSubscriptionExpired(subscription, nowMs)
     return {
       subscription,
       loading,
       effectivePlan: getEffectivePlan(subscription),
-      trialDaysLeft: getTrialDaysLeft(subscription),
+      trialDaysLeft: getTrialDaysLeft(subscription, nowMs),
       trialActive,
       subscriptionActive,
       subscriptionExpired,
     }
-  }, [loading, subscription])
+  }, [loading, nowMs, subscription])
 }

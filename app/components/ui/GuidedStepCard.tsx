@@ -33,7 +33,7 @@ export default function GuidedStepCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               {typeof step === "number" ? (
-                <span className="rounded-full border border-[var(--border-card)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                <span className="rounded-full border border-[var(--border-card)] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   {step}
                 </span>
               ) : null}

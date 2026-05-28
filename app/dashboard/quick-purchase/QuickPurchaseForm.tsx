@@ -12,7 +12,7 @@ import Input from "@/app/components/ui/Input"
 import { findProductByScannedCode } from "@/app/lib/barcode/barcode.utils"
 import { notify as toast } from "@/app/lib/notifications"
 import Suggestions from "@/app/components/inventory/ProductDatalists"
-import { normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { DEFAULT_QUANTITY_UNIT, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { saveQuickPurchase } from "@/app/dashboard/purchases/purchase.service"
@@ -181,11 +181,6 @@ export default function AddProductForm() {
       <Suggestions products={products} type="product" />
       <Suggestions products={products} type="category" />
       <Suggestions products={products} type="supplier" />
-      <datalist id="quantityUnits">
-        {QUANTITY_UNITS.map((unit) => (
-          <option key={unit.value} value={unit.value}>{unit.label}</option>
-        ))}
-      </datalist>
 
       <div className="mb-4 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
         <p className="font-bold text-[var(--text-primary)]">{en.quickPurchase.formGuideTitle}</p>
@@ -254,8 +249,18 @@ export default function AddProductForm() {
                 <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] focus-within:ring-2 focus-within:ring-emerald-400">
                   <input type="number" placeholder={en.quickPurchase.quantityPlaceholder} value={row.quantity}
                     onChange={(event) => handleChange(row.id, "quantity", event.target.value)} className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none" />
-                  <input list="quantityUnits" aria-label={en.quickPurchase.quantityUnit} value={row.quantityUnit} onChange={(event) => handleChange(row.id, "quantityUnit", event.target.value)} className="w-20 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
-                  />
+                  <select
+                    aria-label={en.quickPurchase.quantityUnit}
+                    value={row.quantityUnit || DEFAULT_QUANTITY_UNIT}
+                    onChange={(event) => handleChange(row.id, "quantityUnit", event.target.value)}
+                    className="w-28 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
+                  >
+                    {QUANTITY_UNITS.map((unit) => (
+                      <option key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

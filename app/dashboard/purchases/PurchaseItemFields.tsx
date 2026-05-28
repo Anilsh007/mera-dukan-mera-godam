@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
-import { QUANTITY_UNITS, formatQuantity } from "@/app/lib/quantityUnit"
+import { DEFAULT_QUANTITY_UNIT, QUANTITY_UNITS, formatQuantity } from "@/app/lib/quantityUnit"
 import { formatCurrency } from "./purchase.utils"
 import type { PurchaseRow } from "./purchase.types"
 import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
@@ -30,14 +30,6 @@ export function PurchaseItemFields({
 
   return (
     <>
-      <datalist id="quantityUnits">
-        {QUANTITY_UNITS.map((unit) => (
-          <option key={unit.value} value={unit.value}>
-            {unit.label}
-          </option>
-        ))}
-      </datalist>
-
       <div className="w-full rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-3 shadow-sm sm:p-4 lg:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -222,14 +214,19 @@ function QuantityInput({
           onChange={(event) => onChange("quantity", event.target.value)}
           className="min-h-10 min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] outline-none"
         />
-        <input
+        <select
           id={unitInputId}
-          list="quantityUnits"
-          value={row.quantityUnit}
+          value={row.quantityUnit || DEFAULT_QUANTITY_UNIT}
           onChange={(event) => onChange("quantityUnit", event.target.value)}
           aria-label={en.purchases.quantityAndUnit}
-          className="w-24 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
-        />
+          className="w-28 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
+        >
+          {QUANTITY_UNITS.map((unit) => (
+            <option key={unit.value} value={unit.value}>
+              {unit.label}
+            </option>
+          ))}
+        </select>
       </div>
       {Number(row.quantity) > 0 && (
         <p className="mt-1 text-xs text-[var(--text-muted)]">{formatQuantity(row.quantity, row.quantityUnit)}</p>

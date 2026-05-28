@@ -1,6 +1,7 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { CircleAlert, ReceiptText } from "lucide-react"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
@@ -38,8 +39,7 @@ export default function CompletePurchaseDetailsModal({
   const [billNo, setBillNo] = useState("")
   const [supplierName, setSupplierName] = useState("")
   const [purchaseDate, setPurchaseDate] = useState("")
-  const [paymentStatus, setPaymentStatus] =
-    useState<PurchasePaymentStatus>("unpaid")
+  const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus>("unpaid")
   const [paymentMode, setPaymentMode] = useState(DEFAULT_PAYMENT_MODE)
   const [amountPaid, setAmountPaid] = useState("")
   const [note, setNote] = useState("")
@@ -50,7 +50,7 @@ export default function CompletePurchaseDetailsModal({
     const timeout = window.setTimeout(() => {
       setBillNo(purchase.billNo.startsWith("QP-") ? makePurchaseBillNo() : purchase.billNo)
       setSupplierName(
-        purchase.supplierName === "Details Pending" ? "" : purchase.supplierName
+        purchase.supplierName === "Details Pending" ? "" : purchase.supplierName,
       )
       setPurchaseDate(purchase.purchaseDate)
       setPaymentStatus(purchase.paymentStatus || "unpaid")
@@ -66,7 +66,7 @@ export default function CompletePurchaseDetailsModal({
 
   const { paidAmount, dueAmount } = useMemo(
     () => calculatePaymentAmounts(totalAmount, paymentStatus, amountPaid),
-    [amountPaid, paymentStatus, totalAmount]
+    [amountPaid, paymentStatus, totalAmount],
   )
 
   useEffect(() => {
@@ -99,6 +99,7 @@ export default function CompletePurchaseDetailsModal({
       as="form"
       onSubmit={handleSubmit}
       title={en.purchases.completeQuickPurchaseDetails}
+      titleIcon={<ReceiptText size={18} aria-hidden="true" />}
       description={en.purchases.completeQuickPurchaseDescription}
       onClose={onClose}
       size="xl"
@@ -107,20 +108,23 @@ export default function CompletePurchaseDetailsModal({
       primaryVariant="primary"
       cancelLabel={en.common.cancel}
     >
-      <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200 sm:text-sm">
-        <span>{en.purchases.detailsPendingPurchase}: </span>
-        <b className="break-all">{purchase.billNo}</b>
-        <span className="mx-1 hidden sm:inline">|</span>
-        <span className="block sm:inline">
-          {en.purchases.total}: <b>{formatCurrency(purchase.totalAmount)}</b>
-        </span>
+      <div className="mb-5 rounded-2xl border border-amber-300/70 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(245,158,11,0.08))] p-4 text-sm leading-6 text-amber-900 shadow-[var(--shadow-card)] dark:border-amber-400/25 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.44),rgba(69,26,3,0.24))] dark:text-amber-100">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-amber-700 dark:bg-white/10 dark:text-amber-200">
+            <CircleAlert size={18} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold">
+              {en.purchases.detailsPendingPurchase}:{" "}
+              <span className="break-all font-bold">{purchase.billNo}</span>
+            </p>
+            <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-100/90">
+              {en.purchases.total}:{" "}
+              <span className="font-bold">{formatCurrency(purchase.totalAmount)}</span>
+            </p>
+          </div>
+        </div>
       </div>
-
-      <datalist id="paymentModes">
-        {PAYMENT_MODES.map((mode) => (
-          <option key={mode} value={mode} />
-        ))}
-      </datalist>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Input
@@ -154,9 +158,7 @@ export default function CompletePurchaseDetailsModal({
 
           <select
             value={paymentStatus}
-            onChange={(event) =>
-              setPaymentStatus(event.target.value as PurchasePaymentStatus)
-            }
+            onChange={(event) => setPaymentStatus(event.target.value as PurchasePaymentStatus)}
             className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
           >
             {PAYMENT_STATUSES.map((status) => (
@@ -167,12 +169,22 @@ export default function CompletePurchaseDetailsModal({
           </select>
         </div>
 
-        <Input
-          label={en.purchases.paymentMode}
-          value={paymentMode}
-          onChange={(event) => setPaymentMode(event.target.value)}
-          datalist="paymentModes"
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
+            {en.purchases.paymentMode}
+          </label>
+          <select
+            value={paymentMode || DEFAULT_PAYMENT_MODE}
+            onChange={(event) => setPaymentMode(event.target.value)}
+            className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            {PAYMENT_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {mode}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {paymentStatus === "partial" ? (
           <Input
@@ -217,11 +229,11 @@ export default function CompletePurchaseDetailsModal({
                 </p>
 
                 <p className="mt-0.5 break-words text-xs text-[var(--text-muted)]">
-                  {item.quantity} {item.quantityUnit} × {formatCurrency(item.price)}
+                  {item.quantity} {item.quantityUnit} x {formatCurrency(item.price)}
                 </p>
               </div>
 
-              <p className="text-left font-bold text-emerald-600 sm:text-right">
+              <p className="text-left font-bold text-emerald-700 dark:text-emerald-300 sm:text-right">
                 {formatCurrency(item.lineTotal)}
               </p>
             </div>
@@ -232,7 +244,11 @@ export default function CompletePurchaseDetailsModal({
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard label={en.purchases.total} value={formatCurrency(totalAmount)} />
         <SummaryCard label={en.purchases.paid} value={formatCurrency(paidAmount)} tone="emerald" />
-        <SummaryCard label={en.purchases.due} value={formatCurrency(dueAmount)} tone={dueAmount > 0 ? "rose" : "default"} />
+        <SummaryCard
+          label={en.purchases.due}
+          value={formatCurrency(dueAmount)}
+          tone={dueAmount > 0 ? "rose" : "default"}
+        />
       </div>
     </Modal>
   )

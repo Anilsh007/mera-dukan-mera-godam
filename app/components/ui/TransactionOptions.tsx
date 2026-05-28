@@ -1,8 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import type { ReactNode } from "react"
-import { CheckCircle2, ClipboardList, Copy, Download, FileText, Mail, MessageCircle, Printer, Save } from "lucide-react"
-import ActionChip from "@/app/components/ui/ActionChip"
+import { ChevronUp, ClipboardList, Copy, Download, FileText, Mail, MessageCircle, Printer, Share2 } from "lucide-react"
 import type { TransactionOptionFlags } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
 
@@ -32,6 +32,17 @@ type OptionItem = {
   visible: boolean
 }
 
+const activeToneClassName: Record<OptionItem["tone"], string> = {
+  primary: "border-sky-400 bg-[linear-gradient(135deg,#38bdf8,#0284c7)] text-white shadow-[0_18px_34px_-18px_rgba(14,165,233,0.85)]",
+  amber: "border-amber-400 bg-[linear-gradient(135deg,#f59e0b,#ea580c)] text-white shadow-[0_18px_34px_-18px_rgba(245,158,11,0.8)]",
+  fuchsia: "border-fuchsia-400 bg-[linear-gradient(135deg,#d946ef,#7c3aed)] text-white shadow-[0_18px_34px_-18px_rgba(217,70,239,0.8)]",
+  cyan: "border-cyan-400 bg-[linear-gradient(135deg,#06b6d4,#0284c7)] text-white shadow-[0_18px_34px_-18px_rgba(6,182,212,0.8)]",
+  success: "border-emerald-400 bg-[linear-gradient(135deg,#10b981,#059669)] text-white shadow-[0_18px_34px_-18px_rgba(16,185,129,0.8)]",
+  green: "border-green-400 bg-[linear-gradient(135deg,#22c55e,#16a34a)] text-white shadow-[0_18px_34px_-18px_rgba(34,197,94,0.8)]",
+  rose: "border-rose-400 bg-[linear-gradient(135deg,#fb7185,#e11d48)] text-white shadow-[0_18px_34px_-18px_rgba(251,113,133,0.8)]",
+  violet: "border-violet-400 bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_18px_34px_-18px_rgba(139,92,246,0.8)]",
+}
+
 export default function TransactionOptions({
   value,
   onChange,
@@ -45,16 +56,9 @@ export default function TransactionOptions({
   disabled = false,
   className = "",
 }: TransactionOptionsProps) {
+  const [expanded, setExpanded] = useState(false)
+
   const options: OptionItem[] = [
-    {
-      key: "saveTransaction",
-      label: en.transaction.saveTransaction,
-      description: en.transaction.saveTransactionHelp,
-      icon: <Save size={16} aria-hidden="true" />,
-      tone: "primary",
-      required: true,
-      visible: true,
-    },
     {
       key: "saveAsDraft",
       label: en.transaction.saveAsDraft,
@@ -113,44 +117,79 @@ export default function TransactionOptions({
     },
   ]
 
+  const visibleOptions = options.filter((option) => option.visible)
+  const hasSelection = visibleOptions.some((option) => Boolean(value[option.key]))
+
   const toggle = (key: OptionKey, checked: boolean) => {
-    if (key === "saveTransaction") return
-    onChange({ ...value, [key]: checked })
+    onChange({ ...value, saveTransaction: true, [key]: checked })
   }
 
   return (
-    <fieldset className={`rounded-[26px] border border-[var(--border-card)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-primary)_94%,#071827_6%),color-mix(in_srgb,var(--bg-card-strong)_92%,#020611_8%))] p-3 sm:p-4 ${className}`} disabled={disabled}>
-      <legend className="px-1 text-sm font-bold text-[var(--text-primary)]">{en.transaction.optionsTitle}</legend>
-      <p className="mb-3 px-1 text-xs leading-5 text-[var(--text-secondary)]">{en.transaction.optionsDescription}</p>
-      <div className="flex flex-wrap gap-3">
-        {options.filter((option) => option.visible).map((option) => {
-          const checked = Boolean(value[option.key]) || Boolean(option.required)
-          const isPrimaryAction = option.key === "generateGstInvoice"
+    <div className={`relative inline-flex ${className}`}>
+      <div
+        className={[
+          "absolute bottom-12 left-1/2 z-0 flex -translate-x-1/2 flex-col-reverse items-center gap-2 rounded-[24px] transition-all duration-200",
+          expanded
+            ? "border border-[--border-card] bg-[--bg-card] p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.28)]"
+            : "pointer-events-none opacity-0",
+        ].join(" ")}
+      >
+        {visibleOptions.map((option, index) => {
+          const checked = Boolean(value[option.key])
+          const activeToneClass = activeToneClassName[option.tone]
           return (
             <label
               key={option.key}
-              className={isPrimaryAction ? "sm:ml-auto" : ""}
+              style={{
+                opacity: expanded ? 1 : 0,
+                transform: expanded ? "translateY(0) scale(1)" : "translateY(14px) scale(0.92)",
+                pointerEvents: expanded ? "auto" : "none",
+                transition: "opacity 180ms ease, transform 220ms ease",
+                transitionDelay: expanded ? `${index * 28}ms` : "0ms",
+              }}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => toggle(option.key, event.target.checked)}
-                disabled={disabled || option.required}
-                className="sr-only"
-              />
-              <ActionChip
-                label={option.key === "shareEmail" ? "Email" : option.key === "shareWhatsApp" ? "WhatsApp" : option.key === "downloadPdf" ? "Download PDF" : option.label}
-                icon={option.required ? <CheckCircle2 size={16} aria-hidden="true" /> : option.icon}
-                hint={option.required ? "Required" : undefined}
-                active={checked}
-                disabled={disabled}
-                tone={option.tone}
+              <input type="checkbox" checked={checked} onChange={(event) => toggle(option.key, event.target.checked)} disabled={disabled} className="sr-only" />
+              <span
                 title={option.description}
-              />
+                className={[
+                  "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white shadow-[0_14px_30px_-26px_rgba(15,23,42,0.45)] transition-all duration-200",
+                  checked ? activeToneClass : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                  disabled ? "cursor-not-allowed opacity-60" : "",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "flex h-8 w-8 items-center justify-center rounded-full border",
+                    checked ? "border-white/25 bg-white/15 text-white" : "border-slate-200 bg-white",
+                  ].join(" ")}
+                >
+                  {option.icon}
+                </span>
+              </span>
             </label>
           )
         })}
       </div>
-    </fieldset>
+
+      <button type="button" onClick={() => setExpanded((current) => !current)} disabled={disabled} title="Share & download"
+        className={["relative z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_18px_36px_-20px_rgba(59,130,246,0.8)] transition-all duration-200",
+          expanded || hasSelection
+            ? "border-sky-400/70 bg-[linear-gradient(135deg,#38bdf8,#6366f1)] text-white"
+            : "border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-card-strong)_78%,transparent)] text-[var(--text-primary)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent-soft)_40%,var(--bg-card-strong)_60%)]",
+          disabled ? "cursor-not-allowed opacity-60" : "",
+        ].join(" ")}
+        aria-expanded={expanded}
+        aria-label="Share and download options"
+      >
+        <span className="flex items-center gap-1">
+          <Share2 size={16} aria-hidden="true" />
+          <ChevronUp
+            size={12}
+            aria-hidden="true"
+            className={`transition-transform duration-200 ${expanded ? "rotate-0" : "rotate-180"}`}
+          />
+        </span>
+      </button>
+    </div>
   )
 }

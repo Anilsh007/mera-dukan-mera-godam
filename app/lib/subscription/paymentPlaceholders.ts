@@ -1,6 +1,7 @@
 "use client"
 
-import { en } from "@/app/messages/en"
+import type { CreateCheckoutSessionRequest, VerifyPaymentRequest } from "./contracts"
+import { createSubscriptionCheckoutSession, verifySubscriptionPayment } from "./billing.client"
 
 export type CheckoutPlaceholderInput = {
   userId: string
@@ -8,28 +9,29 @@ export type CheckoutPlaceholderInput = {
 }
 
 export async function createCheckoutSession(input: CheckoutPlaceholderInput) {
-  return {
-    ok: false,
-    provider: "placeholder",
-    checkoutUrl: null,
-    message: `${en.subscription.placeholderPayments} (${input.plan})`,
+  const payload: CreateCheckoutSessionRequest = {
+    plan: input.plan,
+    billingCycle: "monthly",
   }
+
+  return createSubscriptionCheckoutSession(payload)
 }
 
 export async function verifyPayment(reference: string) {
-  return {
-    ok: false,
-    provider: "placeholder",
-    reference,
-    message: en.subscription.placeholderPayments,
+  const payload: VerifyPaymentRequest = {
+    plan: "starter",
+    billingCycle: "monthly",
+    razorpayPaymentId: reference,
   }
+
+  return verifySubscriptionPayment(payload)
 }
 
 export async function handleWebhook(payload: unknown) {
   return {
     ok: false,
-    provider: "placeholder",
+    provider: "razorpay-placeholder",
     payload,
-    message: en.subscription.placeholderPayments,
+    message: "Webhook placeholder moved to /api/subscription/webhook.",
   }
 }

@@ -30,7 +30,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input({
     const errorId = error ? `${inputId}-error` : undefined
     const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined
     const inputClass = [
-        "min-h-11 w-full min-w-0 bg-[var(--bg-input)] p-2 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none backdrop-blur-xl transition-all sm:text-sm",
+        "min-h-11 w-full min-w-0 bg-[var(--bg-input)] p-2 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none backdrop-blur-xl transition-all disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--text-primary)] disabled:opacity-100 sm:text-sm",
         leftAddon || rightAddon ? "border-0" : "rounded-xl border border-[var(--border-input)] shadow-[var(--button-shadow)] focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent)]",
         error && !(leftAddon || rightAddon) ? "border-red-400 focus:ring-red-300" : "",
         className,
@@ -57,7 +57,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input({
             )}
 
             {leftAddon || rightAddon ? (
-                <div className={`flex min-h-11 min-w-0 overflow-hidden rounded-xl border bg-[var(--bg-input)] shadow-[var(--button-shadow)] backdrop-blur-xl transition-all focus-within:ring-2 ${error ? "border-red-400 focus-within:ring-red-300" : "border-[var(--border-input)] focus-within:border-[var(--accent)] focus-within:ring-[var(--focus-ring)]"}`}>
+                <div className={`flex min-h-11 min-w-0 overflow-hidden rounded-xl border bg-[var(--bg-input)] shadow-[var(--button-shadow)] backdrop-blur-xl transition-all focus-within:ring-2 ${props.disabled ? "bg-[var(--button-disabled-bg)]" : ""} ${error ? "border-red-400 focus-within:ring-red-300" : "border-[var(--border-input)] focus-within:border-[var(--accent)] focus-within:ring-[var(--focus-ring)]"}`}>
                     {leftAddon && (
                         <span className="flex items-center border-r border-[var(--border-input)] px-3 text-sm font-semibold text-[var(--text-secondary)]">
                             {leftAddon}

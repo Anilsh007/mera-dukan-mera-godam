@@ -163,7 +163,7 @@ export default function Button({
                 variants[variant] ?? variants.primary,
 
                 isDisabled
-                    ? "cursor-not-allowed opacity-50 pointer-events-none"
+                    ? "cursor-not-allowed border-[var(--button-disabled-border)] bg-[var(--button-disabled-bg)] text-[var(--button-disabled-text)] shadow-none pointer-events-none"
                     : "cursor-pointer hover:-translate-y-0.5 hover:brightness-95 hover:saturate-[0.88] active:translate-y-px active:scale-[0.985] active:brightness-90 active:saturate-[0.82]",
 
                 className,
