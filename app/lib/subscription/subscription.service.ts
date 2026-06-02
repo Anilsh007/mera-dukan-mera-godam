@@ -6,6 +6,7 @@ import { en } from "@/app/messages/en"
 import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { syncSubscriptionFromServer } from "./billing.client"
 import { PLAN_LIMITS, PREMIUM_PLANS, TRIAL_DAYS, type SubscriptionFeatureKey, type SubscriptionFeatureLimit } from "./plans"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
 
 export type FeatureAccessScope = "basic" | "premium"
 export type FeatureAccessOperation = "view" | "create" | "update" | "export"
@@ -91,12 +92,14 @@ export async function ensureSubscriptionRecord(userId: string): Promise<Subscrip
   if (!existing) {
     const created = buildTrialRecord(userId)
     await db.subscriptions.put(created)
+    await requestSupabaseSync("subscription")
     return created
   }
 
   const normalized = normalizeSubscriptionRecord(existing)
   if (normalized.updatedAt !== existing.updatedAt || normalized.plan !== existing.plan || normalized.status !== existing.status) {
     await db.subscriptions.put(normalized)
+    await requestSupabaseSync("subscription")
   }
   return normalized
 }
@@ -220,6 +223,7 @@ export async function incrementUsage(userId: string, feature: UsageTrackedFeatur
     createdAt: current?.createdAt || timestamp,
     updatedAt: timestamp,
   })
+  await requestSupabaseSync("usage tracking")
 }
 
 function buildFeatureMessage(feature: SubscriptionFeatureKey, options: FeatureAccessOptions, effectivePlan: SubscriptionPlanId, limit: SubscriptionFeatureLimit) {

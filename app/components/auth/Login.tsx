@@ -96,7 +96,7 @@ export default function Login() {
 
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white sm:text-3xl">{en.auth.title}</h1>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-emerald-400 sm:text-xs">{en.auth.eyebrow}</p>
+          <p className="text-[11px] uppercase tracking-[0.3em] text-emerald-600 sm:text-xs">{en.auth.eyebrow}</p>
           <p className="mt-3 text-sm leading-6 text-white/75">{en.auth.description}</p>
         </div>
 

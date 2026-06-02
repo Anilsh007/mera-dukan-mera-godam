@@ -6,7 +6,7 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useExpenses from "@/app/hooks/useExpenses"
@@ -14,7 +14,7 @@ import useFeatureGate from "@/app/hooks/useFeatureGate"
 import { auth } from "@/app/lib/firebase"
 import { notify as toast } from "@/app/lib/notifications"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
-import { saveExpense } from "@/app/lib/accounting/accounting.service"
+import { deleteExpense, saveExpense, updateExpense } from "@/app/lib/accounting/accounting.service"
 import {
   buildExpenseNumber,
   buildExpenseReportRows,
@@ -36,10 +36,10 @@ export default function ExpensesPage() {
   const { expenses, loading } = useExpenses()
   const accountingGate = useFeatureGate("accounting")
   const [expenseNo, setExpenseNo] = useState(() => buildExpenseNumber())
-  const [category, setCategory] = useState<ExpenseCategory>("other")
+  const [category, setCategory] = useState<ExpenseCategory | "">("")
   const [amount, setAmount] = useState("")
   const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [paymentMode, setPaymentMode] = useState<string>(() => en.accounting.paymentModeOptions.cash)
+  const [paymentMode, setPaymentMode] = useState("")
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
   const [search, setSearch] = useState("")
@@ -48,6 +48,7 @@ export default function ExpensesPage() {
   const [toDate, setToDate] = useState("")
   const [sort, setSort] = useState<SortOption>("newest")
   const [saving, setSaving] = useState(false)
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
   const debouncedSearch = useDebouncedValue(search, 180)
 
   const canCreate = accountingGate.allowed && !accountingGate.loading
@@ -83,13 +84,44 @@ export default function ExpensesPage() {
   const shareMessage = buildRowsShareMessage(rows, en.accounting.expensesTitle)
 
   const resetForm = () => {
+    setEditingExpenseId(null)
     setExpenseNo(buildExpenseNumber())
-    setCategory("other")
+    setCategory("")
     setAmount("")
     setExpenseDate(new Date().toISOString().slice(0, 10))
-    setPaymentMode(en.accounting.paymentModeOptions.cash)
+    setPaymentMode("")
     setReference("")
     setNote("")
+  }
+
+  const handleEditExpense = (expense: ExpenseRecord) => {
+    setEditingExpenseId(expense.id)
+    setExpenseNo(expense.expenseNo)
+    setCategory(expense.category)
+    setAmount(String(expense.amount))
+    setExpenseDate(expense.expenseDate)
+    setPaymentMode(expense.paymentMode)
+    setReference(expense.reference || "")
+    setNote(expense.note || "")
+  }
+
+  const handleDeleteExpense = async (expense: ExpenseRecord) => {
+    if (!window.confirm(`Delete expense ${expense.expenseNo}?`)) return
+
+    try {
+      setSaving(true)
+      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+      await deleteExpense(userId, expense.id)
+      if (editingExpenseId === expense.id) {
+        resetForm()
+      }
+      toast.success("Expense deleted.")
+    } catch (error) {
+      console.error("Expense delete failed", error)
+      toast.error(error instanceof Error ? error.message : en.accounting.expenseSaveFailed)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSave = async () => {
@@ -97,20 +129,42 @@ export default function ExpensesPage() {
       toast.error(en.subscription.subscriptionRequired)
       return
     }
+    if (!category) {
+      toast.error(en.accounting.categoryRequired)
+      return
+    }
+    if (!paymentMode) {
+      toast.error(en.accounting.paymentModeRequired)
+      return
+    }
     try {
       setSaving(true)
       const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
-      await saveExpense({
-        userId,
-        expenseNo,
-        category,
-        amount: Number(amount || 0),
-        expenseDate,
-        paymentMode,
-        reference,
-        note,
-      })
-      toast.success(en.accounting.expenseSaved)
+      if (editingExpenseId) {
+        await updateExpense(editingExpenseId, {
+          userId,
+          expenseNo,
+          category,
+          amount: Number(amount || 0),
+          expenseDate,
+          paymentMode,
+          reference,
+          note,
+        })
+        toast.success("Expense updated.")
+      } else {
+        await saveExpense({
+          userId,
+          expenseNo,
+          category,
+          amount: Number(amount || 0),
+          expenseDate,
+          paymentMode,
+          reference,
+          note,
+        })
+        toast.success(en.accounting.expenseSaved)
+      }
       resetForm()
     } catch (error) {
       console.error("Expense save failed", error)
@@ -140,7 +194,7 @@ export default function ExpensesPage() {
       <PageHeader
         title={en.accounting.expensesTitle}
         description={en.accounting.expensesDescription}
-        actions={<ShareActions message={shareMessage} subject={en.accounting.expensesTitle} filename="expenses-summary.pdf" showPrint={false} />}
+        actions={<TransactionActionPanel message={shareMessage} subject={en.accounting.expensesTitle} filename="expenses-summary.pdf" showPrint={false} />}
       />
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -152,30 +206,35 @@ export default function ExpensesPage() {
       <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.3fr)]">
         <form className="premium-surface space-y-4 rounded-3xl p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void handleSave() }}>
           <div>
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.accounting.addExpense}</h2>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">{editingExpenseId ? `${en.common.edit} ${en.accounting.addExpense}` : en.accounting.addExpense}</h2>
             <p className="text-sm text-[var(--text-secondary)]">{en.accounting.expenseFormHelp}</p>
           </div>
           <Input label={en.accounting.expenseNo} value={expenseNo} onChange={(event) => setExpenseNo(event.target.value)} />
-          <SelectField
-            label={en.accounting.category}
-            value={category}
-            onChange={(event) => setCategory(event.target.value as ExpenseCategory)}
-            options={EXPENSE_CATEGORIES.map((option) => ({ value: option, label: getExpenseCategoryLabel(option) }))}
-          />
+            <SelectField
+              label={en.accounting.category}
+              value={category}
+              onChange={(event) => setCategory(event.target.value as ExpenseCategory)}
+              options={EXPENSE_CATEGORIES.map((option) => ({ value: option, label: getExpenseCategoryLabel(option) }))}
+            />
           <Input label={en.accounting.amount} value={amount} type="number" min="0" step="0.01" onChange={(event) => setAmount(event.target.value)} />
           <Input label={en.accounting.date} value={expenseDate} type="date" onChange={(event) => setExpenseDate(event.target.value)} />
-          <SelectField
-            label={en.accounting.paymentMode}
-            value={paymentMode}
-            onChange={(event) => setPaymentMode(event.target.value)}
-            options={PAYMENT_MODES.map((option) => ({ value: option, label: option }))}
-          />
+            <SelectField
+              label={en.accounting.paymentMode}
+              value={paymentMode}
+              onChange={(event) => setPaymentMode(event.target.value)}
+              options={PAYMENT_MODES.map((option) => ({ value: option, label: option }))}
+            />
           <Input label={en.accounting.reference} value={reference} onChange={(event) => setReference(event.target.value)} placeholder={en.accounting.referencePlaceholder} />
           <Input label={en.accounting.note} value={note} onChange={(event) => setNote(event.target.value)} placeholder={en.accounting.expenseNotePlaceholder} />
           <div className="rounded-2xl border border-dashed border-[var(--border-input)] p-3 text-sm text-[var(--text-secondary)]">
             <div className="flex items-start gap-2"><Paperclip size={16} /> <span>{en.accounting.receiptAttachmentPlaceholder}</span></div>
           </div>
-          <Button type="submit" title={en.accounting.saveExpense} loading={saving} disabled={!canCreate} className="w-full" />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="submit" title={editingExpenseId ? en.profile.saveChanges : en.accounting.saveExpense} loading={saving} disabled={!canCreate} className="w-full" />
+            {editingExpenseId ? (
+              <Button type="button" variant="outline" title={en.common.cancel} onClick={resetForm} className="w-full sm:w-auto" />
+            ) : null}
+          </div>
         </form>
 
         <section className="premium-surface space-y-4 rounded-3xl p-4 sm:p-5">
@@ -221,7 +280,15 @@ export default function ExpensesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredExpenses.map((expense) => <ExpenseRow key={expense.id} expense={expense} />)}
+                  {filteredExpenses.map((expense) => (
+                    <ExpenseRow
+                        key={expense.id}
+                        expense={expense}
+                        onEdit={handleEditExpense}
+                        onDelete={() => void handleDeleteExpense(expense)}
+                        loading={saving}
+                      />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -237,7 +304,17 @@ export default function ExpensesPage() {
   )
 }
 
-function ExpenseRow({ expense }: { expense: ExpenseRecord }) {
+function ExpenseRow({
+  expense,
+  onEdit,
+  onDelete,
+  loading,
+}: {
+  expense: ExpenseRecord
+  onEdit: (expense: ExpenseRecord) => void
+  onDelete: () => void
+  loading?: boolean
+}) {
   return (
     <tr className="border-t border-[var(--border-card)]">
       <td className="p-3 text-[var(--text-secondary)]">{expense.expenseDate}</td>
@@ -246,6 +323,12 @@ function ExpenseRow({ expense }: { expense: ExpenseRecord }) {
       <td className="p-3 text-[var(--text-secondary)]">{expense.paymentMode}</td>
       <td className="p-3 text-[var(--text-secondary)]">{expense.reference || en.common.notAvailable}</td>
       <td className="p-3 text-[var(--text-secondary)]">{expense.note || en.common.notAvailable}</td>
-    </tr>
+      <td className="p-3">
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" title={en.common.edit} onClick={() => onEdit(expense)} className="min-h-9 px-3 py-1 text-xs" />
+            <Button type="button" variant="danger" title={en.common.delete} onClick={onDelete} loading={loading} className="min-h-9 px-3 py-1 text-xs" />
+          </div>
+        </td>
+      </tr>
   )
 }

@@ -5,6 +5,7 @@ export const DASHBOARD_ROUTES = {
   sales: "/dashboard/sales",
   estimates: "/dashboard/estimates",
   returns: "/dashboard/returns",
+  exchange: "/dashboard/exchange",
   quickPurchase: "/dashboard/quick-purchase",
   purchases: "/dashboard/purchases",
   recentPurchases: "/dashboard/recent-purchases",

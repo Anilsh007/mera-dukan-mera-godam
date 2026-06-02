@@ -67,8 +67,15 @@ type SyncPayload = {
       | "stock-in"
       | "sale"
       | "multi-item-sale"
+      | "sale-cancellation"
+      | "sales-return"
+      | "purchase-return"
+      | "credit-note"
+      | "debit-note"
+      | "delivery-challan"
       | "stock-adjustment"
       | "stock-correction"
+      | "stock-transfer"
     invoiceReceiptNo?: string
     paymentMode?: string
     paymentStatus?: string
@@ -92,6 +99,8 @@ type SyncPayload = {
     correctedAt?: string
     correctionLabel?: string
   }>
+  deletedProductIds?: string[]
+  deletedLogIds?: string[]
 }
 
 export async function GET(request: NextRequest) {
@@ -139,35 +148,37 @@ export async function POST(request: NextRequest) {
     enforceRateLimit(request, { key: "products-sync:post", limit: 40, windowMs: 60_000 })
     assertContentLength(request, 1024 * 1024)
     const userId = await getUserIdentityFromRequest(request)
-    const { products, logs } = validateSyncPayload(await readJsonBody<SyncPayload>(request))
+    const { products, logs, deletedProductIds, deletedLogIds } = validateSyncPayload(await readJsonBody<SyncPayload>(request))
     const supabase = createSupabaseAdminClient()
     const incomingProductIds = products.map((product) => product.id)
 
-    const { error: productError } = await supabase.from("products").upsert(
-      products.map((product) => ({
-        id: product.id,
-        user_id: userId,
-        name: product.name,
-        price: product.price,
-        quantity: product.quantity,
-        quantity_unit: product.quantityUnit,
-        category: product.category,
-        supplier: product.supplier,
-        note: product.note,
-        expiry: product.expiry,
-        sku: product.sku,
-        hsn_code: product.hsnCode,
-        low_stock_threshold: product.lowStockThreshold,
-        critical_stock_threshold: product.criticalStockThreshold,
-        created_at: product.createdAt,
-      }))
-    )
-
-    if (productError) {
-      return NextResponse.json(
-        { code: productError.code, message: productError.message, details: productError.details, hint: productError.hint },
-        { status: 500 }
+    if (products.length) {
+      const { error: productError } = await supabase.from("products").upsert(
+        products.map((product) => ({
+          id: product.id,
+          user_id: userId,
+          name: product.name,
+          price: product.price,
+          quantity: product.quantity,
+          quantity_unit: product.quantityUnit,
+          category: product.category,
+          supplier: product.supplier,
+          note: product.note,
+          expiry: product.expiry,
+          sku: product.sku,
+          hsn_code: product.hsnCode,
+          low_stock_threshold: product.lowStockThreshold,
+          critical_stock_threshold: product.criticalStockThreshold,
+          created_at: product.createdAt,
+        }))
       )
+
+      if (productError) {
+        return NextResponse.json(
+          { code: productError.code, message: productError.message, details: productError.details, hint: productError.hint },
+          { status: 500 }
+        )
+      }
     }
 
     const scopedProductIds = incomingProductIds
@@ -176,11 +187,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Logs contain invalid product references" }, { status: 400 })
     }
 
-    let { error: logError } = await supabase.from("product_logs").upsert(logs.map(mapLogToSupabaseRow))
+    let logError = null
+    if (logs.length) {
+      const upsertResult = await supabase.from("product_logs").upsert(logs.map(mapLogToSupabaseRow))
+      logError = upsertResult.error
 
-    if (logError && isUnknownColumnError(logError)) {
-      const retry = await supabase.from("product_logs").upsert(logs.map(mapLegacyLogToSupabaseRow))
-      logError = retry.error
+      if (logError && isUnknownColumnError(logError)) {
+        const retry = await supabase.from("product_logs").upsert(logs.map(mapLegacyLogToSupabaseRow))
+        logError = retry.error
+      }
     }
 
     if (logError) {
@@ -188,6 +203,26 @@ export async function POST(request: NextRequest) {
         { code: logError.code, message: logError.message, details: logError.details, hint: logError.hint },
         { status: 500 }
       )
+    }
+
+    if (deletedLogIds.length) {
+      const { error } = await supabase.from("product_logs").delete().in("id", deletedLogIds).eq("user_id", userId)
+      if (error) {
+        return NextResponse.json(
+          { code: error.code, message: error.message, details: error.details, hint: error.hint },
+          { status: 500 }
+        )
+      }
+    }
+
+    if (deletedProductIds.length) {
+      const { error } = await supabase.from("products").delete().in("id", deletedProductIds).eq("user_id", userId)
+      if (error) {
+        return NextResponse.json(
+          { code: error.code, message: error.message, details: error.details, hint: error.hint },
+          { status: 500 }
+        )
+      }
     }
 
     return NextResponse.json({ ok: true })
@@ -272,7 +307,10 @@ function validateSyncPayload(payload: SyncPayload) {
     }
   })
 
-  return { products, logs }
+  const deletedProductIds = sanitizeDeletedIds(payload.deletedProductIds, "Deleted product ids")
+  const deletedLogIds = sanitizeDeletedIds(payload.deletedLogIds, "Deleted log ids")
+
+  return { products, logs, deletedProductIds, deletedLogIds }
 }
 
 
@@ -333,8 +371,15 @@ function sanitizeTransactionType(value: SyncPayload["logs"][number]["transaction
     "stock-in",
     "sale",
     "multi-item-sale",
+    "sale-cancellation",
+    "sales-return",
+    "purchase-return",
+    "credit-note",
+    "debit-note",
+    "delivery-challan",
     "stock-adjustment",
     "stock-correction",
+    "stock-transfer",
   ])
   if (!validTypes.has(value)) throw new SecurityError("Invalid transaction type", 400)
   return value
@@ -357,6 +402,12 @@ function sanitizeTransactionProducts(value: SyncPayload["logs"][number]["product
     gstRate: assertOptionalFiniteNumber(product.gstRate, "Transaction product GST rate", { min: 0, max: 100 }),
     gstAmount: assertOptionalFiniteNumber(product.gstAmount, "Transaction product GST amount", { min: 0, max: 100_000_000 }),
   }))
+}
+
+function sanitizeDeletedIds(value: string[] | undefined, label: string) {
+  if (!Array.isArray(value)) return []
+  if (value.length > 10000) throw new SecurityError(`${label} exceeds allowed size`, 400)
+  return value.map((entry) => sanitizeRequiredText(entry, 120, label))
 }
 
 function assertOptionalFiniteNumber(

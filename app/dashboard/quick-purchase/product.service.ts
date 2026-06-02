@@ -8,31 +8,14 @@ import {
   type StockTransactionProduct,
   type StockTransactionType,
 } from "@/app/lib/db";
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service";
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit";
 import { buildSaleLogNote } from "@/app/lib/saleMetadata";
 import { roundCurrency } from "@/app/lib/gst.utils";
 import { assertFeatureAccess } from "@/app/lib/subscription/subscription.service";
 import { adjustAdvancedInventoryStock } from "@/app/lib/advancedInventory/advancedInventory.service";
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger";
+import { markRecordDeleted, markRecordsDeleted } from "@/app/lib/persistence/syncTombstone.service";
 import { en } from "@/app/messages/en";
-
-async function ensureCloudSync(context: string) {
-  const runSync = () => {
-    autoSyncToSupabase().catch((error) => {
-      console.error(
-        `${context} cloud sync failed. Local data is already saved and will retry on the next sync.`,
-        error,
-      );
-    });
-  };
-
-  if (typeof window !== "undefined") {
-    window.setTimeout(runSync, 0);
-    return;
-  }
-
-  runSync();
-}
 
 type StockTransactionMetadata = {
   transactionId?: string;
@@ -243,9 +226,10 @@ export async function addProduct(
       oldProductStock: oldStock,
       batchNo: data.batchNo || transaction?.batchNo,
       expiry: data.expiry || undefined,
+      skipImmediateSync: options?.skipImmediateSync,
     });
 
-    if (!options?.skipImmediateSync) await ensureCloudSync("Stock update");
+    if (!options?.skipImmediateSync) await requestSupabaseSync("stock update");
     return "updated";
   }
 
@@ -307,9 +291,10 @@ export async function addProduct(
     oldProductStock: 0,
     batchNo: data.batchNo || transaction?.batchNo,
     expiry: data.expiry || undefined,
+    skipImmediateSync: options?.skipImmediateSync,
   });
 
-  if (!options?.skipImmediateSync) await ensureCloudSync("Product creation");
+  if (!options?.skipImmediateSync) await requestSupabaseSync("product creation");
   return "created";
 }
 
@@ -405,9 +390,10 @@ export async function stockOut(data: StockOutInput, options?: ServiceOptions) {
     oldProductStock: oldStock,
     batchNo: data.batchNo || transaction.batchNo,
     expiry: data.expiry || undefined,
+    skipImmediateSync: options?.skipImmediateSync,
   });
 
-  if (!options?.skipImmediateSync) await ensureCloudSync("Stock out");
+  if (!options?.skipImmediateSync) await requestSupabaseSync("stock out");
   return "stocked-out";
 }
 
@@ -501,7 +487,7 @@ export async function stockOutMany(entries: StockOutInput[]) {
     }
   });
 
-  await ensureCloudSync("Bulk stock out");
+  await requestSupabaseSync("bulk stock out");
   return "stocked-out-many";
 }
 
@@ -564,7 +550,7 @@ export async function updateProductDetails(data: UpdateProductInput) {
     criticalStockThreshold: data.criticalStockThreshold,
   });
 
-  await ensureCloudSync("Product update");
+  await requestSupabaseSync("product update");
   return "product-updated";
 }
 
@@ -641,7 +627,7 @@ export async function adjustProductStock(data: AdjustProductStockInput) {
     });
   });
 
-  await ensureCloudSync("Stock adjustment");
+  await requestSupabaseSync("stock adjustment");
   return "product-stock-adjusted";
 }
 
@@ -649,15 +635,24 @@ export async function deleteProductWithLogs(productId: string) {
   const product = await db.products.get(productId);
   if (!product) throw new Error(en.sales.productNotFound);
   await assertFeatureAccess(product.userId, "products", { operation: "update" });
+  const [productLogs, locationStocks, inventoryBatches] = await Promise.all([
+    db.productLogs.where("productId").equals(productId).toArray(),
+    db.productLocationStocks.where("productId").equals(productId).toArray(),
+    db.inventoryBatches.where("productId").equals(productId).toArray(),
+  ])
 
-  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches, db.stockTransfers], async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches, db.stockTransfers, db.syncTombstones], async () => {
+    await markRecordDeleted(product.userId, "products", productId)
+    await markRecordsDeleted(product.userId, "productLogs", productLogs.map((log) => log.id))
+    await markRecordsDeleted(product.userId, "productLocationStocks", locationStocks.map((row) => row.id))
+    await markRecordsDeleted(product.userId, "inventoryBatches", inventoryBatches.map((row) => row.id))
     await db.productLogs.where("productId").equals(productId).delete();
     await db.productLocationStocks.where("productId").equals(productId).delete();
     await db.inventoryBatches.where("productId").equals(productId).delete();
     await db.products.delete(productId);
   });
 
-  await ensureCloudSync("Product deletion");
+  await requestSupabaseSync("product deletion");
   return "product-deleted";
 }
 
@@ -763,7 +758,7 @@ export async function updateProductLog(data: UpdateProductLogInput) {
     });
   });
 
-  await ensureCloudSync("History correction");
+  await requestSupabaseSync("history correction");
   return "log-updated";
 }
 
@@ -783,14 +778,15 @@ export async function deleteProductLog(logId: string) {
       en.stockHistory.deleteNegativeStockBlocked,
     );
 
-  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches], async () => {
+  await db.transaction("rw", [db.products, db.productLogs, db.inventoryLocations, db.productLocationStocks, db.inventoryBatches, db.syncTombstones], async () => {
     await db.products.update(product.id, {
       quantity: nextProductQuantity,
     });
+    await markRecordDeleted(product.userId, "productLogs", log.id)
     await db.productLogs.delete(log.id);
   });
 
-  await ensureCloudSync("History deletion");
+  await requestSupabaseSync("history deletion");
   return "log-deleted";
 }
 

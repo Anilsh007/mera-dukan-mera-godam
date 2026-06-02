@@ -5,7 +5,7 @@ import { en } from "@/app/messages/en"
 import type { DateRangeKey, ReportSummary } from "../types"
 import { RANGE_OPTIONS } from "../lib/dateRange"
 import { exportReportCsv, exportReportExcel, printReportSummary } from "../lib/exportCsv"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { notify as toast } from "@/app/lib/notifications"
 import { buildReportShareMessage } from "@/app/lib/share"
 import { formatMoney, formatNumber } from "../lib/format"
@@ -122,7 +122,7 @@ export default function ReportsHeader({ rangeKey, onRangeChange, report }: Repor
               ))}
             </div>
           </div>
-          <ShareActions
+          <TransactionActionPanel
             message={hasReportData ? reportShareMessage : ""}
             subject={en.share.reportTitle}
             filename={`reports-summary-${rangeKey}.txt`}

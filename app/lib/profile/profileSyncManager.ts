@@ -1,17 +1,18 @@
-let syncTimeout: ReturnType<typeof setTimeout> | null = null;
-import { saveProfileToSupabase } from "./profileSupabase.service";
-import type { ProfileData } from "./profile.service";
+import { saveProfileWithSync } from "./profilePersistence.service"
+import type { ProfileData } from "./profile.service"
 
-export function scheduleProfileSync(profileData: Omit<ProfileData, "userId" | "updatedAt">) {
+let syncTimeout: ReturnType<typeof setTimeout> | null = null
+
+export function scheduleProfileSync(profileData: ProfileData) {
   if (syncTimeout) {
-    clearTimeout(syncTimeout);
+    clearTimeout(syncTimeout)
   }
 
   syncTimeout = setTimeout(async () => {
     try {
-      await saveProfileToSupabase(profileData);
-    } catch (err) {
-      console.error("❌ Scheduled profile sync failed:", err);
+      await saveProfileWithSync(profileData, profileData.userId)
+    } catch (error) {
+      console.error("Scheduled profile sync failed:", error)
     }
-  }, 5000); // 5 sec debounce
+  }, 5000)
 }

@@ -17,7 +17,7 @@ import type { StockHistoryLog } from "../stock-history.types"
 import { en } from "@/app/messages/en"
 import { notify as toast } from "@/app/lib/notifications"
 import BulkSaleSection from "./BulkSaleSection"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import { buildBusinessDocumentProfile, type TransactionDocumentData } from "@/app/lib/transactionDocument"
 import useProfile from "@/app/dashboard/profile/useProfile"
@@ -306,7 +306,7 @@ export default function ProductDetails({
               {onBack && (
                 <Button onClick={onBack} title={en.common.back} variant="black" icon={<ArrowLeft size={16} />} />
             )}
-              <ShareActions document={productShareDocument} subject={activeProduct.name} showPrint={false} showDownload compact />
+              <TransactionActionPanel document={productShareDocument} subject={activeProduct.name} showPrint={false} showDownload compact />
               </div>
           </div>
 

@@ -253,7 +253,7 @@ export default function DashboardHome() {
               <p className="font-semibold text-amber-800 dark:text-amber-300">
                 {stats.nearExpiry} {en.dashboard.nearExpiryTitle}
               </p>
-              <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-400">{en.dashboard.nearExpiryDescription}</p>
+              <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-600">{en.dashboard.nearExpiryDescription}</p>
             </div>
           </button>
         ) : (

@@ -54,6 +54,7 @@ export default function SubscriptionCheckoutPage() {
   const searchParams = useSearchParams()
   const launchedRef = useRef(false)
   const [state, setState] = useState<CheckoutState>(DEFAULT_STATE)
+  const missingCheckoutMessage = "Missing checkout parameters. Please start the subscription flow again."
 
   const checkoutInput = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""
@@ -81,13 +82,7 @@ export default function SubscriptionCheckoutPage() {
 
   useEffect(() => {
     if (launchedRef.current) return
-    if (!checkoutInput) {
-      setState({
-        loading: false,
-        message: "Missing checkout parameters. Please start the subscription flow again.",
-      })
-      return
-    }
+    if (!checkoutInput) return
 
     launchedRef.current = true
 
@@ -177,7 +172,9 @@ export default function SubscriptionCheckoutPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-5">
-          <p className="text-base font-semibold text-[var(--text-primary)]">{state.message}</p>
+          <p className="text-base font-semibold text-[var(--text-primary)]">
+            {checkoutInput ? state.message : missingCheckoutMessage}
+          </p>
           {checkoutInput?.amount ? (
             <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Subscription amount: {checkoutInput.amount}

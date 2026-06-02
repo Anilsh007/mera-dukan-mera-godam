@@ -1,6 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { liveQuery } from "dexie"
+import { onAuthStateChanged } from "firebase/auth"
 import { AlertTriangle, DatabaseBackup, FileDown, FileUp, RefreshCw, ShieldCheck } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -18,9 +20,9 @@ const exportModules: ExportModuleKey[] = ["inventory", "sales", "purchases", "cu
 const importKinds: SafeImportKind[] = ["products", "customers", "suppliers"]
 
 export default function BackupRestorePage() {
-  const [userId, setUserId] = useState("")
   const [counts, setCounts] = useState<BackupCollectionCounts | null>(null)
-  const [loadingCounts, setLoadingCounts] = useState(true)
+  const [loadingCounts, setLoadingCounts] = useState(Boolean(auth))
+  const [refreshTick, setRefreshTick] = useState(0)
   const [busyAction, setBusyAction] = useState("")
   const [backupPreview, setBackupPreview] = useState<BackupPreview | null>(null)
   const [backupFileName, setBackupFileName] = useState("")
@@ -32,30 +34,43 @@ export default function BackupRestorePage() {
   const [showRestoreModal, setShowRestoreModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  const refreshCounts = useCallback(async (nextUserId: string) => {
-    setLoadingCounts(true)
-    try {
-      setCounts(await loadBackupCounts(nextUserId))
-    } catch (error) {
-      console.error("Backup counts load failed", error)
-      notify.error(en.backupRestore.countsLoadFailed)
-    } finally {
-      setLoadingCounts(false)
-    }
-  }, [])
-
   useEffect(() => {
-    if (!auth) {
-      setLoadingCounts(false)
-      return
-    }
-    return auth.onAuthStateChanged((user) => {
+    if (!auth) return
+
+    let unsubscribeCounts: { unsubscribe: () => void } | null = null
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribeCounts?.unsubscribe()
+      unsubscribeCounts = null
+
       const nextUserId = user?.email || ""
-      setUserId(nextUserId)
-      if (nextUserId) void refreshCounts(nextUserId)
-      else setLoadingCounts(false)
+
+      if (!nextUserId) {
+        setCounts(null)
+        setLoadingCounts(false)
+        return
+      }
+
+      setLoadingCounts(true)
+      unsubscribeCounts = liveQuery(() => loadBackupCounts(nextUserId)).subscribe({
+        next: (nextCounts) => {
+          setCounts(nextCounts)
+          setLoadingCounts(false)
+        },
+        error: (error) => {
+          console.error("Backup counts load failed", error)
+          notify.error(en.backupRestore.countsLoadFailed)
+          setCounts(null)
+          setLoadingCounts(false)
+        },
+      })
     })
-  }, [refreshCounts])
+
+    return () => {
+      unsubscribeCounts?.unsubscribe()
+      unsubscribe()
+    }
+  }, [refreshTick])
 
   const totalRecords = useMemo(() => Object.values(counts || {}).reduce((sum, value) => sum + value, 0), [counts])
 
@@ -138,7 +153,6 @@ export default function BackupRestorePage() {
       setShowRestoreModal(false)
       setBackupPreview(null)
       setBackupConfirmed(false)
-      await refreshCounts(currentUserId)
     } catch (error) {
       console.error("Restore failed", error)
       notify.error(error instanceof Error ? error.message : en.backupRestore.restoreFailed)
@@ -160,7 +174,6 @@ export default function BackupRestorePage() {
       setShowImportModal(false)
       setImportPreview(null)
       setImportConfirmed(false)
-      await refreshCounts(currentUserId)
     } catch (error) {
       console.error("Import failed", error)
       notify.error(error instanceof Error ? error.message : en.backupRestore.importFailed)
@@ -174,7 +187,7 @@ export default function BackupRestorePage() {
 
   return (
     <main className="space-y-6">
-      <PageHeader eyebrow={en.navigation.settings} title={en.backupRestore.title} description={en.backupRestore.description} actions={<Button type="button" title={en.backupRestore.refreshCounts} icon={<RefreshCw size={16} />} variant="secondary" loading={loadingCounts} onClick={() => userId && void refreshCounts(userId)} />} />
+      <PageHeader eyebrow={en.navigation.settings} title={en.backupRestore.title} description={en.backupRestore.description} actions={<Button type="button" title={en.backupRestore.refreshCounts} icon={<RefreshCw size={16} />} variant="secondary" loading={loadingCounts} onClick={() => setRefreshTick((value) => value + 1)} />} />
 
       <SurfaceCard className="border-amber-300/50 bg-amber-50/80 p-4 text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
         <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" /><div className="space-y-1 text-sm leading-6"><p className="font-semibold">{en.backupRestore.safetyTitle}</p><p>{en.backupRestore.safetyDescription}</p></div></div>
@@ -233,9 +246,9 @@ export default function BackupRestorePage() {
   )
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) { return <SurfaceCard className="p-4"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</p><p className="mt-2 text-xl font-bold text-[var(--text-primary)]">{value}</p></SurfaceCard> }
+  function SummaryTile({ label, value }: { label: string; value: string }) { return <SurfaceCard className="p-4"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</p><p className="mt-2 text-xl font-bold text-[var(--text-primary)]">{value}</p></SurfaceCard> }
 function SectionHeading({ icon, title, description }: { icon: ReactNode; title: string; description: string }) { return <div className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">{icon}</span><div><h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2><p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{description}</p></div></div> }
-function PreviewMessages({ errors, warnings }: { errors: string[]; warnings: string[] }) { if (!errors.length && !warnings.length) return null; return <div className="space-y-2">{errors.map((error) => <p key={error} className="rounded-xl bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-200">{error}</p>)}{warnings.map((warning) => <p key={warning} className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-100">{warning}</p>)}</div> }
+function PreviewMessages({ errors, warnings }: { errors: string[]; warnings: string[] }) { if (!errors.length && !warnings.length) return null; return <div className="space-y-2">{errors.map((error) => <p key={error} className="rounded-xl bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-600">{error}</p>)}{warnings.map((warning) => <p key={warning} className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-100">{warning}</p>)}</div> }
 function BackupPreviewTable({ preview }: { preview: BackupPreview }) { return <div className="overflow-x-auto rounded-2xl border border-[var(--border-card)]"><table className="min-w-[640px] w-full text-sm"><thead className="bg-[var(--surface-subtle)] text-left text-[var(--text-secondary)]"><tr><th className="p-3">{en.backupRestore.collection}</th><th className="p-3">{en.backupRestore.incoming}</th><th className="p-3">{en.backupRestore.duplicates}</th><th className="p-3">{en.backupRestore.willImport}</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.key} className="border-t border-[var(--border-card)]"><td className="p-3 font-medium text-[var(--text-primary)]">{row.label}</td><td className="p-3">{row.incoming}</td><td className="p-3"><StatusBadge tone={row.duplicates ? "warning" : "neutral"}>{row.duplicates}</StatusBadge></td><td className="p-3 font-semibold text-[var(--text-primary)]">{row.willImport}</td></tr>)}</tbody></table></div> }
 function ImportPreviewTable({ preview }: { preview: SafeImportPreview }) { return <div className="overflow-x-auto rounded-2xl border border-[var(--border-card)]"><table className="min-w-[560px] w-full text-sm"><thead className="bg-[var(--surface-subtle)] text-left text-[var(--text-secondary)]"><tr><th className="p-3">{en.backupRestore.importType}</th><th className="p-3">{en.backupRestore.incoming}</th><th className="p-3">{en.backupRestore.duplicates}</th><th className="p-3">{en.backupRestore.invalid}</th><th className="p-3">{en.backupRestore.willImport}</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.label} className="border-t border-[var(--border-card)]"><td className="p-3 font-medium text-[var(--text-primary)]">{row.label}</td><td className="p-3">{row.incoming}</td><td className="p-3"><StatusBadge tone={row.duplicates ? "warning" : "neutral"}>{row.duplicates}</StatusBadge></td><td className="p-3"><StatusBadge tone={row.invalid ? "danger" : "neutral"}>{row.invalid}</StatusBadge></td><td className="p-3 font-semibold text-[var(--text-primary)]">{row.willImport}</td></tr>)}</tbody></table></div> }
 function ConfirmationCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (value: boolean) => void; label: string }) { return <label className="flex items-start gap-3 rounded-2xl border border-amber-300/50 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1 h-4 w-4" /><span>{label}</span></label> }

@@ -61,6 +61,35 @@ export default function StockOutModal({
   defaultQuantity?: number | string
   defaultExpiry?: string
 }) {
+  const modalKey = [product.id, defaultReason, defaultSalePrice, defaultQuantity, defaultExpiry].filter(Boolean).join(":")
+  return (
+    <StockOutModalContent
+      key={modalKey}
+      product={product}
+      onClose={onClose}
+      defaultReason={defaultReason}
+      defaultSalePrice={defaultSalePrice}
+      defaultQuantity={defaultQuantity}
+      defaultExpiry={defaultExpiry}
+    />
+  )
+}
+
+function StockOutModalContent({
+  product,
+  onClose,
+  defaultReason = "Sold",
+  defaultSalePrice,
+  defaultQuantity = "",
+  defaultExpiry = "",
+}: {
+  product: Product
+  onClose: () => void
+  defaultReason?: string
+  defaultSalePrice?: number | string
+  defaultQuantity?: number | string
+  defaultExpiry?: string
+}) {
   const router = useRouter()
   const { profile } = useProfile()
   const { parties: customerParties } = useParties("customer")
@@ -90,7 +119,6 @@ export default function StockOutModal({
       return
     }
     let cancelled = false
-    setLogsLoading(true)
 
     getProductExpiryBatches(product.id)
       .then((batches) => {
@@ -98,7 +126,7 @@ export default function StockOutModal({
         setExpiryOptions(batches)
         if (batches.length > 0) {
           const preferred = defaultExpiry && batches.some((batch) => batch.expiry === defaultExpiry)
-          setSelectedExpiry(preferred ? defaultExpiry : batches[0].expiry)
+          setSelectedExpiry(preferred ? defaultExpiry : "")
         } else {
           setSelectedExpiry("")
         }
@@ -167,7 +195,7 @@ export default function StockOutModal({
 
     try {
       setLoading(true)
-      const receiptNo = `${isSoldFlow ? "SALE" : "ADJ"}-${Date.now()}`
+      const receiptNo = createReceiptReference(isSoldFlow ? "SALE" : "ADJ")
       const effectivePrice = isSoldFlow ? price : Math.max(price || 0, 0)
       let documentData: TransactionDocumentData
 
@@ -265,6 +293,7 @@ export default function StockOutModal({
 
   return (
     <Modal
+      open
       title={en.inventory.stockOutTitle}
       description={`${product.name} - ${formatQuantity(product.quantity, quantityUnit)} ${en.inventory.onlyRemainingSuffix}`}
       onClose={onClose}
@@ -312,6 +341,7 @@ export default function StockOutModal({
             <div className={`${selectClass} text-gray-400 text-sm`}>{en.inventory.noExpiryFound}</div>
           ) : (
             <select value={selectedExpiry} onChange={(e) => setSelectedExpiry(e.target.value)} className={selectClass}>
+              <option value="" disabled>{en.common.select}</option>
               {expiryOptions.map((batch) => (
                 <option key={batch.expiry} value={batch.expiry}>
                   {batch.expiry} - {formatQuantity(batch.quantity, quantityUnit)} {new Date(batch.expiry) >= new Date() ? en.inventory.batchFirst : en.inventory.batchExpired}
@@ -347,13 +377,13 @@ export default function StockOutModal({
 
         {showMore && (
           <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-            <span>{en.advancedInventory.location}</span>
-            <select
-              value={locationId}
-              onChange={(event) => setLocationId(event.target.value)}
-              className={selectClass}
-            >
-              <option value="">{en.advancedInventory.defaultGodownName}</option>
+              <span>{en.advancedInventory.location}</span>
+              <select
+                value={locationId}
+                onChange={(event) => setLocationId(event.target.value)}
+                className={selectClass}
+              >
+              <option value="" disabled>{en.common.select}</option>
               {locations.map((location) => (
                 <option key={location.id} value={location.id}>{location.name}</option>
               ))}
@@ -438,6 +468,9 @@ function toTitleCase(value: string) {
   return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1))
 }
 
+function createReceiptReference(prefix: "SALE" | "ADJ") {
+  return `${prefix}-${Date.now()}`
+}
 
 function buildStockOutDocument({
   product,

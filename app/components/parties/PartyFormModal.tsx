@@ -1,14 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
+import SelectField from "@/app/components/ui/SelectField"
 import { notify as toast } from "@/app/lib/notifications"
 import { en } from "@/app/messages/en"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { ensurePartyRecord } from "@/app/lib/parties/party.service"
 import type { PartyType } from "@/app/lib/db"
+import { useEffect } from "react"
 
 type PartyFormValue = {
   name: string
@@ -19,7 +21,7 @@ type PartyFormValue = {
   city: string
   state: string
   pincode: string
-  type: PartyType
+  type: PartyType | ""
   openingBalance: string
   notes: string
 }
@@ -33,7 +35,7 @@ const EMPTY_VALUE: PartyFormValue = {
   city: "",
   state: "",
   pincode: "",
-  type: "customer",
+  type: "",
   openingBalance: "0",
   notes: "",
 }
@@ -52,7 +54,7 @@ export default function PartyFormModal({
 
   useEffect(() => {
     if (!open) return
-    setValue({ ...EMPTY_VALUE, type })
+    setValue((current) => (current.type ? current : { ...EMPTY_VALUE, type }))
   }, [open, type])
 
   const update = (key: keyof PartyFormValue, next: string) => {
@@ -60,6 +62,10 @@ export default function PartyFormModal({
   }
 
   const handleSave = async () => {
+    if (!value.type) {
+      toast.error(en.parties.typeRequired)
+      return
+    }
     try {
       setSaving(true)
       await ensurePartyRecord({
@@ -99,18 +105,16 @@ export default function PartyFormModal({
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Input label={en.parties.name} value={value.name} onChange={(event) => update("name", event.target.value)} />
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.parties.type}</label>
-          <select
-            value={value.type}
-            onChange={(event) => update("type", event.target.value)}
-            className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2 text-[var(--text-primary)]"
-          >
-            <option value="customer">{en.parties.customer}</option>
-            <option value="supplier">{en.parties.supplier}</option>
-            <option value="both">{en.parties.both}</option>
-          </select>
-        </div>
+        <SelectField
+          label={en.parties.type}
+          value={value.type}
+          onChange={(event) => update("type", event.target.value)}
+          options={[
+            { value: "customer", label: en.parties.customer },
+            { value: "supplier", label: en.parties.supplier },
+            { value: "both", label: en.parties.both },
+          ]}
+        />
         <Input label={en.parties.mobile} value={value.mobile} onChange={(event) => update("mobile", event.target.value)} />
         <Input label={en.parties.email} value={value.email} onChange={(event) => update("email", event.target.value)} />
         <Input label={en.parties.gstin} value={value.gstin} onChange={(event) => update("gstin", event.target.value.toUpperCase())} />

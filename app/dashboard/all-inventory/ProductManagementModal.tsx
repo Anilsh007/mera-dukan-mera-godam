@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -8,7 +8,7 @@ import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import { Product } from "@/app/lib/db"
 import { STOCK_THRESHOLDS } from "@/app/lib/inventory.utils"
-import { DEFAULT_QUANTITY_UNIT, formatQuantity, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { formatQuantity, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import {
   adjustProductStock,
   deleteProductWithLogs,
@@ -55,24 +55,6 @@ const NEW_CATEGORY_VALUE = "__new__"
 const selectClass =
   "min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition-all focus:ring-2 focus:ring-emerald-400"
 
-const emptyForm: FormState = {
-  name: "",
-  categoryOption: NO_CATEGORY_VALUE,
-  customCategory: "",
-  supplier: "",
-  expiry: "",
-  price: "",
-  quantityUnit: DEFAULT_QUANTITY_UNIT,
-  sku: "",
-  hsnCode: "",
-  batchNo: "",
-  serialTrackingNote: "",
-  note: "",
-  reorderLevel: "",
-  lowStockThreshold: "",
-  criticalStockThreshold: "",
-}
-
 const emptyAdjustment: AdjustmentState = {
   type: "in",
   quantity: "",
@@ -87,74 +69,70 @@ export default function ProductManagementModal({
   onClose,
   onSaved,
 }: Props) {
+  if (!open || !product) return null
+
+  const modalKey = [product.id, mode, historyCount].filter(Boolean).join(":")
+
+  return (
+    <ProductManagementModalContent
+      key={modalKey}
+      mode={mode}
+      product={product}
+      historyCount={historyCount}
+      onClose={onClose}
+      onSaved={onSaved}
+    />
+  )
+}
+
+function ProductManagementModalContent({
+  mode,
+  product,
+  historyCount,
+  onClose,
+  onSaved,
+}: Omit<Props, "open" | "product"> & { product: Product }) {
   const { products } = useProducts()
-  const [form, setForm] = useState<FormState>(emptyForm)
+  const [form, setForm] = useState<FormState>(() => ({
+    name: product.name || "",
+    categoryOption: normalizeCategoryInput(product.category) || NO_CATEGORY_VALUE,
+    customCategory: "",
+    supplier: product.supplier || "",
+    expiry: product.expiry || "",
+    price: String(product.price ?? ""),
+    quantityUnit: normalizeQuantityUnit(product.quantityUnit),
+    sku: product.sku || "",
+    hsnCode: product.hsnCode || "",
+    batchNo: product.batchNo || "",
+    serialTrackingNote: product.serialTrackingNote || "",
+    note: product.note || "",
+    reorderLevel: product.reorderLevel !== undefined ? String(product.reorderLevel) : "",
+    lowStockThreshold: product.lowStockThreshold !== undefined ? String(product.lowStockThreshold) : "",
+    criticalStockThreshold: product.criticalStockThreshold !== undefined ? String(product.criticalStockThreshold) : "",
+  }))
   const [loading, setLoading] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
   const [showStockAdjustment, setShowStockAdjustment] = useState(false)
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [adjustment, setAdjustment] = useState<AdjustmentState>(emptyAdjustment)
 
-  const categoryOptions = useMemo(
-    () => buildCategoryOptions(products, product?.category),
-    [products, product?.category]
-  )
-
-  useEffect(() => {
-    if (!product) return
-
-    setForm({
-      name: product.name || "",
-      categoryOption: normalizeCategoryInput(product.category) || NO_CATEGORY_VALUE,
-      customCategory: "",
-      supplier: product.supplier || "",
-      expiry: product.expiry || "",
-      price: String(product.price ?? ""),
-      quantityUnit: normalizeQuantityUnit(product.quantityUnit),
-      sku: product.sku || "",
-      hsnCode: product.hsnCode || "",
-      batchNo: product.batchNo || "",
-      serialTrackingNote: product.serialTrackingNote || "",
-      note: product.note || "",
-      reorderLevel: product.reorderLevel !== undefined ? String(product.reorderLevel) : "",
-      lowStockThreshold: product.lowStockThreshold !== undefined ? String(product.lowStockThreshold) : "",
-      criticalStockThreshold: product.criticalStockThreshold !== undefined ? String(product.criticalStockThreshold) : "",
-    })
-    setAdjustment(emptyAdjustment)
-    setShowWarning(false)
-    setShowStockAdjustment(false)
-    setDeleteArmed(false)
-  }, [product])
-
+  const categoryOptions = useMemo(() => buildCategoryOptions(products, product.category), [product.category, products])
   const adjustmentQuantity = Number(adjustment.quantity || 0)
   const hasStockAdjustment = Number.isFinite(adjustmentQuantity) && adjustmentQuantity > 0
 
   const resolvedCategory = useMemo(() => {
-    if (form.categoryOption === NEW_CATEGORY_VALUE) {
-      return normalizeCategoryInput(form.customCategory)
-    }
-
-    if (form.categoryOption === NO_CATEGORY_VALUE) {
-      return ""
-    }
-
+    if (form.categoryOption === NEW_CATEGORY_VALUE) return normalizeCategoryInput(form.customCategory)
+    if (form.categoryOption === NO_CATEGORY_VALUE) return ""
     return normalizeCategoryInput(form.categoryOption)
   }, [form.categoryOption, form.customCategory])
 
   const effectiveNewStock = useMemo(() => {
-    const currentStock = Number(product?.quantity || 0)
+    const currentStock = Number(product.quantity || 0)
     if (!hasStockAdjustment) return currentStock
-    return adjustment.type === "in"
-      ? currentStock + adjustmentQuantity
-      : currentStock - adjustmentQuantity
-  }, [adjustment.type, adjustmentQuantity, hasStockAdjustment, product?.quantity])
+    return adjustment.type === "in" ? currentStock + adjustmentQuantity : currentStock - adjustmentQuantity
+  }, [adjustment.type, adjustmentQuantity, hasStockAdjustment, product.quantity])
 
-  const inventoryValue = useMemo(() => {
-    const price = Number(form.price || 0)
-    return price * Math.max(effectiveNewStock, 0)
-  }, [effectiveNewStock, form.price])
-
-  if (!open || !product) return null
+  const inventoryValue = useMemo(() => Number(form.price || 0) * Math.max(effectiveNewStock, 0), [effectiveNewStock, form.price])
 
   const setField = (key: keyof FormState, value: string) =>
     setForm((current) => ({ ...current, [key]: value }))
@@ -342,10 +320,11 @@ export default function ProductManagementModal({
             {en.inventory.unit} <span className="text-red-400">*</span>
           </label>
           <select
-            value={form.quantityUnit || DEFAULT_QUANTITY_UNIT}
+            value={form.quantityUnit || ""}
             onChange={(event) => setField("quantityUnit", event.target.value)}
             className={selectClass}
           >
+            <option value="">{en.common.select}</option>
             {QUANTITY_UNITS.map((unit) => (
               <option key={unit.value} value={unit.value}>
                 {unit.label}
@@ -466,6 +445,7 @@ export default function ProductManagementModal({
 
   return (
     <Modal
+      open
       title={mode === "edit" ? en.inventory.productManagement.editItem : product.name}
       description={mode === "edit" ? en.inventory.productManagement.editDescription : en.inventory.productManagement.deleteDescription}
       onClose={onClose}
@@ -548,7 +528,7 @@ function StockWarningSection({
     <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-950/20 sm:col-span-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-base font-bold text-amber-800 dark:text-amber-200">
+          <p className="text-base font-bold text-amber-800 dark:text-amber-600">
             {en.inventory.productManagement.warningTitle}
           </p>
           <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
@@ -600,7 +580,7 @@ function StockWarningSection({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-3 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-slate-950/80 dark:text-amber-200">
+      <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-3 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-slate-950/80 dark:text-amber-600">
         <p className="font-semibold">{en.inventory.productManagement.example}</p>
         <p className="mt-1">
           {`${en.inventory.productManagement.criticalStock} = ${critical}, ${en.inventory.productManagement.lowStock} = ${low}: ${critical} ${unit} ${en.inventory.productManagement.redWarningSuffix}; ${critical + 1} ${unit} - ${low} ${unit} ${en.inventory.productManagement.yellowWarningText}.`}

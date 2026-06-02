@@ -3,9 +3,9 @@
 import { v4 as uuidv4 } from "uuid"
 import { addProduct } from "@/app/dashboard/quick-purchase/product.service"
 import { db, type PurchaseDetailsStatus, type PurchaseEntryMode, type PurchaseItem, type PurchasePaymentStatus, type PurchaseRecord, type StockTransactionProduct } from "@/app/lib/db"
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { ensurePartyRecord, syncPartyBalances } from "@/app/lib/parties/party.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
 import { en } from "@/app/messages/en"
 import { makePurchaseBillNo } from "./purchase.form"
 import {
@@ -267,7 +267,7 @@ export async function savePurchase(input: SavePurchaseInput) {
   })
 
   if (supplierPartyId) await syncPartyBalances(input.userId, supplierPartyId)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("purchase")
   await incrementUsage(input.userId, "purchases")
   return purchaseId
 }
@@ -374,7 +374,7 @@ export async function completeQuickPurchaseDetails(input: CompletePurchaseDetail
   })
 
   await syncPartyBalances(input.userId, supplierParty.id)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("purchase details")
   return purchase.id
 }
 export async function loadPurchases(userId: string) {
@@ -461,7 +461,7 @@ export async function applySupplierPayment(input: ApplySupplierPaymentInput) {
   })
 
   await syncPartyBalances(input.userId, supplierParty.id)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("supplier payment")
   return {
     paidAmount: Math.min(amount, totalDue),
     remainingSupplierDue: Math.max(totalDue - amount, 0),

@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import useProfile from "@/app/dashboard/profile/useProfile"
+import useAuthLiveQuery from "@/app/hooks/useAuthLiveQuery"
 import { notify as toast } from "@/app/lib/notifications"
 import { syncSupabaseToDexie } from "@/app/lib/supabaseDownload.service"
 import { type TransactionOptionFlags } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
-
 import { buildGstInvoiceDocument } from "./Preview/InvoicePreview"
 
 import {
@@ -15,8 +15,7 @@ import {
   buildBankDetailsFromProfile,
   buildInvoiceNumber,
   loadInvoicesFromDb,
-  saveInvoiceToDb,
-  saveInvoiceToSupabase,
+  saveInvoiceWithSync,
 } from "./invoice.service"
 
 import { buildBuyerSuggestions, matchBuyerSuggestion } from "./buyerSuggestions"
@@ -44,75 +43,73 @@ import {
 const today = new Date().toISOString().slice(0, 10)
 
 export function useGstInvoiceForm() {
-  const [invoice, setInvoice] = useState<GSTInvoice>(createEmptyInvoice())
-  const [invoices, setInvoices] = useState<GSTInvoiceRecord[]>([])
+  const [draftInvoice, setDraftInvoice] = useState<GSTInvoice>(createEmptyInvoice())
   const [saving, setSaving] = useState(false)
   const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"new" | "saved">("new")
   const [previewMode, setPreviewMode] = useState<"preview" | "print" | null>(null)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
-  const [hsnLookupVersion, setHsnLookupVersion] = useState(0)
+  const hasInitializedDraftRef = useRef(false)
 
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
   const [invoiceCopyMode, setInvoiceCopyMode] = useState<GstInvoiceCopyMode>("customer")
 
   const { profile } = useProfile()
+  const { data: invoiceHistory } = useAuthLiveQuery<GSTInvoiceRecord[]>(
+    [],
+    async (userId) => loadInvoicesFromDb(userId),
+    (error) => {
+      console.error("GST invoice history load failed", error)
+      toast.error(en.gstInvoice.loadFailed)
+    },
+  )
 
-  const sellerState = invoice.seller.state?.trim().toLowerCase() || ""
-  const buyerState = invoice.buyer.state?.trim().toLowerCase() || ""
-  const isInterState = isInterStateSupply(invoice)
+  const isInterState = isInterStateSupply({
+    seller: draftInvoice.seller,
+    buyer: draftInvoice.buyer,
+  } as GSTInvoice)
+  const invoice = useMemo(() => {
+    const updatedItems = draftInvoice.items.map((item) => calculateInvoiceItem(item, isInterState))
+    return {
+      ...draftInvoice,
+      items: updatedItems,
+      totals: buildInvoiceTotals(updatedItems),
+    }
+  }, [draftInvoice, isInterState])
 
   const buyerSuggestions = useMemo(() => buildBuyerSuggestions(invoices), [invoices])
 
   useEffect(() => {
-    let cancelled = false
-
-    warmHsnSacLookup()
-      .then(() => {
-        if (!cancelled) setHsnLookupVersion((version) => version + 1)
-      })
-      .catch((error) => {
-        console.error("HSN/SAC data load failed", error)
-        if (!cancelled) toast.warning(en.gstInvoice.hsnLookupUnavailable, { id: "gst-hsn-lookup-warning" })
-      })
-
-    return () => {
-      cancelled = true
-    }
+    warmHsnSacLookup().catch((error) => {
+      console.error("HSN/SAC data load failed", error)
+      toast.warning(en.gstInvoice.hsnLookupUnavailable, { id: "gst-hsn-lookup-warning" })
+    })
   }, [])
 
+  const invoices = invoiceHistory
+
   useEffect(() => {
-    async function init() {
-      const data = await loadInvoicesFromDb()
-      setInvoices(data)
-      setActiveInvoiceId(null)
+    if (!profile || hasInitializedDraftRef.current) return
 
-      const baseInvoice: GSTInvoice = {
-        ...createEmptyInvoice(),
-        invoiceNo: buildInvoiceNumber(profile, data),
-        invoiceDate: today,
-        dueDate: today,
-        seller: buildSellerFromProfile(profile),
-        bankDetails: buildBankDetailsFromProfile(profile),
-        shippingSameAsBilling: true,
-      }
-
-      const draft = consumeSaleInvoiceDraft()
-      const nextInvoice = draft ? buildInvoiceFromSaleDraft(baseInvoice, draft) : baseInvoice
-
-      setInvoice(nextInvoice)
-      if (draft) toast.success(en.gstInvoice.saleDraftLoaded)
+    const baseInvoice: GSTInvoice = {
+      ...createEmptyInvoice(),
+      invoiceNo: buildInvoiceNumber(profile, invoiceHistory),
+      invoiceDate: today,
+      dueDate: today,
+      seller: buildSellerFromProfile(profile),
+      bankDetails: buildBankDetailsFromProfile(profile),
+      shippingSameAsBilling: true,
     }
 
-    if (profile) init()
-  }, [profile])
+    const draft = consumeSaleInvoiceDraft()
+    const nextInvoice = draft ? buildInvoiceFromSaleDraft(baseInvoice, draft) : baseInvoice
 
-  useEffect(() => {
-    setInvoice((prev) => {
-      const updatedItems = prev.items.map((item) => calculateInvoiceItem(item, isInterState))
-      return { ...prev, items: updatedItems, totals: buildInvoiceTotals(updatedItems) }
-    })
-  }, [buyerState, sellerState, isInterState, hsnLookupVersion])
+    setDraftInvoice(nextInvoice)
+    setActiveInvoiceId(null)
+    hasInitializedDraftRef.current = true
+
+    if (draft) toast.success(en.gstInvoice.saleDraftLoaded)
+  }, [profile, invoiceHistory])
 
   useEffect(() => {
     async function syncData() {
@@ -145,7 +142,7 @@ export function useGstInvoiceForm() {
       if (state) updatedBuyer.state = state
     }
 
-    setInvoice((prev) => ({
+    setDraftInvoice((prev) => ({
       ...prev,
       buyer: updatedBuyer,
       shippingAddress: prev.shippingSameAsBilling
@@ -160,7 +157,7 @@ export function useGstInvoiceForm() {
   }
 
   const handleShippingAddressChange = (field: string, value: string) => {
-    setInvoice((prev) => ({
+    setDraftInvoice((prev) => ({
       ...prev,
       shippingAddress: {
         ...prev.shippingAddress,
@@ -170,7 +167,7 @@ export function useGstInvoiceForm() {
   }
 
   const handleShippingSameChange = (checked: boolean) => {
-    setInvoice((prev) => ({
+    setDraftInvoice((prev) => ({
       ...prev,
       shippingSameAsBilling: checked,
       shippingAddress: checked
@@ -185,7 +182,7 @@ export function useGstInvoiceForm() {
   }
 
   const updateInvoiceItem = (index: number, patch: Partial<GSTInvoice["items"][number]>) => {
-    setInvoice((prev) => {
+    setDraftInvoice((prev) => {
       const updatedItems = [...prev.items]
       const current = updatedItems[index]
       if (!current) return prev
@@ -209,7 +206,7 @@ export function useGstInvoiceForm() {
   }
 
   const addItem = () => {
-    setInvoice((prev) => {
+    setDraftInvoice((prev) => {
       const items = [...prev.items, createEmptyInvoiceItem()]
       return {
         ...prev,
@@ -220,7 +217,7 @@ export function useGstInvoiceForm() {
   }
 
   const removeItem = (index: number) => {
-    setInvoice((prev) => {
+    setDraftInvoice((prev) => {
       const items = prev.items.filter((_, i) => i !== index)
       const nextItems = items.length ? items : [createEmptyInvoiceItem()]
       return {
@@ -239,7 +236,7 @@ export function useGstInvoiceForm() {
     const nextInvoiceNo = buildInvoiceNumber(profile, invoices)
 
     setActiveInvoiceId(null)
-    setInvoice({
+    setDraftInvoice({
       ...createEmptyInvoice(),
       invoiceNo: nextInvoiceNo,
       invoiceDate: today,
@@ -271,20 +268,8 @@ export function useGstInvoiceForm() {
         ? ({ ...cleanedInvoice, id: activeInvoiceId } as GSTInvoice & { id: string })
         : cleanedInvoice
 
-      const saved = await saveInvoiceToDb(invoiceToSave, undefined, "pending")
-      let finalSaved = saved
-
-      try {
-        await saveInvoiceToSupabase(saved)
-        finalSaved = await saveInvoiceToDb(saved, undefined, "synced")
-      } catch {
-        toast.warning(en.gstInvoice.localSavedCloudPending)
-      }
-
-      setInvoices((prev) => {
-        const withoutCurrent = prev.filter((entry) => entry.id !== finalSaved.id)
-        return [finalSaved, ...withoutCurrent]
-      })
+      const finalSaved = await saveInvoiceWithSync(invoiceToSave)
+      if (finalSaved.syncStatus !== "synced") toast.warning(en.gstInvoice.localSavedCloudPending)
 
       const invoiceDocuments = buildGstInvoiceCopyDocuments(buildGstInvoiceDocument(invoiceToSave), invoiceCopyMode)
       for (const invoiceDocument of invoiceDocuments) {
@@ -306,7 +291,7 @@ export function useGstInvoiceForm() {
     setActiveTab("new")
     toast.success(en.gstInvoice.loadedFromHistory)
 
-    setInvoice({
+    setDraftInvoice({
       ...inv,
       shippingSameAsBilling: inv.shippingSameAsBilling !== false,
       shippingAddress: inv.shippingAddress || {
@@ -330,7 +315,7 @@ export function useGstInvoiceForm() {
     isInterState,
     buyerSuggestions,
 
-    setInvoice,
+    setInvoice: setDraftInvoice,
     setActiveTab,
     setPreviewMode,
     setResetConfirmOpen,

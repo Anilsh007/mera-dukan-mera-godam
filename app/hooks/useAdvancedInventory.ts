@@ -3,6 +3,16 @@ import { notify } from "@/app/lib/notifications"
 import { en } from "@/app/messages/en"
 import useAuthLiveQuery from "./useAuthLiveQuery"
 
+export type InventoryLocationLike = {
+  id: string
+  name: string
+  isDefault?: boolean
+}
+
+export function getPreferredInventoryLocation(locations: InventoryLocationLike[]) {
+  return locations.find((location) => location.isDefault) || locations[0] || null
+}
+
 export function useInventoryLocations() {
   const { data: locations, loading } = useAuthLiveQuery(
     [],

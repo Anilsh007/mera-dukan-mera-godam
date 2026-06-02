@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { en } from "@/app/messages/en"
+import { beginCrudBusy, endCrudBusy } from "@/app/lib/crudBusy"
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "full"
 type ModalVariant = "default" | "form" | "confirmation" | "detail" | "warning"
@@ -139,6 +140,14 @@ export default function Modal({
       previouslyFocusedElement.current?.focus?.({ preventScroll: true })
     }
   }, [open])
+
+  useEffect(() => {
+    if (!loading) return
+    beginCrudBusy(typeof title === "string" ? title : en.common.processing)
+    return () => {
+      endCrudBusy()
+    }
+  }, [loading, title])
 
   if (!open || typeof document === "undefined") return null
 

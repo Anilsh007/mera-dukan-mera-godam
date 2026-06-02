@@ -462,6 +462,34 @@ export interface UsageTrackingRecord {
   updatedAt: string
 }
 
+export type SyncEntityName =
+  | "profiles"
+  | "products"
+  | "productLogs"
+  | "purchases"
+  | "invoices"
+  | "sales"
+  | "estimates"
+  | "returnDocuments"
+  | "expenses"
+  | "cashbookEntries"
+  | "inventoryLocations"
+  | "productLocationStocks"
+  | "inventoryBatches"
+  | "stockTransfers"
+  | "parties"
+  | "partyLedger"
+  | "subscriptions"
+  | "usageTracking"
+
+export interface SyncTombstoneRecord {
+  id: string
+  userId: string
+  entity: SyncEntityName
+  recordId: string
+  deletedAt: string
+}
+
 export type PartyType = "customer" | "supplier" | "both"
 
 export interface PartyRecord {
@@ -522,6 +550,7 @@ const LATEST_STOCK_DB_SCHEMA: Record<string, string> = {
   partyLedger: "id,[userId+partyId],[partyId+entryDate],userId,partyId,type,entryDate,updatedAt",
   subscriptions: "id,userId,status,plan,trialEndsAt,subscriptionEndsAt,updatedAt",
   usageTracking: "id,[userId+feature+periodKey],userId,feature,periodKey,updatedAt",
+  syncTombstones: "id,[userId+entity],userId,entity,recordId,deletedAt",
 }
 
 class StockDB extends Dexie {
@@ -543,6 +572,7 @@ class StockDB extends Dexie {
   partyLedger!: Table<PartyLedgerRecord>
   subscriptions!: Table<SubscriptionRecord>
   usageTracking!: Table<UsageTrackingRecord>
+  syncTombstones!: Table<SyncTombstoneRecord>
 
   constructor() {
     super("StockDatabase")
@@ -747,6 +777,7 @@ class StockDB extends Dexie {
       })
 
     this.version(21).stores(LATEST_STOCK_DB_SCHEMA)
+    this.version(22).stores(LATEST_STOCK_DB_SCHEMA)
   }
 }
 

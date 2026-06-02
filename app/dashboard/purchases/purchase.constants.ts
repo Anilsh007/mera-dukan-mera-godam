@@ -16,4 +16,4 @@ export const PAYMENT_STATUSES: Array<{ value: PurchasePaymentStatus; label: stri
   { value: "unpaid", label: en.purchases.paymentStatuses.unpaid },
 ]
 
-export const DEFAULT_PAYMENT_MODE = " "
+export const DEFAULT_PAYMENT_MODE = ""

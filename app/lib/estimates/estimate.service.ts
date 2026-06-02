@@ -7,6 +7,8 @@ import { assertFeatureAccess, ensureCustomerCapacity, incrementUsage } from "@/a
 import { roundCurrency } from "@/app/lib/gst.utils"
 import { saveSale } from "@/app/lib/sales/sale.service"
 import { calculateEstimateLine, calculateEstimateTotals, buildEstimateNumber, type EstimateLineInput } from "@/app/lib/estimates/estimate.utils"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
+import { normalizeContactLike, requirePositiveNumber, trimOrUndefined } from "@/app/lib/normalization.utils"
 import type { SalePaymentMode, SalePaymentStatus } from "@/app/lib/db"
 import { en } from "@/app/messages/en"
 
@@ -39,28 +41,15 @@ export type ConvertEstimateToSaleInput = {
 }
 
 function normalizeCustomer(customer?: SaleCustomer) {
-  if (!customer) return undefined
-  const normalized: SaleCustomer = {
-    name: customer.name?.trim() || undefined,
-    gstin: customer.gstin?.trim().toUpperCase() || undefined,
-    phone: customer.phone?.trim() || undefined,
-    email: customer.email?.trim() || undefined,
-    address: customer.address?.trim() || undefined,
-    city: customer.city?.trim() || undefined,
-    state: customer.state?.trim() || undefined,
-    pincode: customer.pincode?.trim() || undefined,
-  }
-
-  return Object.values(normalized).some(Boolean) ? normalized : undefined
+  return normalizeContactLike(customer) as SaleCustomer | undefined
 }
 
 function validateEstimateItems(items: EstimateLineInput[]) {
   if (!items.length) throw new Error(en.estimates.addAtLeastOneItem)
   items.forEach((item) => {
-    const quantity = Number(item.quantity || 0)
-    const price = Number(item.salePrice || 0)
-    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(en.estimates.quantityRequired)
-    if (!Number.isFinite(price) || price < 0) throw new Error(en.estimates.priceRequired)
+    requirePositiveNumber(item.quantity, en.estimates.quantityRequired)
+    if (item.salePrice === undefined || item.salePrice === null) throw new Error(en.estimates.priceRequired)
+    if (Number(item.salePrice) < 0) throw new Error(en.estimates.priceRequired)
   })
 }
 
@@ -155,15 +144,16 @@ export async function saveEstimate(input: SaveEstimateInput) {
     taxableAmount: roundCurrency(totals.taxableAmount),
     gstAmount: roundCurrency(totals.gstAmount),
     status: input.status || "draft",
-    note: input.note?.trim() || undefined,
-    terms: input.terms?.trim() || undefined,
-    reference: input.reference?.trim() || undefined,
+    note: trimOrUndefined(input.note),
+    terms: trimOrUndefined(input.terms),
+    reference: trimOrUndefined(input.reference),
     gstEnabled: Boolean(input.gstEnabled),
     createdAt: now,
     updatedAt: now,
   }
 
   await db.estimates.add(estimate)
+  await requestSupabaseSync("estimate")
   await incrementUsage(input.userId, "estimates")
   return estimate
 }
@@ -182,6 +172,7 @@ export async function updateEstimateStatus({
   if (!estimate || estimate.userId !== userId) throw new Error(en.estimates.notFound)
   if (estimate.status === "converted" && status !== "converted") throw new Error(en.estimates.convertedCannotChange)
   await db.estimates.update(estimateId, { status, updatedAt: new Date().toISOString() })
+  await requestSupabaseSync("estimate status")
 }
 
 export async function markEstimateInvoiceDraftCreated({
@@ -198,6 +189,7 @@ export async function markEstimateInvoiceDraftCreated({
     convertedInvoiceDraftAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   })
+  await requestSupabaseSync("estimate invoice draft")
 }
 
 export async function convertEstimateToSale(input: ConvertEstimateToSaleInput) {
@@ -241,6 +233,7 @@ export async function convertEstimateToSale(input: ConvertEstimateToSaleInput) {
     convertedAt: now,
     updatedAt: now,
   })
+  await requestSupabaseSync("estimate conversion")
 
   return sale
 }

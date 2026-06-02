@@ -40,7 +40,7 @@ export default function SupplierPaymentModal({
 }) {
   const { profile } = useProfile()
   const [amount, setAmount] = useState(String(supplier.dueAmount))
-  const [paymentMode, setPaymentMode] = useState(DEFAULT_PAYMENT_MODE)
+  const [paymentMode, setPaymentMode] = useState<string>(DEFAULT_PAYMENT_MODE)
   const [note, setNote] = useState("")
   const [showMore, setShowMore] = useState(false)
   const [loading, setLoading] = useState(false)

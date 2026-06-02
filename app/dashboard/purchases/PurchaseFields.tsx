@@ -3,6 +3,7 @@
 import { Plus, Save } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
+import SelectField from "@/app/components/ui/SelectField"
 import type { PurchasePaymentStatus } from "@/app/lib/db"
 import { PAYMENT_MODES, PAYMENT_STATUSES } from "./purchase.constants"
 import { formatCurrency } from "./purchase.utils"
@@ -16,7 +17,7 @@ type Props = {
   supplierName: string
   purchaseDate: string
   supplierDatalistId?: string
-  paymentStatus: PurchasePaymentStatus
+  paymentStatus: PurchasePaymentStatus | ""
   paymentMode: string
   amountPaid: string
   purchaseNote: string
@@ -28,7 +29,7 @@ type Props = {
   onBillNoChange: (value: string) => void
   onSupplierChange: (value: string) => void
   onPurchaseDateChange: (value: string) => void
-  onPaymentStatusChange: (value: PurchasePaymentStatus) => void
+  onPaymentStatusChange: (value: PurchasePaymentStatus | "") => void
   onPaymentModeChange: (value: string) => void
   onAmountPaidChange: (value: string) => void
   onPurchaseNoteChange: (value: string) => void
@@ -82,18 +83,13 @@ export default function PurchaseFields({
 
         <Input id="purchase-supplier" label={<>{en.purchases.supplierNameRequired.replace(" *", "")} <RequiredMark /> </>} value={supplierName} onChange={(event) => onSupplierChange(event.target.value)} datalist={supplierDatalistId} placeholder={en.purchases.supplierPlaceholder} />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.purchases.payment} <RequiredMark /></label>
-
-          <select value={paymentStatus} onChange={(event) => onPaymentStatusChange(event.target.value as PurchasePaymentStatus)}
-            className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400" >
-            {PAYMENT_STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          id="purchase-payment-status"
+          label={<>{en.purchases.payment} <RequiredMark /></>}
+          value={paymentStatus}
+          onChange={(event) => onPaymentStatusChange(event.target.value as PurchasePaymentStatus)}
+          options={PAYMENT_STATUSES}
+        />
 
         <Input id="purchase-date" type="date" label={<>{en.purchases.purchaseDate} <RequiredMark /></>} value={purchaseDate} onChange={(event) => onPurchaseDateChange(event.target.value)} />
 

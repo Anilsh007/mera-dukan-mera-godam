@@ -11,7 +11,6 @@ import {
   type SaleRecord,
   type StockTransactionProduct,
 } from "@/app/lib/db"
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { ensurePartyRecord, syncPartyBalances } from "@/app/lib/parties/party.service"
 import { buildSaleLogNote } from "@/app/lib/saleMetadata"
 import { roundCurrency } from "@/app/lib/gst.utils"
@@ -19,6 +18,9 @@ import { assertFeatureAccess, ensureCustomerCapacity, incrementUsage } from "@/a
 import { calculateSaleLine, calculateSaleTotals, normalizePaidAmount, buildReceiptNumber, type SaleDraftLineInput } from "./sale.utils"
 import { stockOut } from "@/app/dashboard/quick-purchase/product.service"
 import { adjustAdvancedInventoryStock } from "@/app/lib/advancedInventory/advancedInventory.service"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
+import { normalizeContactLike } from "@/app/lib/normalization.utils"
+import { runWithCrudBusy } from "@/app/lib/crudBusy"
 import { en } from "@/app/messages/en"
 
 export type SaveSaleInput = {
@@ -40,7 +42,8 @@ export type SaveSaleInput = {
 }
 
 export async function saveSale(input: SaveSaleInput): Promise<SaleRecord> {
-  await assertFeatureAccess(input.userId, "quickSales", {
+  return runWithCrudBusy("Saving sale", async () => {
+    await assertFeatureAccess(input.userId, "quickSales", {
     operation: "create",
     incrementBy: 1,
   })
@@ -227,12 +230,13 @@ export async function saveSale(input: SaveSaleInput): Promise<SaleRecord> {
   })
 
   if (partyId) await syncPartyBalances(input.userId, partyId)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("sale")
   await incrementUsage(input.userId, "quickSales")
   if (!createdSale) {
     throw new Error(en.sales.saveFailed)
   }
-  return createdSale as SaleRecord
+    return createdSale as SaleRecord
+  })
 }
 
 export async function loadSales(userId: string) {
@@ -253,7 +257,8 @@ export async function cancelSale({
   userId: string
   note?: string
 }) {
-  await assertFeatureAccess(userId, "sales", { operation: "update", scope: "premium" })
+  return runWithCrudBusy("Cancelling sale", async () => {
+    await assertFeatureAccess(userId, "sales", { operation: "update", scope: "premium" })
 
   const sale = await db.sales.get(saleId)
   if (!sale || sale.userId !== userId) throw new Error(en.sales.saleRecordNotFound)
@@ -336,6 +341,7 @@ export async function cancelSale({
         quantityUnit: item.quantityUnit,
         oldProductStock: oldStock,
         batchNo: item.batchNo,
+        skipImmediateSync: true,
       })
     }
 
@@ -357,22 +363,11 @@ export async function cancelSale({
   })
 
   if (sale.partyId) await syncPartyBalances(userId, sale.partyId)
-  await autoSyncToSupabase()
-  return sale.id
+    await requestSupabaseSync("sale cancellation")
+    return sale.id
+  })
 }
 
 function normalizeCustomer(customer?: SaleCustomer) {
-  if (!customer) return undefined
-  const normalized: SaleCustomer = {
-    name: customer.name?.trim() || undefined,
-    gstin: customer.gstin?.trim() || undefined,
-    phone: customer.phone?.trim() || undefined,
-    email: customer.email?.trim() || undefined,
-    address: customer.address?.trim() || undefined,
-    city: customer.city?.trim() || undefined,
-    state: customer.state?.trim() || undefined,
-    pincode: customer.pincode?.trim() || undefined,
-  }
-
-  return Object.values(normalized).some(Boolean) ? normalized : undefined
+  return normalizeContactLike(customer) as SaleCustomer | undefined
 }

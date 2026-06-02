@@ -5,6 +5,8 @@ import { CircleAlert, ReceiptText } from "lucide-react"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import SummaryCard from "@/app/components/ui/SummaryCard"
+import SelectField from "@/app/components/ui/SelectField"
+import { notify as toast } from "@/app/lib/notifications"
 import type { PurchasePaymentStatus, PurchaseRecord } from "@/app/lib/db"
 import {
   DEFAULT_PAYMENT_MODE,
@@ -39,8 +41,8 @@ export default function CompletePurchaseDetailsModal({
   const [billNo, setBillNo] = useState("")
   const [supplierName, setSupplierName] = useState("")
   const [purchaseDate, setPurchaseDate] = useState("")
-  const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus>("unpaid")
-  const [paymentMode, setPaymentMode] = useState(DEFAULT_PAYMENT_MODE)
+  const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus | "">("")
+  const [paymentMode, setPaymentMode] = useState<string>(DEFAULT_PAYMENT_MODE)
   const [amountPaid, setAmountPaid] = useState("")
   const [note, setNote] = useState("")
 
@@ -53,7 +55,7 @@ export default function CompletePurchaseDetailsModal({
         purchase.supplierName === "Details Pending" ? "" : purchase.supplierName,
       )
       setPurchaseDate(purchase.purchaseDate)
-      setPaymentStatus(purchase.paymentStatus || "unpaid")
+      setPaymentStatus(purchase.paymentStatus || "")
       setPaymentMode(purchase.paymentMode || DEFAULT_PAYMENT_MODE)
       setAmountPaid(String(purchase.amountPaid || ""))
       setNote(purchase.note || "")
@@ -83,6 +85,11 @@ export default function CompletePurchaseDetailsModal({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    if (!paymentStatus) {
+      toast.error(en.purchases.validation.paymentStatusRequired)
+      return
+    }
+
     await onSave({
       billNo,
       supplierName,
@@ -110,7 +117,7 @@ export default function CompletePurchaseDetailsModal({
     >
       <div className="mb-5 rounded-2xl border border-amber-300/70 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(245,158,11,0.08))] p-4 text-sm leading-6 text-amber-900 shadow-[var(--shadow-card)] dark:border-amber-400/25 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.44),rgba(69,26,3,0.24))] dark:text-amber-100">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-amber-700 dark:bg-white/10 dark:text-amber-200">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-amber-700 dark:bg-white/10 dark:text-amber-600">
             <CircleAlert size={18} aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -151,40 +158,19 @@ export default function CompletePurchaseDetailsModal({
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-            {en.purchases.paymentStatusRequired}
-          </label>
+        <SelectField
+          label={en.purchases.paymentStatusRequired}
+          value={paymentStatus}
+          onChange={(event) => setPaymentStatus(event.target.value as PurchasePaymentStatus)}
+          options={PAYMENT_STATUSES}
+        />
 
-          <select
-            value={paymentStatus}
-            onChange={(event) => setPaymentStatus(event.target.value as PurchasePaymentStatus)}
-            className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            {PAYMENT_STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-            {en.purchases.paymentMode}
-          </label>
-          <select
-            value={paymentMode || DEFAULT_PAYMENT_MODE}
-            onChange={(event) => setPaymentMode(event.target.value)}
-            className="min-h-10 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            {PAYMENT_MODES.map((mode) => (
-              <option key={mode} value={mode}>
-                {mode}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label={en.purchases.paymentMode}
+          value={paymentMode}
+          onChange={(event) => setPaymentMode(event.target.value)}
+          options={PAYMENT_MODES.map((mode) => ({ value: mode, label: mode }))}
+        />
 
         {paymentStatus === "partial" ? (
           <Input

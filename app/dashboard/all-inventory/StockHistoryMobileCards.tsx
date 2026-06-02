@@ -63,7 +63,7 @@ function StockHistoryMobileCard({
               <p className="truncate font-medium capitalize text-[var(--text-primary)]">{row.productName}</p>
               <p className="text-xs text-[var(--text-secondary)]">{formatDateTime(row.date)}</p>
             </div>
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.logType === "in" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400"}`}>
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.logType === "in" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-600" : "bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400"}`}>
               {row.logType === "in" ? en.stockHistory.typeLabels.stockIn : row.reason.toLowerCase() === "sold" ? en.stockHistory.reasonLabels.sale : en.stockHistory.typeLabels.stockOut}
             </span>
           </div>

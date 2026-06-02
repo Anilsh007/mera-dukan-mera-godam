@@ -6,6 +6,7 @@ import ProfileCompletionNotice from "./profile/ProfileCompletionNotice"
 import ProtectedRoute from "@/app/components/auth/ProtectedRoute"
 import Sidebar from "@/app/components/layout/Sidebar"
 import Header from "@/app/components/layout/Header"
+import { CrudBusyOverlay } from "@/app/lib/crudBusy"
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -28,6 +29,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           </main>
         </div>
         <SupabaseSyncManager />
+        <CrudBusyOverlay />
       </div>
     </ProtectedRoute>
   )

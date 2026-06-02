@@ -29,7 +29,7 @@ export default function PartyPaymentModal({
   const { profile } = useProfile()
   const sellerProfile = buildBusinessDocumentProfile(profile)
   const [amount, setAmount] = useState("")
-  const [paymentMode, setPaymentMode] = useState("Cash")
+  const [paymentMode, setPaymentMode] = useState("")
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
   const [saving, setSaving] = useState(false)

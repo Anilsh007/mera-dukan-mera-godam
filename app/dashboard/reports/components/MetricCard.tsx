@@ -10,9 +10,9 @@ type MetricCardProps = {
 
 export default function MetricCard({ label, value, helper, positive, warning }: MetricCardProps) {
   const valueClass = positive
-    ? "text-emerald-600 dark:text-emerald-400"
+    ? "text-emerald-600 dark:text-emerald-600"
     : warning
-      ? "text-amber-600 dark:text-amber-400"
+      ? "text-amber-600 dark:text-amber-600"
       : "text-[var(--text-primary)]"
 
   return (

@@ -218,13 +218,13 @@ export default function StockInModal({
               />
             </div>
             <label className="basis-full space-y-1 text-sm font-semibold text-[var(--text-secondary)] sm:basis-[calc(50%-6px)]">
-              <span>{en.advancedInventory.location}</span>
-              <select
-                value={form.locationId}
-                onChange={(event) => set("locationId", event.target.value)}
-                className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]"
-              >
-                <option value="">{en.advancedInventory.defaultGodownName}</option>
+                <span>{en.advancedInventory.location}</span>
+                <select
+                  value={form.locationId}
+                  onChange={(event) => set("locationId", event.target.value)}
+                  className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]"
+                >
+                <option value="" disabled>{en.common.select}</option>
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>{location.name}</option>
                 ))}

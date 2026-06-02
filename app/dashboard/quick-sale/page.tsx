@@ -1,10 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { ReceiptText } from "lucide-react"
+import { useMemo, useState, type SetStateAction } from "react"
 import { useRouter } from "next/navigation"
 import PageHeader from "@/app/components/ui/PageHeader"
-import GuidedStepCard from "@/app/components/ui/GuidedStepCard"
 import useProducts from "@/app/hooks/useProducts"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { findProductByScannedCode } from "@/app/lib/barcode/barcode.utils"
@@ -29,7 +27,6 @@ import {
   buildSaleDraftLinesFromCart,
   createStockAwareSaleCartItemFromProduct,
   mapPartyToSaleCustomer,
-  type StockAwareSaleCartItemDraft,
 } from "@/app/lib/sales/saleForm.utils"
 import QuickSaleProductPicker from "./QuickSaleProductPicker"
 import QuickSaleCartEditor from "./QuickSaleCartEditor"
@@ -44,8 +41,8 @@ export default function QuickSalePage() {
   const [search, setSearch] = useState("")
   const [cart, setCart] = useState<QuickSaleCartItem[]>([])
   const [customer, setCustomer] = useState<SaleCustomer>(EMPTY_SALE_CUSTOMER)
-  const [paymentMode, setPaymentMode] = useState<SalePaymentMode>("Cash")
-  const [paymentStatus, setPaymentStatus] = useState<SalePaymentStatus>("paid")
+  const [paymentMode, setPaymentMode] = useState<SalePaymentMode | "">("")
+  const [paymentStatus, setPaymentStatus] = useState<SalePaymentStatus | "">("")
   const [amountPaid, setAmountPaid] = useState("")
   const [note, setNote] = useState("")
   const [reference, setReference] = useState("")
@@ -94,6 +91,26 @@ export default function QuickSalePage() {
         ? 0
         : Math.min(Math.max(Number(amountPaid || 0), 0), totalAmount)
   const dueAmount = Math.max(totalAmount - normalizedPaidAmount, 0)
+  const customerNameRequired = dueAmount > 0
+  const customerNameReady = !customerNameRequired || Boolean(customer.name?.trim())
+  const gstinReady = !customer.gstin?.trim() || isValidGstin(customer.gstin)
+  const paymentReady =
+    Boolean(paymentMode) &&
+    Boolean(paymentStatus) &&
+    (
+      paymentStatus !== "partial" ||
+      (Number(amountPaid || 0) > 0 && Number(amountPaid || 0) < totalAmount)
+    )
+  const canSaveSale = cart.length > 0 && customerNameReady && gstinReady && paymentReady && !saving
+
+  const handlePaymentModeChange = (value: SetStateAction<SalePaymentMode | "">) => {
+    const nextValue = typeof value === "function" ? value(paymentMode) : value
+    setPaymentMode(nextValue)
+    if (!nextValue) {
+      setPaymentStatus("")
+      setAmountPaid("")
+    }
+  }
 
   const addProductToCart = (product: Product) => {
     setCart((current) => {
@@ -142,6 +159,14 @@ export default function QuickSalePage() {
   const handleSave = async () => {
     if (!cart.length) {
       toast.error(en.sales.addFirstProduct)
+      return
+    }
+    if (!paymentMode) {
+      toast.error(en.sales.paymentModeRequired)
+      return
+    }
+    if (!paymentStatus) {
+      toast.error(en.sales.paymentStatusRequired)
       return
     }
 
@@ -197,8 +222,8 @@ export default function QuickSalePage() {
 
       setCart([])
       setCustomer(EMPTY_SALE_CUSTOMER)
-      setPaymentMode("Cash")
-      setPaymentStatus("paid")
+      setPaymentMode("")
+      setPaymentStatus("")
       setAmountPaid("")
       setNote("")
       setReference("")
@@ -226,7 +251,7 @@ export default function QuickSalePage() {
         <div className="space-y-4">
           <QuickSaleCartEditor cart={cart} calculatedItems={calculatedItems} gstEnabled={transactionOptions.generateGstInvoice} onUpdateCartItem={updateCartItem} onRemoveCartItem={removeCartItem} />
 
-          <QuickSaleCheckout customerParties={customerParties} customer={customer} onCustomerPartyChange={handleCustomerPartyChange} setCustomer={setCustomer} paymentMode={paymentMode} setPaymentMode={setPaymentMode} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} amountPaid={amountPaid} setAmountPaid={setAmountPaid} note={note} setNote={setNote} reference={reference} setReference={setReference} totalAmount={totalAmount} taxableAmount={totals.taxableAmount} gstAmount={totals.gstAmount} dueAmount={dueAmount} cartLength={cart.length} saving={saving} transactionOptions={transactionOptions} setTransactionOptions={setTransactionOptions} profileWarnings={profileWarnings} onSave={handleSave} />
+        <QuickSaleCheckout customerParties={customerParties} customer={customer} onCustomerPartyChange={handleCustomerPartyChange} setCustomer={setCustomer} paymentMode={paymentMode} setPaymentMode={handlePaymentModeChange} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} amountPaid={amountPaid} setAmountPaid={setAmountPaid} note={note} setNote={setNote} reference={reference} setReference={setReference} totalAmount={totalAmount} taxableAmount={totals.taxableAmount} gstAmount={totals.gstAmount} dueAmount={dueAmount} cartLength={cart.length} saving={saving} canSaveSale={canSaveSale} transactionOptions={transactionOptions} setTransactionOptions={setTransactionOptions} profileWarnings={profileWarnings} onSave={handleSave} />
         </div>
       </section>
     </div>

@@ -38,7 +38,7 @@ export default function BusinessComparisonChart({ points }: BusinessComparisonCh
       <div className="relative mb-4 grid grid-cols-1 gap-3 min-[560px]:grid-cols-3">
         <div className="rounded-2xl bg-[var(--bg-card-strong)] px-4 py-3 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{en.reports.sales}</p>
-          <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(totalSales)}</p>
+          <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-600">{formatMoney(totalSales)}</p>
         </div>
         <div className="rounded-2xl bg-[var(--bg-card-strong)] px-4 py-3 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{en.reports.purchaseValue}</p>
@@ -46,7 +46,7 @@ export default function BusinessComparisonChart({ points }: BusinessComparisonCh
         </div>
         <div className="rounded-2xl bg-[var(--bg-card-strong)] px-4 py-3 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{en.reports.netMovement}</p>
-          <p className={`mt-1 text-lg font-bold ${margin >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-300"}`}>{formatMoney(margin)}</p>
+          <p className={`mt-1 text-lg font-bold ${margin >= 0 ? "text-emerald-600 dark:text-emerald-600" : "text-amber-600 dark:text-amber-300"}`}>{formatMoney(margin)}</p>
         </div>
       </div>
 

@@ -33,8 +33,8 @@ export default function QuickSaleCartEditor({
         <div className="space-y-4">
           {cart.map((item, index) => (
             <div key={item.productId} className="rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex align-items-center gap-2">
+              <div className="flex flex-wrap align-items-center justify-between gap-3">
+                <div className="flex align-items-end gap-2">
                   <p className="font-semibold capitalize text-[var(--text-primary)]">{item.name}</p>
                   <span className="text-xs text-[var(--text-secondary)]">(
                     {formatQuantity(item.availableQty, item.quantityUnit)} | {item.category || en.inventory.noCategory})
@@ -48,7 +48,7 @@ export default function QuickSaleCartEditor({
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-between">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 <QuantityStepper label={en.inventory.quantityToSell} value={item.quantity} onChange={(value) => onUpdateCartItem(item.productId, { quantity: value })} min={1} max={item.availableQty} unitLabel={item.quantityUnit} decreaseLabel={en.pos.decreaseQuantity} increaseLabel={en.pos.increaseQuantity} />
                 <Input type="number" min={0} label={en.inventory.saleRate} value={item.salePrice} onChange={(event) => onUpdateCartItem(item.productId, { salePrice: event.target.value })} />
                 <Input type="number" min={0} label={en.sales.discount} value={item.discount} onChange={(event) => onUpdateCartItem(item.productId, { discount: event.target.value })} placeholder={en.sales.discountPlaceholder} />
@@ -60,10 +60,7 @@ export default function QuickSaleCartEditor({
           ))}
 
           {!cart.length ? (
-            <SimpleEmptyState
-              title={en.sales.emptyCartTitle}
-              description={en.sales.emptyCartDescription}
-              icon={<ShoppingCart size={18} aria-hidden="true" />}
+            <SimpleEmptyState title={en.sales.emptyCartTitle} description={en.sales.emptyCartDescription} icon={<ShoppingCart size={18} aria-hidden="true" />}
             />
           ) : null}
         </div>

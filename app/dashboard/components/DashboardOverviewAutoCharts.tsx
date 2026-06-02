@@ -1,17 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import DashboardOverviewCharts from "@/app/dashboard/components/DashboardOverviewCharts"
+import useAuthLiveQuery from "@/app/hooks/useAuthLiveQuery"
 import { buildOverviewChartData, type OverviewChartData, type OverviewSourceRecord } from "@/app/lib/dashboard/overviewChartData"
+import { db } from "@/app/lib/db"
 import { en } from "@/app/messages/en"
-
-type TableLike = {
-  toArray?: () => Promise<unknown[]>
-}
-
-type DbLike = Record<string, unknown> & {
-  table?: (name: string) => TableLike
-}
 
 type DashboardChartRecords = {
   sales: OverviewSourceRecord[]
@@ -32,52 +26,27 @@ const EMPTY_RECORDS: DashboardChartRecords = {
 }
 
 export default function DashboardOverviewAutoCharts() {
-  const [records, setRecords] = useState<DashboardChartRecords>(EMPTY_RECORDS)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { data: records, loading } = useAuthLiveQuery<DashboardChartRecords>(
+    EMPTY_RECORDS,
+    async (userId) => {
+      setError(null)
+      const [sales, purchases, products, gstInvoices, parties, expenses] = await Promise.all([
+        readTable(db, "sales", userId),
+        readTable(db, "purchases", userId),
+        readTable(db, "products", userId),
+        readTable(db, "invoices", userId),
+        readTable(db, "parties", userId),
+        readTable(db, "expenses", userId),
+      ])
 
-  useEffect(() => {
-    let active = true
-
-    async function loadOverviewCharts() {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const dbModule = await import("@/app/lib/db")
-        const database = getDatabase(dbModule)
-
-        if (!database) {
-          if (active) setRecords(EMPTY_RECORDS)
-          return
-        }
-
-        const [sales, purchases, products, gstInvoices, parties, expenses] = await Promise.all([
-          readFirstAvailableTable(database, ["sales", "saleRecords", "transactions"]),
-          readFirstAvailableTable(database, ["purchases", "purchaseRecords"]),
-          readFirstAvailableTable(database, ["products", "inventory", "items"]),
-          readFirstAvailableTable(database, ["gstInvoices", "invoices", "gst_invoices"]),
-          readFirstAvailableTable(database, ["parties", "customers", "suppliers"]),
-          readFirstAvailableTable(database, ["expenses", "expenseRecords"]),
-        ])
-
-        if (!active) return
-
-        setRecords({ sales, purchases, products, gstInvoices, parties, expenses })
-      } catch (loadError) {
-        console.error("Dashboard overview chart data load failed", loadError)
-        if (active) setError(en.notifications.reportsLoadFailed)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    void loadOverviewCharts()
-
-    return () => {
-      active = false
-    }
-  }, [])
+      return { sales, purchases, products, gstInvoices, parties, expenses }
+    },
+    (loadError) => {
+      console.error("Dashboard overview chart data load failed", loadError)
+      setError(en.notifications.reportsLoadFailed)
+    },
+  )
 
   const data: OverviewChartData = useMemo(
     () =>
@@ -95,38 +64,14 @@ export default function DashboardOverviewAutoCharts() {
   return <DashboardOverviewCharts data={data} loading={loading} error={error} />
 }
 
-function getDatabase(moduleValue: unknown): DbLike | null {
-  if (!moduleValue || typeof moduleValue !== "object") return null
-  const moduleRecord = moduleValue as Record<string, unknown>
-  const candidates = [moduleRecord.db, moduleRecord.default, moduleRecord.database]
-  const match = candidates.find((candidate): candidate is DbLike => Boolean(candidate) && typeof candidate === "object")
-  return match || null
-}
+type DashboardTableName = "sales" | "purchases" | "products" | "invoices" | "parties" | "expenses"
 
-async function readFirstAvailableTable(database: DbLike, names: string[]) {
-  for (const name of names) {
-    const rows = await readTable(database, name)
-    if (rows.length) return rows
-  }
-  return []
-}
-
-async function readTable(database: DbLike, name: string): Promise<OverviewSourceRecord[]> {
+async function readTable(database: typeof db, tableName: DashboardTableName, userId: string): Promise<OverviewSourceRecord[]> {
   try {
-    const directTable = database[name]
-    const table = isTableLike(directTable) ? directTable : database.table?.(name)
-    const rows = await table?.toArray?.()
-    return toRecordList(rows)
+    const table = database.table(tableName)
+    const rows = await table.where("userId").equals(userId).toArray()
+    return rows.filter((item): item is OverviewSourceRecord => Boolean(item) && typeof item === "object" && !Array.isArray(item))
   } catch {
     return []
   }
-}
-
-function isTableLike(value: unknown): value is TableLike {
-  return Boolean(value) && typeof value === "object" && typeof (value as TableLike).toArray === "function"
-}
-
-function toRecordList(value: unknown): OverviewSourceRecord[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is OverviewSourceRecord => Boolean(item) && typeof item === "object" && !Array.isArray(item))
 }

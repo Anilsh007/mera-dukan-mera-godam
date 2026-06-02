@@ -1,53 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { onAuthStateChanged } from "firebase/auth"
+import { useState } from "react"
 import Button from "@/app/components/ui/Button"
-import { notify as toast } from "@/app/lib/notifications"
 import { auth } from "@/app/lib/firebase"
+import { notify as toast } from "@/app/lib/notifications"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
-import useInventoryData from "@/app/hooks/useInventoryData"
 import type { PurchasePaymentStatus, PurchaseRecord } from "@/app/lib/db"
 import StockHistoryTabs from "../all-inventory/StockHistoryTabs"
 import PurchaseHistory from "../recent-purchases/PurchaseHistory"
 import CompletePurchaseDetailsModal from "../purchases/CompletePurchaseDetailsModal"
-import { completeQuickPurchaseDetails, loadPurchases } from "../purchases/purchase.service"
+import { completeQuickPurchaseDetails } from "../purchases/purchase.service"
+import useInventoryData from "@/app/hooks/useInventoryData"
+import usePurchases from "@/app/hooks/usePurchases"
 import { en } from "@/app/messages/en"
 
 type ViewTab = "history" | "recent-purchases"
 
 export default function StockHistoryPage() {
   const { products, logs, loading } = useInventoryData()
+  const { purchases, loading: purchasesLoading } = usePurchases()
   const [viewTab, setViewTab] = useState<ViewTab>("history")
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([])
-  const [purchasesLoading, setPurchasesLoading] = useState(true)
   const [selectedPendingPurchase, setSelectedPendingPurchase] = useState<PurchaseRecord | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
-
-  useEffect(() => {
-    if (!auth) return
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setPurchases([])
-        setPurchasesLoading(false)
-        return
-      }
-
-      try {
-        setPurchasesLoading(true)
-        const data = await loadPurchases(requireUserIdentityFromAuthUser(user))
-        setPurchases(data)
-      } catch (error) {
-        console.error("Failed to load purchases", error)
-        toast.error(en.purchases.loadFailed)
-      } finally {
-        setPurchasesLoading(false)
-      }
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   const handleCompleteDetails = async (values: {
     billNo: string
@@ -67,9 +41,6 @@ export default function StockHistoryPage() {
         purchaseId: selectedPendingPurchase.id,
         ...values,
       })
-
-      const refreshed = await loadPurchases(requireUserIdentityFromAuthUser(auth?.currentUser))
-      setPurchases(refreshed)
       toast.success(en.purchases.quickDetailsCompleted)
       setSelectedPendingPurchase(null)
     } catch (error) {

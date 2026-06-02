@@ -76,7 +76,7 @@ function ProductGroupCard({
 
                     {/* Left */}
                     <div className="min-w-0 flex items-center gap-2">
-                        <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 shrink-0"> <Boxes className="h-4 w-4" /> </div>
+                        <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-600 shrink-0"> <Boxes className="h-4 w-4" /> </div>
 
                         <h3 className="truncate text-base sm:text-lg font-semibold capitalize"> {group.label} </h3>
                     </div>

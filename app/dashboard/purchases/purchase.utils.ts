@@ -3,7 +3,7 @@ import { formatCurrency as formatIndianCurrency } from "@/app/lib/formatters"
 
 export function calculatePaymentAmounts(
   totalAmount: number,
-  paymentStatus: PurchasePaymentStatus,
+  paymentStatus: PurchasePaymentStatus | "",
   amountPaid: number | string
 ) {
   const parsedPaid = Number(amountPaid || 0)

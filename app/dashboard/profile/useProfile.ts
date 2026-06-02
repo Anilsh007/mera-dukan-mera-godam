@@ -1,10 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { liveQuery } from "dexie"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/app/lib/firebase"
-import { deleteProfileFromDb, loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
-import { deleteProfileFromSupabase, loadProfileFromSupabase, saveProfileToSupabase } from "@/app/lib/profile/profileSupabase.service"
+import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
+import { loadProfileFromSupabase } from "@/app/lib/profile/profileSupabase.service"
+import { saveProfileWithSync, deleteProfileWithSync } from "@/app/lib/profile/profilePersistence.service"
+import { stripProfileMeta } from "@/app/lib/profile/profileSync.utils"
 import { migrateLocalUserData } from "@/app/lib/userDataMigration"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { notify as toast } from "@/app/lib/notifications"
@@ -61,7 +64,7 @@ const defaultState: ProfileState = {
   business: {
     shopName: "",
     gstNumber: "",
-    businessType: "retail",
+    businessType: "",
     upiId: "",
     invoicePrefix: "INV",
     logoUrl: "",
@@ -85,15 +88,14 @@ const defaultState: ProfileState = {
 
 export default function useProfile() {
   const [profile, setProfile] = useState<ProfileState>(defaultState)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(auth))
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let isMounted = true
+    let unsubscribeLocalProfile: { unsubscribe: () => void } | null = null
 
     if (!auth) {
-      setProfile(defaultState)
-      setLoading(false)
       return () => {
         isMounted = false
       }
@@ -101,6 +103,8 @@ export default function useProfile() {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return
+      unsubscribeLocalProfile?.unsubscribe()
+      unsubscribeLocalProfile = null
 
       if (!user) {
         setProfile(defaultState)
@@ -133,8 +137,19 @@ export default function useProfile() {
         }
 
         if (!localProfile || latestProfile?.updatedAt !== localProfile?.updatedAt) {
-          await persistProfileLocally(mergedLatest, userId);
+          await saveProfileToDb(stripProfileMeta(mergedLatest), userId)
         }
+
+        if (!isMounted) return
+        unsubscribeLocalProfile = liveQuery(() => loadProfileFromDb(userId)).subscribe({
+          next: (nextLocalProfile) => {
+            if (!isMounted || !nextLocalProfile) return
+            setProfile(mergeWithFirebaseProfile(nextLocalProfile, user))
+          },
+          error: () => {
+            if (isMounted) toast.error(en.profile.loadFailed)
+          },
+        })
       } catch {
         toast.error(en.profile.loadFailed)
       } finally {
@@ -146,6 +161,7 @@ export default function useProfile() {
 
     return () => {
       isMounted = false
+      unsubscribeLocalProfile?.unsubscribe()
       unsubscribe()
     }
   }, [])
@@ -159,25 +175,9 @@ export default function useProfile() {
 
     try {
       const mergedProfile = mergeWithFirebaseProfile(newData, user)
-
-      // 1. Save locally
-      const savedProfile = await persistProfileLocally(mergedProfile, userId)
+      const { profile: savedProfile, cloudSyncSkipped } = await saveProfileWithSync(mergedProfile, userId)
       setProfile(savedProfile)
-
-      // 2. Save to Supabase
-      try {
-        await saveProfileToSupabase(stripProfileMeta(savedProfile))
-        return { profile: savedProfile }
-      } catch (error) {
-        if (isSupabaseRlsError(error)) {
-          return {
-            profile: savedProfile,
-            cloudSyncSkipped: true,
-          }
-        }
-
-        throw error
-      }
+      return { profile: savedProfile, cloudSyncSkipped }
     } catch (error) {
       throw error
     } finally {
@@ -193,19 +193,9 @@ export default function useProfile() {
     setSaving(true)
 
     try {
-      await deleteProfileFromDb(userId)
+      const { cloudSyncSkipped } = await deleteProfileWithSync(userId)
       setProfile(buildFirebaseProfile(user))
-
-      try {
-        await deleteProfileFromSupabase()
-        return { cloudSyncSkipped: false }
-      } catch (error) {
-        if (isSupabaseRlsError(error)) {
-          return { cloudSyncSkipped: true }
-        }
-
-        throw error
-      }
+      return { cloudSyncSkipped }
     } finally {
       setSaving(false)
     }
@@ -266,24 +256,4 @@ function getLatestProfile(localProfile: ProfileState | null, cloudProfile: Profi
   const cloudTime = cloudProfile.updatedAt ? new Date(cloudProfile.updatedAt).getTime() : 0;
 
   return cloudTime >= localTime ? cloudProfile : localProfile;
-}
-
-function stripProfileMeta(profile: ProfileState): Omit<ProfileState, "userId" | "updatedAt"> {
-  const rest: ProfileState = { ...profile }
-  delete rest.userId
-  delete rest.updatedAt
-  return rest
-}
-
-async function persistProfileLocally(profile: ProfileState, userId: string): Promise<ProfileState> {
-  return saveProfileToDb(stripProfileMeta(profile), userId)
-}
-
-function isSupabaseRlsError(error: unknown) {
-  if (!error || typeof error !== "object") return false
-
-  const code = "code" in error ? error.code : undefined
-  const message = "message" in error ? error.message : undefined
-
-  return code === "42501" || message === "new row violates row-level security policy for table \"profiles\""
 }

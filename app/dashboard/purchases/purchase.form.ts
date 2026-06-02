@@ -1,4 +1,3 @@
-import { DEFAULT_QUANTITY_UNIT } from "@/app/lib/quantityUnit"
 import type { PurchasePaymentStatus } from "@/app/lib/db"
 import type { PurchaseRow } from "./purchase.types"
 import { en } from "@/app/messages/en"
@@ -16,7 +15,7 @@ export function createPurchaseRow(): PurchaseRow {
     locationName: "",
     price: "",
     quantity: "",
-    quantityUnit: DEFAULT_QUANTITY_UNIT,
+    quantityUnit: "",
     note: "",
   }
 }
@@ -49,7 +48,7 @@ export function validatePurchaseForm({
   supplierName: string
   purchaseDate: string
   rows: PurchaseRow[]
-  paymentStatus: PurchasePaymentStatus
+  paymentStatus: PurchasePaymentStatus | ""
   amountPaid: string
   totalAmount: number
 }) {
@@ -68,6 +67,10 @@ export function validatePurchaseForm({
     setFocus("purchase-date")
   }
   if (!rows.length) errors.push(en.purchases.validation.addAtLeastOneProduct)
+  if (!paymentStatus) {
+    errors.push(en.purchases.validation.paymentStatusRequired)
+    setFocus("purchase-payment-status")
+  }
 
   rows.forEach((row, index) => {
     const rowNo = index + 1

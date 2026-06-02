@@ -29,9 +29,9 @@ export default function AddressTab({ data }: Props) {
           <p className="text-lg font-medium text-[var(--text-primary)] mb-2">{data.business.shopName}</p>
           <p className="text-[var(--text-secondary)] whitespace-pre-wrap mb-4">{data.address.address}</p>
           <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm">{data.address.district}</span>
-            <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm">{data.address.state}</span>
-            <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-mono">{en.profile.pin}: {data.address.pincode}</span>
+            <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-600 text-sm">{data.address.district}</span>
+            <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-600 text-sm">{data.address.state}</span>
+            <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-600 text-sm font-mono">{en.profile.pin}: {data.address.pincode}</span>
           </div>
         </div>
       </div>

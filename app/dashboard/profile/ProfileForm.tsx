@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
 import { MdSave, MdClose } from "react-icons/md"
 import PersonalInfo from "./sections/PersonalInfo"
 import BusinessInfo from "./sections/BusinessInfo"
+import GodownInfo from "./sections/GodownInfo"
 import AddressInfo from "./sections/AddressInfo"
 import BankingInfo from "./sections/BankingInfo"
 import TermsSection from "./sections/TermsSection"
@@ -24,10 +25,6 @@ type EditableProfileSection = "personal" | "business" | "address" | "banking" | 
 export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFormProps) {
   const [profile, setProfile] = useState<ProfileState>(initialData)
   const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setProfile(initialData)
-  }, [initialData])
 
   const handleChange = (section: EditableProfileSection, field: string, value: string) => {
     setProfile((prev) => ({
@@ -77,6 +74,8 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
       <PersonalInfo data={profile.personal} onChange={(field, value) => handleChange("personal", field, value)} />
 
       <BusinessInfo data={profile.business} onChange={(field, value) => handleChange("business", field, value)} />
+
+      <GodownInfo />
 
       <AddressInfo data={profile.address} onChange={(field, value) => handleChange("address", field, value)} />
 

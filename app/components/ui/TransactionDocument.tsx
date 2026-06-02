@@ -4,7 +4,7 @@ import Link from "next/link"
 import SurfaceCard from "@/app/components/ui/SurfaceCard"
 import InfoTile from "@/app/components/ui/InfoTile"
 import StatusBadge from "@/app/components/ui/StatusBadge"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { en } from "@/app/messages/en"
 import { formatIndianDateTime } from "@/app/lib/formatters"
@@ -89,7 +89,7 @@ export default function TransactionDocument({
       )}
 
       {showShareActions && (
-        <ShareActions document={documentData} compact className="print:hidden" />
+        <TransactionActionPanel document={documentData} compact className="print:hidden" />
       )}
 
       <SurfaceCard className="overflow-hidden p-0 print:border-none print:shadow-none">

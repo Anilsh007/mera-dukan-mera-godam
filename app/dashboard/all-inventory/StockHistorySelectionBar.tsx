@@ -1,5 +1,5 @@
 import ActionChip from "@/app/components/ui/ActionChip"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import type { TransactionDocumentData } from "@/app/lib/transactionDocument"
 import { en } from "@/app/messages/en"
 import { FileText, X } from "lucide-react"
@@ -39,7 +39,7 @@ export default function StockHistorySelectionBar({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
-        {shareDocument && <ShareActions document={shareDocument} compact showPrint={false} />}
+        {shareDocument && <TransactionActionPanel document={shareDocument} compact showPrint={false} />}
         <ActionChip
           label={en.stockHistory.createGstBill}
           icon={<FileText size={16} aria-hidden="true" />}
@@ -61,7 +61,7 @@ export default function StockHistorySelectionBar({
         />
       </div>
       {actionMessage && (
-        <div className="basis-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+        <div className="basis-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-600">
           {actionMessage}
         </div>
       )}

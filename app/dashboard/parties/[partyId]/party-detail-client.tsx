@@ -9,7 +9,7 @@ import PageHeader from "@/app/components/ui/PageHeader"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import SimpleEmptyState from "@/app/components/ui/SimpleEmptyState"
 import PaymentStatusBadge from "@/app/components/ui/PaymentStatusBadge"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import PartyPaymentModal from "@/app/components/parties/PartyPaymentModal"
 import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import usePartyDetail from "@/app/hooks/usePartyDetail"
@@ -80,7 +80,7 @@ export default function PartyDetailClientPage({ partyId }: { partyId: string }) 
                 <InfoTile valueClassName="mt-1 text-sm font-semibold text-[var(--text-primary)]" label={en.parties.balanceDue} value={formatCurrency(detail.balanceDue)} />
               </div>
               <div className="space-y-3">
-                <ShareActions document={statementDocument} message={reminderMessage} />
+                <TransactionActionPanel document={statementDocument} message={reminderMessage} />
                 <Link href={detail.party.type === "supplier" ? "/dashboard/purchases" : "/dashboard/quick-sale"}>
                   <Button type="button" variant="primary" title={detail.party.type === "supplier" ? en.suppliers.newPurchase : en.sales.createNewSale} className="w-full" />
                 </Link>
@@ -99,7 +99,7 @@ export default function PartyDetailClientPage({ partyId }: { partyId: string }) 
                 <p className="text-lg font-bold text-[var(--text-primary)]">{en.parties.ledgerHistory}</p>
                 <p className="text-sm text-[var(--text-secondary)]">{en.parties.printShareDownload}</p>
               </div>
-              <ShareActions document={statementDocument} message={reminderMessage} />
+              <TransactionActionPanel document={statementDocument} message={reminderMessage} />
             </div>
             <div className="mt-4 space-y-3">
               {detail.ledger.length ? detail.ledger.map((entry) => (

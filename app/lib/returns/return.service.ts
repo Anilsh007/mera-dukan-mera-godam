@@ -12,13 +12,15 @@ import {
   type SaleCustomer,
   type StockTransactionProduct,
 } from "@/app/lib/db"
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { adjustAdvancedInventoryStock } from "@/app/lib/advancedInventory/advancedInventory.service"
 import { ensureCustomerCapacity, ensureSupplierCapacity, assertFeatureAccess, incrementUsage } from "@/app/lib/subscription/subscription.service"
 import { ensurePartyRecord } from "@/app/lib/parties/party.service"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { roundCurrency } from "@/app/lib/gst.utils"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
+import { normalizeContactLike } from "@/app/lib/normalization.utils"
 import { en } from "@/app/messages/en"
+import { assertLinkedSaleAllowsReturn } from "@/app/lib/returns/linkedSaleReturnGuard"
 import {
   buildReturnAuditNote,
   buildReturnDocumentNumber,
@@ -92,7 +94,16 @@ export async function saveReturnDocument(input: SaveReturnDocumentInput) {
   const documentDateTime = input.documentDateTime || now
   const documentDate = input.documentDate || documentDateTime.slice(0, 10)
   const documentNo = input.documentNo?.trim() || buildReturnDocumentNumber(kind)
-  const linkedSale = input.linkedSaleId ? await db.sales.get(input.linkedSaleId) : undefined
+  const linkedSale = input.linkedSaleId
+    ? await assertLinkedSaleAllowsReturn(
+        input.linkedSaleId,
+        documentItems.map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          quantity: Number(item.quantity || 0),
+        })),
+      )
+    : undefined
   const linkedPurchase = input.linkedPurchaseId ? await db.purchases.get(input.linkedPurchaseId) : undefined
   const linkedInvoice = input.linkedInvoiceId ? await db.invoices.get(input.linkedInvoiceId) : undefined
   const linkedReference = linkedSale?.receiptNo || linkedPurchase?.billNo || linkedInvoice?.invoiceNo
@@ -144,7 +155,7 @@ export async function saveReturnDocument(input: SaveReturnDocumentInput) {
     await db.returnDocuments.add(record)
   })
 
-  await autoSyncToSupabase()
+  await requestSupabaseSync("return document")
   await incrementUsage(input.userId, "returns")
   return record
 }
@@ -167,18 +178,7 @@ function validateItems(items: ReturnDraftLineInput[]) {
 }
 
 function normalizeParty(party?: SaleCustomer) {
-  if (!party) return undefined
-  const normalized: SaleCustomer = {
-    name: party.name?.trim() || undefined,
-    gstin: party.gstin?.trim().toUpperCase() || undefined,
-    phone: party.phone?.trim() || undefined,
-    email: party.email?.trim() || undefined,
-    address: party.address?.trim() || undefined,
-    city: party.city?.trim() || undefined,
-    state: party.state?.trim() || undefined,
-    pincode: party.pincode?.trim() || undefined,
-  }
-  return Object.values(normalized).some(Boolean) ? normalized : undefined
+  return normalizeContactLike(party) as SaleCustomer | undefined
 }
 
 async function ensureCorrectionParty({

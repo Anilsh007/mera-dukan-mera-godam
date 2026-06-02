@@ -6,14 +6,14 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useCashbookEntries from "@/app/hooks/useCashbookEntries"
 import useExpenses from "@/app/hooks/useExpenses"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
 import usePurchases from "@/app/hooks/usePurchases"
 import useSales from "@/app/hooks/useSales"
-import { saveCashbookEntry } from "@/app/lib/accounting/accounting.service"
+import { deleteCashbookEntry, saveCashbookEntry, updateCashbookEntry } from "@/app/lib/accounting/accounting.service"
 import {
   buildCashbookNumber,
   buildCashbookReportRows,
@@ -44,13 +44,14 @@ export default function CashbookPage() {
   const [entryNo, setEntryNo] = useState(() => buildCashbookNumber())
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [type, setType] = useState<CashbookEntryType>("cash-in")
-  const [account, setAccount] = useState<CashbookAccount>("cash")
+  const [type, setType] = useState<CashbookEntryType | "">("")
+  const [account, setAccount] = useState<CashbookAccount | "">("")
   const [amount, setAmount] = useState("")
   const [paymentMode, setPaymentMode] = useState<string>(() => en.accounting.paymentModeOptions.cash)
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
   const [saving, setSaving] = useState(false)
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
 
   const canCreate = accountingGate.allowed && !accountingGate.loading
   const entries = useMemo(
@@ -66,14 +67,49 @@ export default function CashbookPage() {
   const shareMessage = buildRowsShareMessage(rows, en.accounting.cashbookTitle)
 
   const resetForm = () => {
+    setEditingEntryId(null)
     setEntryNo(buildCashbookNumber())
     setEntryDate(new Date().toISOString().slice(0, 10))
-    setType("cash-in")
-    setAccount("cash")
+    setType("")
+    setAccount("")
     setAmount("")
     setPaymentMode(en.accounting.paymentModeOptions.cash)
     setReference("")
     setNote("")
+  }
+
+  const handleEditEntry = (entryId: string) => {
+    const entry = manualEntries.find((candidate) => candidate.id === entryId)
+    if (!entry) return
+
+    setEditingEntryId(entry.id)
+    setEntryNo(entry.entryNo)
+    setEntryDate(entry.entryDate)
+    setType(entry.type)
+    setAccount(entry.account)
+    setAmount(String(entry.amount))
+    setPaymentMode(entry.paymentMode || en.accounting.paymentModeOptions.cash)
+    setReference(entry.reference || "")
+    setNote(entry.note)
+  }
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!window.confirm("Delete this manual cashbook entry?")) return
+
+    try {
+      setSaving(true)
+      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
+      await deleteCashbookEntry(userId, entryId)
+      if (editingEntryId === entryId) {
+        resetForm()
+      }
+      toast.success("Cashbook entry deleted.")
+    } catch (error) {
+      console.error("Cashbook entry delete failed", error)
+      toast.error(error instanceof Error ? error.message : en.accounting.cashbookEntrySaveFailed)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSave = async () => {
@@ -81,21 +117,44 @@ export default function CashbookPage() {
       toast.error(en.subscription.subscriptionRequired)
       return
     }
+    if (!type) {
+      toast.error(en.accounting.typeRequired)
+      return
+    }
+    if (!account) {
+      toast.error(en.accounting.accountRequired)
+      return
+    }
     try {
       setSaving(true)
       const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
-      await saveCashbookEntry({
-        userId,
-        entryNo,
-        entryDate,
-        type,
-        account,
-        amount: Number(amount || 0),
-        paymentMode,
-        reference,
-        note,
-      })
-      toast.success(en.accounting.cashbookEntrySaved)
+      if (editingEntryId) {
+        await updateCashbookEntry(editingEntryId, {
+          userId,
+          entryNo,
+          entryDate,
+          type,
+          account,
+          amount: Number(amount || 0),
+          paymentMode,
+          reference,
+          note,
+        })
+        toast.success("Cashbook entry updated.")
+      } else {
+        await saveCashbookEntry({
+          userId,
+          entryNo,
+          entryDate,
+          type,
+          account,
+          amount: Number(amount || 0),
+          paymentMode,
+          reference,
+          note,
+        })
+        toast.success(en.accounting.cashbookEntrySaved)
+      }
       resetForm()
     } catch (error) {
       console.error("Cashbook entry save failed", error)
@@ -125,7 +184,7 @@ export default function CashbookPage() {
       <PageHeader
         title={en.accounting.cashbookTitle}
         description={en.accounting.cashbookDescription}
-        actions={<ShareActions message={shareMessage} subject={en.accounting.cashbookTitle} filename="cashbook-summary.pdf" showPrint={false} />}
+        actions={<TransactionActionPanel message={shareMessage} subject={en.accounting.cashbookTitle} filename="cashbook-summary.pdf" showPrint={false} />}
       />
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -138,7 +197,7 @@ export default function CashbookPage() {
       <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.3fr)]">
         <form className="premium-surface space-y-4 rounded-3xl p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void handleSave() }}>
           <div>
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.accounting.manualCashbookEntry}</h2>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">{editingEntryId ? `${en.common.edit} ${en.accounting.manualCashbookEntry}` : en.accounting.manualCashbookEntry}</h2>
             <p className="text-sm text-[var(--text-secondary)]">{en.accounting.manualCashbookHelp}</p>
           </div>
           <Input label={en.accounting.entryNo} value={entryNo} onChange={(event) => setEntryNo(event.target.value)} />
@@ -147,26 +206,31 @@ export default function CashbookPage() {
             <SelectField
               label={en.accounting.type}
               value={type}
-              onChange={(event) => setType(event.target.value as CashbookEntryType)}
+              onChange={(event) => setType(event.target.value as CashbookEntryType | "")}
               options={["cash-in", "cash-out"].map((option) => ({ value: option, label: en.accounting.cashbookTypes[option as CashbookEntryType] }))}
             />
             <SelectField
               label={en.accounting.account}
               value={account}
-              onChange={(event) => setAccount(event.target.value as CashbookAccount)}
+              onChange={(event) => setAccount(event.target.value as CashbookAccount | "")}
               options={CASHBOOK_ACCOUNTS.map((option) => ({ value: option, label: getCashbookAccountLabel(option) }))}
             />
           </div>
           <Input label={en.accounting.amount} type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} />
-          <SelectField
-            label={en.accounting.paymentMode}
-            value={paymentMode}
-            onChange={(event) => setPaymentMode(event.target.value)}
-            options={PAYMENT_MODES.map((option) => ({ value: option, label: option }))}
-          />
+            <SelectField
+              label={en.accounting.paymentMode}
+              value={paymentMode}
+              onChange={(event) => setPaymentMode(event.target.value)}
+              options={PAYMENT_MODES.map((option) => ({ value: option, label: option }))}
+            />
           <Input label={en.accounting.reference} value={reference} onChange={(event) => setReference(event.target.value)} placeholder={en.accounting.referencePlaceholder} />
           <Input label={en.accounting.note} value={note} onChange={(event) => setNote(event.target.value)} placeholder={en.accounting.cashbookNotePlaceholder} />
-          <Button type="submit" title={en.accounting.saveCashbookEntry} loading={saving} disabled={!canCreate} className="w-full" />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="submit" title={editingEntryId ? en.profile.saveChanges : en.accounting.saveCashbookEntry} loading={saving} disabled={!canCreate} className="w-full" />
+            {editingEntryId ? (
+              <Button type="button" variant="outline" title={en.common.cancel} onClick={resetForm} className="w-full sm:w-auto" />
+            ) : null}
+          </div>
         </form>
 
         <section className="premium-surface space-y-4 rounded-3xl p-4 sm:p-5">
@@ -184,7 +248,15 @@ export default function CashbookPage() {
             <p className="text-sm text-[var(--text-secondary)]">{en.common.loading}</p>
           ) : dayEntries.length ? (
             <div className="space-y-3">
-              {dayEntries.map((entry) => <CashbookEntryCard key={entry.id} entry={entry} />)}
+                {dayEntries.map((entry) => (
+                  <CashbookEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    onEdit={entry.source === "manual" ? () => handleEditEntry(entry.id) : undefined}
+                    onDelete={entry.source === "manual" ? () => void handleDeleteEntry(entry.id) : undefined}
+                    loading={saving}
+                  />
+                ))}
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-[var(--border-input)] p-6 text-center">
@@ -198,7 +270,17 @@ export default function CashbookPage() {
   )
 }
 
-function CashbookEntryCard({ entry }: { entry: CashbookViewEntry }) {
+function CashbookEntryCard({
+  entry,
+  onEdit,
+  onDelete,
+  loading,
+}: {
+  entry: CashbookViewEntry
+  onEdit?: () => void
+  onDelete?: () => void
+  loading?: boolean
+}) {
   const isIn = entry.type === "cash-in"
   return (
     <article className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-4">
@@ -213,7 +295,15 @@ function CashbookEntryCard({ entry }: { entry: CashbookViewEntry }) {
           </p>
           <p className="mt-1 text-xs text-[var(--text-secondary)]">{entry.reference || en.common.notAvailable}</p>
         </div>
-        <p className={`text-lg font-bold ${isIn ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>{isIn ? "+" : "-"}{formatAccountingMoney(entry.amount)}</p>
+        <div className="flex flex-col items-end gap-2">
+          <p className={`text-lg font-bold ${isIn ? "text-emerald-600 dark:text-emerald-600" : "text-amber-600 dark:text-amber-600"}`}>{isIn ? "+" : "-"}{formatAccountingMoney(entry.amount)}</p>
+          {onEdit && onDelete ? (
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" title={en.common.edit} onClick={onEdit} className="min-h-9 px-3 py-1 text-xs" />
+               <Button type="button" variant="danger" title={en.common.delete} onClick={onDelete} loading={loading} className="min-h-9 px-3 py-1 text-xs" />
+              </div>
+            ) : null}
+        </div>
       </div>
     </article>
   )

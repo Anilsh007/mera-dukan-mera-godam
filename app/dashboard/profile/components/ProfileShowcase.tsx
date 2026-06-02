@@ -8,6 +8,7 @@ import OverviewTab from "../tabs/OverviewTab"
 import BusinessTab from "../tabs/BusinessTab"
 import AddressTab from "../tabs/AddressTab"
 import BusinessCard from "./BusinessCard"
+import GodownCard from "./GodownCard"
 import { ProfileData } from "@/app/lib/profile/profile.service"
 import { en } from "@/app/messages/en"
 
@@ -52,6 +53,9 @@ export default function ProfileShowcase({ data, onEdit }: Props) {
 
         <div className="min-w-0 lg:col-span-1">
           <BusinessCard data={data} />
+          <div className="mt-6">
+            <GodownCard />
+          </div>
         </div>
       </div>
 

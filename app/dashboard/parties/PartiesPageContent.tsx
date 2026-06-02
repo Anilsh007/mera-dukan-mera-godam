@@ -155,7 +155,12 @@ export default function PartiesPageContent({
         <SimpleEmptyState title={en.parties.noPartiesTitle} description={en.parties.noPartiesDescription} />
       ) : null}
 
-      <PartyFormModal open={showCreate} type={defaultType === "customer" ? "customer" : "both"} onClose={() => setShowCreate(false)} />
+      <PartyFormModal
+        key={`${showCreate}-${defaultType}`}
+        open={showCreate}
+        type={defaultType === "customer" ? "customer" : "both"}
+        onClose={() => setShowCreate(false)}
+      />
     </div>
   )
 }

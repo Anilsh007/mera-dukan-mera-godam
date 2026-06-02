@@ -1,12 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { ArrowDownLeft, ArrowUpRight, FileText, Link2, RotateCcw, Search, Trash2 } from "lucide-react"
-import Button from "@/app/components/ui/Button"
-import Input from "@/app/components/ui/Input"
-import Modal from "@/app/components/ui/Modal"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ArrowUpRight, FileText, RotateCcw } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import PageHeader from "@/app/components/ui/PageHeader"
-import ShareActions from "@/app/components/ui/ShareActions"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
@@ -20,54 +17,32 @@ import { auth } from "@/app/lib/firebase"
 import { formatCurrency } from "@/app/lib/formatters"
 import { roundCurrency } from "@/app/lib/gst.utils"
 import { notify as toast } from "@/app/lib/notifications"
-import { buildReturnTransactionDocument } from "@/app/lib/returns/return.documents"
 import { saveReturnDocument } from "@/app/lib/returns/return.service"
 import {
   buildReturnDocumentNumber,
   calculateReturnLine,
   calculateReturnTotals,
   getDefaultStockImpact,
-  getReturnKindLabel,
 } from "@/app/lib/returns/return.utils"
 import { buildBusinessDocumentProfile } from "@/app/lib/transactionDocument"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
-import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { en } from "@/app/messages/en"
 import { EMPTY_SALE_CUSTOMER, mapPartyToSaleCustomer } from "@/app/lib/sales/saleForm.utils"
 import type {
   Product,
-  PurchaseRecord,
   ReturnDocumentKind,
   ReturnStockImpact,
   SaleCustomer,
-  SaleRecord,
 } from "@/app/lib/db"
-
+import ReturnsEditor from "./ReturnsEditor"
+import ReturnsSidebar from "./ReturnsSidebar"
+import ReturnsConfirmModal from "./ReturnsConfirmModal"
+import type { DraftItem } from "./returns.types"
+import { createDraftItemFromProduct, fromPurchaseItem, fromSaleItem } from "./returns.utils"
 const SEARCH_LIMIT = 8
-const RETURN_KINDS: ReturnDocumentKind[] = [
-  "sales-return",
-  "purchase-return",
-  "credit-note",
-  "debit-note",
-  "delivery-challan",
-]
-const STOCK_IMPACTS: ReturnStockImpact[] = ["stock-in", "stock-out", "none"]
-
-type DraftItem = {
-  productId?: string
-  name: string
-  category?: string
-  sku?: string
-  hsnCode?: string
-  quantity: string
-  quantityUnit: string
-  rate: string
-  discount: string
-  gstRate: string
-  note: string
-}
 
 export default function ReturnsPage() {
+  const searchParams = useSearchParams()
   const { products } = useProducts()
   const { sales } = useSales()
   const { purchases } = usePurchases()
@@ -143,6 +118,22 @@ export default function ReturnsPage() {
   }, [debouncedSearch, products])
 
   const visibleDocuments = useMemo(() => documents.slice(0, 12), [documents])
+  const saleOptions = useMemo(
+    () =>
+      sales
+        .filter((sale) => sale.status !== "cancelled")
+        .slice(0, 80)
+        .map((sale) => ({ value: sale.id, label: `${sale.receiptNo} - ${sale.customer?.name || en.sales.customerName}` })),
+    [sales],
+  )
+  const purchaseOptions = useMemo(
+    () =>
+      purchases
+        .slice(0, 80)
+        .map((purchase) => ({ value: purchase.id, label: `${purchase.billNo} - ${purchase.supplierName}` })),
+    [purchases],
+  )
+  const partyOptions = useMemo(() => parties.map((entry) => ({ value: entry.id, label: entry.name })), [parties])
 
   const handleKindChange = (nextKind: ReturnDocumentKind) => {
     setKind(nextKind)
@@ -176,22 +167,7 @@ export default function ReturnsPage() {
             : item,
         )
       }
-      return [
-        ...current,
-        {
-          productId: product.id,
-          name: product.name,
-          category: product.category,
-          sku: product.sku,
-          hsnCode: product.hsnCode,
-          quantity: "1",
-          quantityUnit: normalizeQuantityUnit(product.quantityUnit),
-          rate: String(Number(product.price || 0)),
-          discount: "0",
-          gstRate: "18",
-          note: "",
-        },
-      ]
+      return [...current, createDraftItemFromProduct(product)]
     })
     setSearch("")
   }
@@ -226,7 +202,7 @@ export default function ReturnsPage() {
     setParty(mapPartyToSaleCustomer(selected))
   }
 
-  const handleLinkedSaleChange = (saleId: string) => {
+  const handleLinkedSaleChange = useCallback((saleId: string) => {
     setLinkedSaleId(saleId)
     const sale = sales.find((entry) => entry.id === saleId)
     if (!sale) return
@@ -235,9 +211,9 @@ export default function ReturnsPage() {
     setItems(sale.items.map(fromSaleItem))
     if (kind !== "credit-note") setKind("sales-return")
     setStockImpact("stock-in")
-  }
+  }, [kind, sales])
 
-  const handleLinkedPurchaseChange = (purchaseId: string) => {
+  const handleLinkedPurchaseChange = useCallback((purchaseId: string) => {
     setLinkedPurchaseId(purchaseId)
     const purchase = purchases.find((entry) => entry.id === purchaseId)
     if (!purchase) return
@@ -246,7 +222,17 @@ export default function ReturnsPage() {
     setItems(purchase.items.map(fromPurchaseItem))
     if (kind !== "debit-note") setKind("purchase-return")
     setStockImpact("stock-out")
-  }
+  }, [kind, purchases])
+
+  useEffect(() => {
+    const saleId = searchParams.get("saleId")
+    if (!saleId || linkedSaleId === saleId || !sales.length) return
+    const sale = sales.find((entry) => entry.id === saleId)
+    if (!sale) return
+    queueMicrotask(() => {
+      handleLinkedSaleChange(saleId)
+    })
+  }, [handleLinkedSaleChange, linkedSaleId, sales, searchParams])
 
   const requestSave = () => {
     if (!canCreate) {
@@ -314,225 +300,62 @@ export default function ReturnsPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,0.6fr)]">
-        <div className="premium-surface space-y-5 rounded-3xl p-4 sm:p-5">
-          <div className="grid gap-3 md:grid-cols-3">
-            <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-              <span>{en.returns.documentType}</span>
-              <select value={kind} onChange={(event) => handleKindChange(event.target.value as ReturnDocumentKind)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                {RETURN_KINDS.map((option) => (
-                  <option key={option} value={option}>{getReturnKindLabel(option)}</option>
-                ))}
-              </select>
-            </label>
-            <Input label={en.returns.documentNo} value={documentNo} onChange={(event) => setDocumentNo(event.target.value)} />
-            <Input label={en.returns.documentDate} type="date" value={documentDate} onChange={(event) => setDocumentDate(event.target.value)} />
-          </div>
+        <ReturnsEditor
+          kind={kind}
+          onKindChange={handleKindChange}
+          documentNo={documentNo}
+          setDocumentNo={setDocumentNo}
+          documentDate={documentDate}
+          setDocumentDate={setDocumentDate}
+          linkedSaleId={linkedSaleId}
+          onLinkedSaleChange={handleLinkedSaleChange}
+          salesOptions={saleOptions}
+          linkedPurchaseId={linkedPurchaseId}
+          onLinkedPurchaseChange={handleLinkedPurchaseChange}
+          purchaseOptions={purchaseOptions}
+          stockImpact={stockImpact}
+          setStockImpact={setStockImpact}
+          selectedPartyId={selectedPartyId}
+          onPartyChange={handlePartyChange}
+          partyOptions={partyOptions}
+          party={party}
+          setParty={setParty}
+          search={search}
+          setSearch={setSearch}
+          filteredProducts={filteredProducts}
+          onAddProduct={addProductToItems}
+          onAddManualItem={addManualItem}
+          items={items}
+          calculatedItems={calculatedItems}
+          onUpdateItem={updateItem}
+          onRemoveItem={removeItem}
+          gstEnabled={gstEnabled}
+          setGstEnabled={setGstEnabled}
+          note={note}
+          setNote={setNote}
+          totals={totals}
+          canCreate={canCreate}
+          saving={saving}
+          onRequestSave={requestSave}
+        />
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-              <span>{en.returns.linkSale}</span>
-              <select value={linkedSaleId} onChange={(event) => handleLinkedSaleChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                <option value="">{en.returns.noLinkedSale}</option>
-                {sales.filter((sale) => sale.status !== "cancelled").slice(0, 80).map((sale) => (
-                  <option key={sale.id} value={sale.id}>{sale.receiptNo} - {sale.customer?.name || en.sales.customerName}</option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-              <span>{en.returns.linkPurchase}</span>
-              <select value={linkedPurchaseId} onChange={(event) => handleLinkedPurchaseChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                <option value="">{en.returns.noLinkedPurchase}</option>
-                {purchases.slice(0, 80).map((purchase) => (
-                  <option key={purchase.id} value={purchase.id}>{purchase.billNo} - {purchase.supplierName}</option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-              <span>{en.returns.stockImpact}</span>
-              <select value={stockImpact} onChange={(event) => setStockImpact(event.target.value as ReturnStockImpact)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                {STOCK_IMPACTS.map((option) => (
-                  <option key={option} value={option}>{en.returns.stockImpacts[option]}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
-              <span>{en.returns.party}</span>
-              <select value={selectedPartyId} onChange={(event) => handlePartyChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                <option value="">{en.parties.optionalPartyHint}</option>
-                {parties.map((entry) => (
-                  <option key={entry.id} value={entry.id}>{entry.name}</option>
-                ))}
-              </select>
-            </label>
-            <Input label={en.returns.partyName} value={party.name || ""} onChange={(event) => setParty((current) => ({ ...current, name: event.target.value }))} placeholder={en.returns.partyNamePlaceholder} />
-            <Input label={en.parties.mobile} value={party.phone || ""} onChange={(event) => setParty((current) => ({ ...current, phone: event.target.value }))} />
-            <Input label={en.parties.gstin} value={party.gstin || ""} onChange={(event) => setParty((current) => ({ ...current, gstin: event.target.value }))} />
-          </div>
-
-          <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--surface-subtle)] p-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <Input label={en.returns.productSearch} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={en.returns.productSearchPlaceholder} leftAddon={<Search size={16} />} containerClassName="flex-1" />
-              <Button variant="secondary" title={en.returns.addManualItem} icon={<FileText size={16} />} onClick={addManualItem} />
-            </div>
-            {search.trim() && (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {filteredProducts.length ? filteredProducts.map((product) => (
-                  <button key={product.id} type="button" onClick={() => addProductToItems(product)} className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-3 text-left transition hover:border-[var(--accent)]">
-                    <span className="block font-semibold text-[var(--text-primary)]">{product.name}</span>
-                    <span className="text-xs text-[var(--text-secondary)]">{formatCurrency(product.price)} - {product.quantity} {product.quantityUnit}</span>
-                  </button>
-                )) : <p className="text-sm text-[var(--text-secondary)]">{en.returns.noProductFound}</p>}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.returns.itemsTitle}</h2>
-                <p className="text-sm text-[var(--text-secondary)]">{en.returns.itemsHelp}</p>
-              </div>
-              <label className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]">
-                <input type="checkbox" checked={gstEnabled} onChange={(event) => setGstEnabled(event.target.checked)} className="h-4 w-4" />
-                {en.estimates.applyGst}
-              </label>
-            </div>
-
-            {!items.length && (
-              <div className="rounded-2xl border border-dashed border-[var(--border-input)] p-5 text-center text-sm text-[var(--text-secondary)]">
-                {en.returns.emptyItemsDescription}
-              </div>
-            )}
-
-            {items.map((item, index) => {
-              const calculated = calculatedItems[index]
-              return (
-                <div key={`${item.productId || "manual"}-${index}`} className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-3">
-                  <div className="grid gap-3 md:grid-cols-12">
-                    <Input label={en.receipt.product} value={item.name} onChange={(event) => updateItem(index, { name: event.target.value })} containerClassName="md:col-span-3" />
-                    <Input label={en.returns.quantity} type="number" min="0" step="0.01" value={item.quantity} onChange={(event) => updateItem(index, { quantity: event.target.value })} containerClassName="md:col-span-2" />
-                    <Input label={en.quickPurchase.quantityUnit} value={item.quantityUnit} onChange={(event) => updateItem(index, { quantityUnit: event.target.value })} containerClassName="md:col-span-1" />
-                    <Input label={en.receipt.rate} type="number" min="0" step="0.01" value={item.rate} onChange={(event) => updateItem(index, { rate: event.target.value })} containerClassName="md:col-span-2" />
-                    <Input label={en.estimates.discount} type="number" min="0" step="0.01" value={item.discount} onChange={(event) => updateItem(index, { discount: event.target.value })} containerClassName="md:col-span-1" />
-                    <Input label={en.estimates.gstRate} type="number" min="0" step="0.01" value={item.gstRate} onChange={(event) => updateItem(index, { gstRate: event.target.value })} containerClassName="md:col-span-1" />
-                    <div className="flex items-end justify-between gap-2 md:col-span-2">
-                      <div>
-                        <p className="text-xs text-[var(--text-secondary)]">{en.receipt.total}</p>
-                        <p className="font-bold text-[var(--text-primary)]">{formatCurrency(calculated?.lineTotal || 0)}</p>
-                      </div>
-                      <Button variant="delete" ariaLabel={en.returns.removeItem} icon={<Trash2 size={16} />} onClick={() => removeItem(index)} className="px-3" />
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <Input label={en.returns.note} value={note} onChange={(event) => setNote(event.target.value)} placeholder={en.returns.notePlaceholder} />
-
-          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-subtle)] p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-[var(--text-secondary)]">{en.returns.totalCorrection}</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(totals.totalAmount)}</p>
-              <p className="text-xs text-[var(--text-secondary)]">{en.returns.safeCorrectionHelp}</p>
-            </div>
-            <Button title={en.returns.saveDocument} icon={<RotateCcw size={18} />} onClick={requestSave} loading={saving} disabled={!canCreate} />
-          </div>
-        </div>
-
-        <aside className="premium-surface h-fit rounded-3xl p-4 sm:p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Link2 size={18} className="text-[var(--accent)]" />
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.returns.savedDocuments}</h2>
-          </div>
-          {documentsLoading ? (
-            <p className="text-sm text-[var(--text-secondary)]">{en.common.loading}</p>
-          ) : visibleDocuments.length ? (
-            <div className="space-y-3">
-              {visibleDocuments.map((record) => {
-                const document = buildReturnTransactionDocument(record, sellerProfile)
-                return (
-                  <div key={record.id} className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-[var(--text-primary)]">{record.documentNo}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">{getReturnKindLabel(record.kind)} - {formatCurrency(record.totalAmount)}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">{en.returns.stockImpacts[record.stockImpact]}</p>
-                      </div>
-                      {record.stockImpact === "stock-in" ? <ArrowDownLeft size={18} className="text-emerald-500" /> : record.stockImpact === "stock-out" ? <ArrowUpRight size={18} className="text-amber-500" /> : <FileText size={18} className="text-[var(--accent)]" />}
-                    </div>
-                    {canPrintShare ? (
-                      <ShareActions document={document} compact className="mt-3" />
-                    ) : (
-                      <p className="mt-3 text-xs text-[var(--text-secondary)]">{en.returns.printShareLocked}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-[var(--border-input)] p-5 text-center">
-              <p className="font-semibold text-[var(--text-primary)]">{en.returns.noDocumentsTitle}</p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">{en.returns.noDocumentsDescription}</p>
-            </div>
-          )}
-        </aside>
+        <ReturnsSidebar
+          documentsLoading={documentsLoading}
+          visibleDocuments={visibleDocuments}
+          sellerProfile={sellerProfile}
+          canPrintShare={canPrintShare}
+        />
       </section>
 
-      <Modal
+      <ReturnsConfirmModal
         open={confirmOpen}
-        title={en.returns.confirmTitle}
-        description={en.returns.confirmDescription}
+        kind={kind}
+        stockImpact={stockImpact}
+        totalAmount={totals.totalAmount}
         onClose={() => setConfirmOpen(false)}
-        primaryLabel={en.common.confirm}
-        primaryVariant={stockImpact === "stock-out" ? "warning" : "primary"}
-        cancelLabel={en.common.keepEditing}
-        variant={stockImpact === "stock-out" ? "warning" : "confirmation"}
-        onPrimary={confirmSave}
-        loading={saving}
-      >
-        <div className="space-y-3 text-sm text-[var(--text-secondary)]">
-          <p><strong>{en.returns.documentType}:</strong> {getReturnKindLabel(kind)}</p>
-          <p><strong>{en.returns.stockImpact}:</strong> {en.returns.stockImpacts[stockImpact]}</p>
-          <p><strong>{en.returns.totalCorrection}:</strong> {formatCurrency(totals.totalAmount)}</p>
-          <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">{en.returns.confirmStockWarning}</p>
-        </div>
-      </Modal>
+        onConfirm={confirmSave}
+        saving={saving}
+      />
     </main>
   )
-}
-
-function fromSaleItem(item: SaleRecord["items"][number]): DraftItem {
-  return {
-    productId: item.productId,
-    name: item.name,
-    category: item.category,
-    sku: item.sku,
-    hsnCode: item.hsnCode,
-    quantity: String(item.quantity),
-    quantityUnit: item.quantityUnit,
-    rate: String(item.salePrice),
-    discount: String(item.discount || 0),
-    gstRate: String(item.gstRate || 0),
-    note: item.note || "",
-  }
-}
-
-function fromPurchaseItem(item: PurchaseRecord["items"][number]): DraftItem {
-  return {
-    productId: item.productId,
-    name: item.name,
-    category: item.category,
-    sku: item.sku,
-    hsnCode: item.hsnCode,
-    quantity: String(item.quantity),
-    quantityUnit: item.quantityUnit,
-    rate: String(item.price),
-    discount: "0",
-    gstRate: "0",
-    note: item.note || "",
-  }
 }

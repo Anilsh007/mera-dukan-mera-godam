@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useRef } from "react"
+import React, { useEffect, useRef } from "react"
 import { en } from "@/app/messages/en"
+import { beginCrudBusy, endCrudBusy } from "@/app/lib/crudBusy"
 
 interface ButtonProps {
     onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -48,6 +49,14 @@ export default function Button({
 }: ButtonProps) {
 
     const btnRef = useRef<HTMLButtonElement>(null)
+
+    useEffect(() => {
+        if (!loading) return
+        beginCrudBusy(typeof title === "string" ? title : en.common.processing)
+        return () => {
+            endCrudBusy()
+        }
+    }, [loading, title])
 
     const handleRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
         if (!ripple || disabled || loading) return
@@ -125,7 +134,7 @@ export default function Button({
             "border border-[color-mix(in_srgb,var(--accent)_24%,white_14%)] bg-[color-mix(in_srgb,var(--accent-soft)_88%,white_12%)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent-soft)_96%,white_4%)]",
 
         "soft-danger":
-            "border border-rose-300 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20",
+            "border border-rose-300 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-600 dark:hover:bg-rose-500/20",
 
         "soft-warning":
             "border border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100 dark:hover:bg-amber-500/20",

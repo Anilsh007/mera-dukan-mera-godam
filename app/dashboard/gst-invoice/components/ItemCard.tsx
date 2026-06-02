@@ -170,20 +170,20 @@ export default function ItemCard({ item, index, onChange, onPatch, onRemove, isI
           <div className="flex flex-1 flex-wrap items-center justify-center gap-3 sm:gap-4">
             {isInterState ? (
               <div className="text-center">
-                <p className="text-xs text-purple-400">{en.gstInvoice.igst} ({formatTaxRate(item.igstRate)})</p>
+                <p className="text-xs text-purple-600">{en.gstInvoice.igst} ({formatTaxRate(item.igstRate)})</p>
                 <p className="text-lg font-semibold text-purple-500">{en.common.rupeeSymbol} {item.igstAmount.toFixed(2)}</p>
               </div>
             ) : (
               <>
                 <div className="text-center">
-                  <p className="text-xs text-emerald-400">{en.gstInvoice.cgst} ({formatTaxRate(item.cgstRate)})</p>
+                  <p className="text-xs text-emerald-600">{en.gstInvoice.cgst} ({formatTaxRate(item.cgstRate)})</p>
                   <p className="text-lg font-semibold text-emerald-500">{en.common.rupeeSymbol} {item.cgstAmount.toFixed(2)}</p>
                 </div>
 
                 <FaPlus size={20} className="mx-auto" />
 
                 <div className="text-center">
-                  <p className="text-xs text-blue-400">{en.gstInvoice.sgstUtgst} ({formatTaxRate(item.sgstRate)})</p>
+                  <p className="text-xs text-blue-600">{en.gstInvoice.sgstUtgst} ({formatTaxRate(item.sgstRate)})</p>
                   <p className="text-lg font-semibold text-blue-500">{en.common.rupeeSymbol} {item.sgstAmount.toFixed(2)}</p>
                 </div>
               </>

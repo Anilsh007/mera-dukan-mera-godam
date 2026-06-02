@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -66,50 +66,37 @@ type FormState = {
   buyerGstin: string
 }
 
-const emptyForm: FormState = {
-  quantity: "",
-  price: "",
-  reason: "Sold",
-  expiry: "",
-  date: "",
-  note: "",
-  buyerName: "",
-  buyerPhone: "",
-  buyerGstin: "",
+export default function InventoryLogCorrectionModal({ open, row, onClose, onSaved }: Props) {
+  if (!open || !row) return null
+
+  const rowKey = [row.id, row.correctedAt, row.date, row.quantity, row.price].filter(Boolean).join(":")
+
+  return <InventoryLogCorrectionModalContent key={rowKey} row={row} onClose={onClose} onSaved={onSaved} />
 }
 
-export default function InventoryLogCorrectionModal({ open, row, onClose, onSaved }: Props) {
+function InventoryLogCorrectionModalContent({
+  row,
+  onClose,
+  onSaved,
+}: Omit<Props, "open" | "row"> & { row: HistoryRow }) {
   const { profile } = useProfile()
-  const [form, setForm] = useState<FormState>(emptyForm)
+  const [form, setForm] = useState<FormState>(() => ({
+    quantity: String(row.quantity),
+    price: String(row.price),
+    reason: row.reason || "Sold",
+    expiry: row.expiry || "",
+    date: toDateTimeLocal(row.date),
+    note: row.note || "",
+    buyerName: row.buyerName || "",
+    buyerPhone: row.buyerPhone || "",
+    buyerGstin: row.buyerGstin || "",
+  }))
   const [loading, setLoading] = useState(false)
   const [deleteMode, setDeleteMode] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
-
-  useEffect(() => {
-    if (!row) return
-
-    setDeleteMode(false)
-    setShowMore(false)
-    setForm({
-      quantity: String(row.quantity),
-      price: String(row.price),
-      reason: row.reason || "Sold",
-      expiry: row.expiry || "",
-      date: toDateTimeLocal(row.date),
-      note: row.note || "",
-      buyerName: row.buyerName || "",
-      buyerPhone: row.buyerPhone || "",
-      buyerGstin: row.buyerGstin || "",
-    })
-  }, [row])
-
-  const isSaleFlow = row?.logType === "out" && form.reason === "Sold"
-  const totalValue = useMemo(() => {
-    return Number(form.quantity || 0) * Number(form.price || 0)
-  }, [form.quantity, form.price])
-
-  if (!open || !row) return null
+  const isSaleFlow = row.logType === "out" && form.reason === "Sold"
+  const totalValue = useMemo(() => Number(form.quantity || 0) * Number(form.price || 0), [form.price, form.quantity])
 
   const setField = (key: keyof FormState, value: string) =>
     setForm((current) => ({ ...current, [key]: value }))
@@ -165,13 +152,11 @@ export default function InventoryLogCorrectionModal({ open, row, onClose, onSave
     }
   }
 
-  const description = row.logType === "in"
-    ? en.inventory.updateStockInDescription
-    : en.inventory.updateStockOutDescription
+  const description = row.logType === "in" ? en.inventory.updateStockInDescription : en.inventory.updateStockOutDescription
 
   return (
     <Modal
-      open={open}
+      open
       title={row.productName}
       description={description}
       onClose={onClose}

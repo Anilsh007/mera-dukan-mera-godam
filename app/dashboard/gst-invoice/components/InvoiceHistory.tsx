@@ -1,6 +1,6 @@
 import { InvoiceHistoryProps } from "../types/ui.types"
 import { en } from "@/app/messages/en"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { buildGstInvoiceDocument } from "../Preview/InvoicePreview"
 
 const formatCurrency = (amount: number) =>
@@ -77,7 +77,7 @@ export default function InvoiceHistory({ invoices, onSelect }: InvoiceHistoryPro
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-2">
-                    <ShareActions document={buildGstInvoiceDocument(inv)} compact showPrint={false} className="justify-end" />
+                    <TransactionActionPanel document={buildGstInvoiceDocument(inv)} compact showPrint={false} className="justify-end" />
                     <button
                       type="button"
                       onClick={() => onSelect(inv)}

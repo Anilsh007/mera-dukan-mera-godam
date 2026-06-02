@@ -72,7 +72,7 @@ export default function CurrentPlanCard({
 
       <div className="mt-5 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
         <div className="flex items-start gap-3">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-400" aria-hidden="true" />
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
           <p className="text-sm leading-6 text-[var(--text-secondary)]">{en.subscription.keepDataSafeDescription}</p>
         </div>
       </div>

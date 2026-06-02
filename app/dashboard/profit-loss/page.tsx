@@ -5,7 +5,7 @@ import { Download, FileSpreadsheet, Printer, TrendingDown, TrendingUp } from "lu
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import PageHeader from "@/app/components/ui/PageHeader"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useExpenses from "@/app/hooks/useExpenses"
 import usePurchases from "@/app/hooks/usePurchases"
@@ -56,7 +56,7 @@ export default function ProfitLossPage() {
       <PageHeader
         title={en.accounting.profitLossTitle}
         description={en.accounting.profitLossDescription}
-        actions={<ShareActions message={shareMessage} subject={en.accounting.profitLossTitle} filename="profit-loss-summary.pdf" showPrint={false} />}
+        actions={<TransactionActionPanel message={shareMessage} subject={en.accounting.profitLossTitle} filename="profit-loss-summary.pdf" showPrint={false} />}
       />
 
       <section className="premium-surface rounded-3xl p-4 sm:p-5">
@@ -125,7 +125,7 @@ function MonthlyRow({ point }: { point: MonthlyProfitLossPoint }) {
     <article className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-4">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-semibold text-[var(--text-primary)]">{point.label}</p>
-        <p className={`font-bold ${point.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{formatAccountingMoney(point.netProfit)}</p>
+        <p className={`font-bold ${point.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-600" : "text-rose-600 dark:text-rose-400"}`}>{formatAccountingMoney(point.netProfit)}</p>
       </div>
       <div className="space-y-2 text-xs text-[var(--text-secondary)]">
         <BarLine label={en.accounting.salesTotal} value={point.sales} width={salesWidth} />

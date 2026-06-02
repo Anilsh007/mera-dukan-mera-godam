@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowRightLeft, Download, PackageSearch, Printer, Warehouse } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -17,7 +18,7 @@ import {
   filterAdvancedInventoryRows,
   type AdvancedInventoryViewRow,
 } from "@/app/lib/advancedInventory/advancedInventory.utils"
-import { ensureDefaultInventoryLocation, saveInventoryLocation, transferStock } from "@/app/lib/advancedInventory/advancedInventory.service"
+import { transferStock } from "@/app/lib/advancedInventory/advancedInventory.service"
 import { exportAccountingCsv, printAccountingRows } from "@/app/lib/accounting/accounting.export"
 import { auth } from "@/app/lib/firebase"
 import { notify as toast } from "@/app/lib/notifications"
@@ -27,6 +28,7 @@ import { formatQuantity } from "@/app/lib/quantityUnit"
 import { en } from "@/app/messages/en"
 
 export default function AdvancedInventoryPage() {
+  const router = useRouter()
   const { products, loading: productsLoading } = useProducts()
   const { locations } = useInventoryLocations()
   const { locationStocks } = useProductLocationStocks()
@@ -36,12 +38,8 @@ export default function AdvancedInventoryPage() {
   const [search, setSearch] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
   const [batchFilter, setBatchFilter] = useState("")
-  const [expiryFilter, setExpiryFilter] = useState("all")
-  const [locationName, setLocationName] = useState("")
-  const [locationCode, setLocationCode] = useState("")
-  const [locationNotes, setLocationNotes] = useState("")
+  const [expiryFilter, setExpiryFilter] = useState("")
   const [transferOpen, setTransferOpen] = useState(false)
-  const [savingLocation, setSavingLocation] = useState(false)
 
   const rows = useMemo(
     () => buildAdvancedInventoryRows({ products, locations, locationStocks, batches }),
@@ -56,34 +54,6 @@ export default function AdvancedInventoryPage() {
   const lowReorderRows = rows.filter((row) => Number(row.product.quantity || 0) <= Number(row.product.reorderLevel ?? row.product.lowStockThreshold ?? -1))
   const reportRows = buildAdvancedInventoryReportRows(filteredRows)
   const transferRows = buildTransferReportRows(transfers)
-
-  const handleEnsureDefault = async () => {
-    try {
-      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
-      await ensureDefaultInventoryLocation(userId)
-      toast.success(en.advancedInventory.locationSaved)
-    } catch (error) {
-      console.error("Default godown save failed", error)
-      toast.error(error instanceof Error ? error.message : en.advancedInventory.locationSaveFailed)
-    }
-  }
-
-  const handleSaveLocation = async () => {
-    try {
-      setSavingLocation(true)
-      const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
-      await saveInventoryLocation({ userId, name: locationName, code: locationCode, notes: locationNotes })
-      toast.success(en.advancedInventory.locationSaved)
-      setLocationName("")
-      setLocationCode("")
-      setLocationNotes("")
-    } catch (error) {
-      console.error("Godown save failed", error)
-      toast.error(error instanceof Error ? error.message : en.advancedInventory.locationSaveFailed)
-    } finally {
-      setSavingLocation(false)
-    }
-  }
 
   const runExport = async (kind: "csv" | "print") => {
     if (!filteredRows.length) {
@@ -123,16 +93,24 @@ export default function AdvancedInventoryPage() {
 
       <section className="grid gap-4 xl:grid-cols-[minmax(280px,0.7fr)_minmax(0,1.3fr)]">
         <div className="space-y-4">
-          <form className="premium-surface space-y-3 rounded-3xl p-4" onSubmit={(event) => { event.preventDefault(); void handleSaveLocation() }}>
+          <section className="premium-surface space-y-3 rounded-3xl p-4">
             <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.advancedInventory.locations}</h2>
-            <Input label={en.advancedInventory.locationName} value={locationName} onChange={(event) => setLocationName(event.target.value)} placeholder={en.advancedInventory.locationNamePlaceholder} />
-            <Input label={en.advancedInventory.locationCode} value={locationCode} onChange={(event) => setLocationCode(event.target.value)} />
-            <Input label={en.advancedInventory.locationNotes} value={locationNotes} onChange={(event) => setLocationNotes(event.target.value)} />
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" title={en.advancedInventory.saveLocation} loading={savingLocation} disabled={!godownGate.allowed || godownGate.loading} />
-              <Button type="button" variant="outline" title={en.advancedInventory.defaultGodownName} onClick={() => void handleEnsureDefault()} />
-            </div>
-          </form>
+            <p className="text-sm text-[var(--text-secondary)]">{en.advancedInventory.defaultLocationHelp}</p>
+            <Button
+              type="button"
+              variant="primary"
+              title={en.advancedInventory.saveLocation}
+              onClick={() => router.push("/dashboard/profile")}
+              disabled={!godownGate.allowed || godownGate.loading}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              title={en.profile.editProfile}
+              onClick={() => router.push("/dashboard/profile")}
+              disabled={!godownGate.allowed || godownGate.loading}
+            />
+          </section>
 
           <section className="premium-surface space-y-3 rounded-3xl p-4">
             <h2 className="text-lg font-bold text-[var(--text-primary)]">{en.advancedInventory.transferStock}</h2>
@@ -147,7 +125,7 @@ export default function AdvancedInventoryPage() {
             <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
               <span>{en.advancedInventory.location}</span>
               <select value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                <option value="">{en.advancedInventory.allLocations}</option>
+                <option value="" disabled>{en.common.select}</option>
                 {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
               </select>
             </label>
@@ -155,7 +133,7 @@ export default function AdvancedInventoryPage() {
             <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
               <span>{en.advancedInventory.expiryFilter}</span>
               <select value={expiryFilter} onChange={(event) => setExpiryFilter(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                <option value="all">{en.advancedInventory.allExpiry}</option>
+                <option value="" disabled>{en.common.select}</option>
                 <option value="tracked">{en.advancedInventory.trackedExpiry}</option>
                 <option value="expired">{en.advancedInventory.expired}</option>
                 <option value="next30">{en.advancedInventory.expiringIn30Days}</option>
@@ -262,6 +240,7 @@ function TransferModal({ rows, locations, onClose }: { rows: AdvancedInventoryVi
         <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
           <span>{en.advancedInventory.product}</span>
           <select value={productId} onChange={(event) => setProductId(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
+            <option value="" disabled>{en.common.select}</option>
             {rows.map((row) => <option key={row.product.id} value={row.product.id}>{row.product.name}</option>)}
           </select>
         </label>
@@ -269,12 +248,14 @@ function TransferModal({ rows, locations, onClose }: { rows: AdvancedInventoryVi
           <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
             <span>{en.advancedInventory.fromGodown}</span>
             <select value={fromLocationId} onChange={(event) => setFromLocationId(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
+              <option value="" disabled>{en.common.select}</option>
               {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
             </select>
           </label>
           <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
             <span>{en.advancedInventory.toGodown}</span>
             <select value={toLocationId} onChange={(event) => setToLocationId(event.target.value)} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
+              <option value="" disabled>{en.common.select}</option>
               {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
             </select>
           </label>

@@ -76,12 +76,12 @@ export default function AccountSettingsPage() {
                 <AlertTriangle size={18} aria-hidden="true" />
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-200">{en.settings.dangerZone}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-600">{en.settings.dangerZone}</p>
                 <h2 className="mt-1 text-lg font-bold text-[var(--text-primary)]">{en.settings.deleteProfileTitle}</h2>
               </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">{en.settings.deleteProfileDescription}</p>
-            <p className="mt-3 text-sm font-medium text-rose-700 dark:text-rose-200">{en.settings.deleteProfileWarning}</p>
+            <p className="mt-3 text-sm font-medium text-rose-700 dark:text-rose-600">{en.settings.deleteProfileWarning}</p>
             <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">{en.settings.accountDangerHelp}</p>
           </div>
 
@@ -119,7 +119,7 @@ export default function AccountSettingsPage() {
         primaryDisabled={loading}
       >
         <div className="space-y-4">
-          <div className="rounded-2xl border border-rose-300/70 bg-rose-50 p-4 text-sm leading-6 text-rose-700 dark:border-rose-400/18 dark:bg-rose-500/8 dark:text-rose-200">
+          <div className="rounded-2xl border border-rose-300/70 bg-rose-50 p-4 text-sm leading-6 text-rose-700 dark:border-rose-400/18 dark:bg-rose-500/8 dark:text-rose-600">
             {en.settings.deleteProfileWarning}
           </div>
 

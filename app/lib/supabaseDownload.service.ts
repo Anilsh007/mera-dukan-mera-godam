@@ -7,6 +7,7 @@ import { normalizeQuantityUnit } from "./quantityUnit"
 import { getUserIdentityFromAuthUser } from "./userIdentity"
 import { en } from "@/app/messages/en"
 import type { PurchaseRecord, StockTransactionProduct, StockTransactionType } from "./db"
+import { syncDexieToSupabase } from "./supabaseSync.service"
 
 type ProductSyncRow = {
   id: string
@@ -73,6 +74,7 @@ export async function syncSupabaseToDexie() {
   const token = await user.getIdToken()
   const userId = getUserIdentityFromAuthUser(user)
   if (!userId) throw new Error(en.profile.signInRequired)
+  await syncDexieToSupabase()
 
   const response = await fetch("/api/products/sync", {
     method: "GET",
@@ -89,6 +91,20 @@ export async function syncSupabaseToDexie() {
     products: ProductSyncRow[]
     logs: ProductLogSyncRow[]
   }
+  const localProducts = await db.products.where("userId").equals(userId).toArray()
+  const localProductIds = localProducts.map((product) => product.id)
+  const localLogs = localProductIds.length
+    ? await db.productLogs.where("productId").anyOf(localProductIds).toArray()
+    : []
+  const remoteProductIds = new Set(products.map((product) => product.id))
+  const staleProductIds = localProducts
+    .filter((product) => !remoteProductIds.has(product.id))
+    .map((product) => product.id)
+  const staleProductIdSet = new Set(staleProductIds)
+  const remoteLogIds = new Set(logs.map((log) => log.id))
+  const staleLogIds = localLogs
+    .filter((log) => staleProductIdSet.has(log.productId) || !remoteLogIds.has(log.id))
+    .map((log) => log.id)
 
   await db.transaction("rw", db.products, db.productLogs, async () => {
     if (products.length) {
@@ -156,14 +172,23 @@ export async function syncSupabaseToDexie() {
         })
       )
     }
+
+    if (staleLogIds.length) {
+      await db.productLogs.bulkDelete(staleLogIds)
+    }
+    if (staleProductIds.length) {
+      await db.products.bulkDelete(staleProductIds)
+    }
   })
 
   await syncPurchasesFromSupabase(token, userId)
+  await syncExtendedDataFromSupabase(token)
 
   console.log("Supabase to Dexie sync complete")
 }
 
 async function syncPurchasesFromSupabase(token: string, userId: string) {
+  const localPurchases = await db.purchases.where("userId").equals(userId).toArray()
   const response = await fetch("/api/purchases/sync", {
     method: "GET",
     headers: authHeaders(token),
@@ -180,6 +205,10 @@ async function syncPurchasesFromSupabase(token: string, userId: string) {
   }
 
   const { purchases } = (await response.json()) as PurchaseSyncResponse
+  const remotePurchaseIds = new Set(purchases.map((purchase) => purchase.id))
+  const stalePurchaseIds = localPurchases
+    .filter((purchase) => !remotePurchaseIds.has(purchase.id))
+    .map((purchase) => purchase.id)
 
   await db.transaction("rw", db.purchases, async () => {
     if (purchases.length) {
@@ -200,7 +229,214 @@ async function syncPurchasesFromSupabase(token: string, userId: string) {
         }))
       )
     }
+    if (stalePurchaseIds.length) {
+      await db.purchases.bulkDelete(stalePurchaseIds)
+    }
   })
+}
+
+type GenericSyncResponse = {
+  profiles?: Array<Record<string, unknown>>
+  invoices?: Array<Record<string, unknown>>
+  sales?: Array<Record<string, unknown>>
+  estimates?: Array<Record<string, unknown>>
+  returnDocuments?: Array<Record<string, unknown>>
+  expenses?: Array<Record<string, unknown>>
+  cashbookEntries?: Array<Record<string, unknown>>
+  inventoryLocations?: Array<Record<string, unknown>>
+  productLocationStocks?: Array<Record<string, unknown>>
+  inventoryBatches?: Array<Record<string, unknown>>
+  stockTransfers?: Array<Record<string, unknown>>
+  parties?: Array<Record<string, unknown>>
+  partyLedger?: Array<Record<string, unknown>>
+  subscriptions?: Array<Record<string, unknown>>
+  usageTracking?: Array<Record<string, unknown>>
+}
+
+async function syncExtendedDataFromSupabase(token: string) {
+  const response = await fetch("/api/sync/all", {
+    method: "GET",
+    headers: authHeaders(token),
+  })
+
+  if (!response.ok) {
+    const error = await readApiError(response, "Extended sync fetch request")
+    console.error("Fetch extended sync error:", error)
+    throw error
+  }
+
+  const payload = (await response.json()) as GenericSyncResponse
+  const user = auth?.currentUser
+  if (!user) throw new Error(en.profile.signInRequired)
+  const userId = getUserIdentityFromAuthUser(user)
+  if (!userId) throw new Error(en.profile.signInRequired)
+  const [
+    localProfiles,
+    localInvoices,
+    localSales,
+    localEstimates,
+    localReturnDocuments,
+    localExpenses,
+    localCashbookEntries,
+    localInventoryLocations,
+    localProductLocationStocks,
+    localInventoryBatches,
+    localStockTransfers,
+    localParties,
+    localPartyLedger,
+    localSubscriptions,
+    localUsageTracking,
+  ] = await Promise.all([
+    db.profiles.where("userId").equals(userId).toArray(),
+    db.invoices.where("userId").equals(userId).toArray(),
+    db.sales.where("userId").equals(userId).toArray(),
+    db.estimates.where("userId").equals(userId).toArray(),
+    db.returnDocuments.where("userId").equals(userId).toArray(),
+    db.expenses.where("userId").equals(userId).toArray(),
+    db.cashbookEntries.where("userId").equals(userId).toArray(),
+    db.inventoryLocations.where("userId").equals(userId).toArray(),
+    db.productLocationStocks.where("userId").equals(userId).toArray(),
+    db.inventoryBatches.where("userId").equals(userId).toArray(),
+    db.stockTransfers.where("userId").equals(userId).toArray(),
+    db.parties.where("userId").equals(userId).toArray(),
+    db.partyLedger.where("userId").equals(userId).toArray(),
+    db.subscriptions.where("userId").equals(userId).toArray(),
+    db.usageTracking.where("userId").equals(userId).toArray(),
+  ])
+
+  await db.transaction(
+    "rw",
+    [
+      db.profiles,
+      db.invoices,
+      db.sales,
+      db.estimates,
+      db.returnDocuments,
+      db.expenses,
+      db.cashbookEntries,
+      db.inventoryLocations,
+      db.productLocationStocks,
+      db.inventoryBatches,
+      db.stockTransfers,
+      db.parties,
+      db.partyLedger,
+      db.subscriptions,
+      db.usageTracking,
+    ],
+    async () => {
+      await reconcileUserScopedTable({
+        table: db.profiles,
+        localRecords: localProfiles,
+        remoteRecords: payload.profiles || [],
+        idSelector: (record) => String(record.userId),
+      })
+      await reconcileUserScopedTable({
+        table: db.invoices,
+        localRecords: localInvoices,
+        remoteRecords: payload.invoices || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.sales,
+        localRecords: localSales,
+        remoteRecords: payload.sales || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.estimates,
+        localRecords: localEstimates,
+        remoteRecords: payload.estimates || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.returnDocuments,
+        localRecords: localReturnDocuments,
+        remoteRecords: payload.returnDocuments || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.expenses,
+        localRecords: localExpenses,
+        remoteRecords: payload.expenses || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.cashbookEntries,
+        localRecords: localCashbookEntries,
+        remoteRecords: payload.cashbookEntries || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.inventoryLocations,
+        localRecords: localInventoryLocations,
+        remoteRecords: payload.inventoryLocations || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.productLocationStocks,
+        localRecords: localProductLocationStocks,
+        remoteRecords: payload.productLocationStocks || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.inventoryBatches,
+        localRecords: localInventoryBatches,
+        remoteRecords: payload.inventoryBatches || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.stockTransfers,
+        localRecords: localStockTransfers,
+        remoteRecords: payload.stockTransfers || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.parties,
+        localRecords: localParties,
+        remoteRecords: payload.parties || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.partyLedger,
+        localRecords: localPartyLedger,
+        remoteRecords: payload.partyLedger || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.subscriptions,
+        localRecords: localSubscriptions,
+        remoteRecords: payload.subscriptions || [],
+        idSelector: (record) => String(record.id),
+      })
+      await reconcileUserScopedTable({
+        table: db.usageTracking,
+        localRecords: localUsageTracking,
+        remoteRecords: payload.usageTracking || [],
+        idSelector: (record) => String(record.id),
+      })
+    },
+  )
+}
+
+async function reconcileUserScopedTable<T extends { userId?: string }>(params: {
+  table: { bulkPut: (records: T[]) => Promise<unknown>; bulkDelete: (keys: string[]) => Promise<unknown> }
+  localRecords: T[]
+  remoteRecords: Array<Record<string, unknown>>
+  idSelector: (record: T) => string
+}) {
+  const { table, localRecords, remoteRecords, idSelector } = params
+  const normalizedRemote = remoteRecords as T[]
+  const remoteIds = new Set(normalizedRemote.map((record) => idSelector(record)))
+  const staleIds = localRecords
+    .map((record) => idSelector(record))
+    .filter((id) => !remoteIds.has(id))
+
+  if (normalizedRemote.length) {
+    await table.bulkPut(normalizedRemote)
+  }
+  if (staleIds.length) {
+    await table.bulkDelete(staleIds)
+  }
 }
 
 function normalizeOptionalNumber(value: number | string | null | undefined) {

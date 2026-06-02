@@ -76,7 +76,7 @@ export default function ProductCard({ product, onClick }: { product: Product; on
           </div>
           <div className="rounded-xl bg-[var(--bg-primary)] p-2">
             <p className="mb-0.5 text-xs text-[var(--text-muted)]">{en.inventory.valueLabel}</p>
-            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-600">
               {en.common.rupeeSymbol} {(product.price * product.quantity).toLocaleString("en-IN")}
             </p>
           </div>

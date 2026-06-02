@@ -28,7 +28,7 @@ export default function OverviewTab({ data, onViewBusiness }: Props) {
 
       <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 p-6 dark:border-emerald-800">
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-600">
             <MdBusiness size={20} aria-hidden="true" />
             <h3 className="text-lg font-bold">{en.profile.businessOverview}</h3>
           </div>

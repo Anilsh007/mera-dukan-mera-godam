@@ -63,7 +63,7 @@ export default function BusinessCard({ data }: Props) {
 
                 {/* Shop Info */}
                 <div>
-                  <p className="text-emerald-200 text-xs uppercase tracking-wider">
+                  <p className="text-emerald-600 text-xs uppercase tracking-wider">
                     {en.profile.businessCard}
                   </p>
                   <h4 className="text-xl font-bold">
@@ -77,16 +77,16 @@ export default function BusinessCard({ data }: Props) {
 
             <div className="space-y-3">
               <div>
-                <p className="text-emerald-200 text-xs">{en.profile.owner}</p>
+                <p className="text-emerald-600 text-xs">{en.profile.owner}</p>
                 <p className="font-medium">{data.personal.displayName}</p>
               </div>
               <div>
-                <p className="text-emerald-200 text-xs">{en.profile.contact}</p>
+                <p className="text-emerald-600 text-xs">{en.profile.contact}</p>
                 <p className="font-medium">{data.personal.phone || data.personal.email}</p>
               </div>
               {data.business.gstNumber && (
                 <div>
-                  <p className="text-emerald-200 text-xs">{en.profile.gstShort}</p>
+                  <p className="text-emerald-600 text-xs">{en.profile.gstShort}</p>
                   <p className="font-mono text-sm">{data.business.gstNumber}</p>
                 </div>
               )}
@@ -95,7 +95,7 @@ export default function BusinessCard({ data }: Props) {
 
           <div className="border-t border-white/20 pt-4">
             <div className="flex items-center justify-between">
-              <div className="text-xs text-emerald-200">
+              <div className="text-xs text-emerald-600">
                 <p>{data.address.district}, {data.address.state}</p>
               </div>
               {data.business.upiId && (

@@ -3,6 +3,8 @@ import { db } from "../db";
 import type { ProfileData } from "./profile.service";
 import { getUserIdentityFromAuthUser } from "../userIdentity";
 import { en } from "@/app/messages/en";
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger";
+import { clearRecordDeleted, markRecordDeleted } from "@/app/lib/persistence/syncTombstone.service";
 
 export async function loadProfileFromDb(userId?: string): Promise<ProfileData | null> {
   const resolvedUserId = userId || getUserIdentityFromAuthUser(auth?.currentUser);
@@ -25,7 +27,9 @@ export async function saveProfileToDb(
     updatedAt: new Date().toISOString(),
   };
 
+  await clearRecordDeleted(resolvedUserId, "profiles", resolvedUserId)
   await db.profiles.put(fullData);
+  await requestSupabaseSync("profile")
   return fullData;
 }
 
@@ -33,5 +37,7 @@ export async function deleteProfileFromDb(userId?: string): Promise<void> {
   const resolvedUserId = userId || getUserIdentityFromAuthUser(auth?.currentUser);
   if (!resolvedUserId) throw new Error(en.profile.signInRequired);
 
+  await markRecordDeleted(resolvedUserId, "profiles", resolvedUserId)
   await db.profiles.delete(resolvedUserId);
+  await requestSupabaseSync("profile delete")
 }

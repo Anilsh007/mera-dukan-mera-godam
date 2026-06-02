@@ -1,56 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { onAuthStateChanged } from "firebase/auth"
 import { ArrowLeft, PlusCircle } from "lucide-react"
 
 import Button from "@/app/components/ui/Button"
-import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import { auth } from "@/app/lib/firebase"
+import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import { notify as toast } from "@/app/lib/notifications"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 
 import type { PurchasePaymentStatus, PurchaseRecord } from "@/app/lib/db"
 import CompletePurchaseDetailsModal from "../purchases/CompletePurchaseDetailsModal"
-import { completeQuickPurchaseDetails, loadPurchases } from "../purchases/purchase.service"
+import { completeQuickPurchaseDetails } from "../purchases/purchase.service"
+import usePurchases from "@/app/hooks/usePurchases"
 
 import PurchaseHistory from "./PurchaseHistory"
 
 import { en } from "@/app/messages/en"
 
 export default function RecentPurchasesPage() {
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([])
-  const [loading, setLoading] = useState(true)
+  const { purchases, loading } = usePurchases()
   const [selectedPendingPurchase, setSelectedPendingPurchase] = useState<PurchaseRecord | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
-
-  useEffect(() => {
-    if (!auth) return
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setPurchases([])
-        setLoading(false)
-        return
-      }
-
-      try {
-        const data = await loadPurchases(
-          requireUserIdentityFromAuthUser(user)
-        )
-
-        setPurchases(data)
-      } catch (error) {
-        console.error("Failed to load purchases", error)
-        toast.error(en.purchases.loadFailed)
-      } finally {
-        setLoading(false)
-      }
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   const handleCompleteDetails = async (values: {
     billNo: string
@@ -71,9 +43,6 @@ export default function RecentPurchasesPage() {
         purchaseId: selectedPendingPurchase.id,
         ...values,
       })
-
-      const refreshed = await loadPurchases(userId)
-      setPurchases(refreshed)
       toast.success(en.purchases.quickDetailsCompleted)
       setSelectedPendingPurchase(null)
     } catch (error) {

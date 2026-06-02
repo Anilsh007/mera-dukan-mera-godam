@@ -32,8 +32,8 @@ export default function SupabaseSyncManager() {
 
       try {
         await migrateLocalUserData(user)
-        await syncSupabaseToDexie()
         await syncDexieToSupabase()
+        await syncSupabaseToDexie()
         resetSyncErrorGuard()
       } catch (err) {
         console.error("Initial Supabase sync failed:", err instanceof Error ? err.message : err)
@@ -45,22 +45,27 @@ export default function SupabaseSyncManager() {
   }, [])
 
   useEffect(() => {
-    const runPeriodicSync = () => {
+    const runSync = () => {
       autoSyncToSupabase()
+        .then(() => {
+          return syncSupabaseToDexie()
+        })
         .then(() => {
           resetSyncErrorGuard()
         })
         .catch((err) => {
-          console.error("Scheduled Supabase sync failed:", err instanceof Error ? err.message : err)
+          console.error("Supabase sync failed:", err instanceof Error ? err.message : err)
           showSyncError()
         })
     }
 
-    const interval = setInterval(() => {
-      runPeriodicSync()
-    }, 5 * 60 * 1000)
+    if (typeof window === "undefined") return
 
-    return () => clearInterval(interval)
+    window.addEventListener("online", runSync)
+
+    return () => {
+      window.removeEventListener("online", runSync)
+    }
   }, [])
 
   return null

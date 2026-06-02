@@ -194,7 +194,7 @@ export default function ProductStats({
             icon: IndianRupee,
             tone: soldQty > 0
                 ? netProfit >= 0
-                    ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20"
+                    ? "text-emerald-700 bg-emerald-50 dark:text-emerald-600 dark:bg-emerald-900/20"
                     : "text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-900/20"
                 : "text-[var(--all-inventory-text)] bg-[var(--all-inventory)]",
         },

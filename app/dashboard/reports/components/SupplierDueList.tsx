@@ -13,7 +13,7 @@ export default function SupplierDueList({ suppliers }: { suppliers: Array<{ supp
             <p className="truncate font-medium capitalize text-[var(--text-primary)]">{supplier.supplierName}</p>
             <p className="text-xs text-[var(--text-secondary)]">{supplier.billCount} {supplier.billCount > 1 ? en.reports.pendingBills : en.reports.pendingBill}</p>
           </div>
-          <span className="shrink-0 text-sm font-bold text-amber-600 dark:text-amber-400">{formatMoney(supplier.dueAmount)}</span>
+          <span className="shrink-0 text-sm font-bold text-amber-600 dark:text-amber-600">{formatMoney(supplier.dueAmount)}</span>
         </div>
       ))}
     </div>

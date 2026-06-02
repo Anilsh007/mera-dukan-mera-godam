@@ -170,7 +170,7 @@ function mapDbToProfile(data: Record<string, unknown>, userId: string) {
     business: {
       shopName: String(data.shop_name ?? ""),
       gstNumber: String(data.gst_number ?? ""),
-      businessType: String(data.business_type ?? "retail"),
+      businessType: String(data.business_type ?? ""),
       upiId: String(data.upi_id ?? ""),
       invoicePrefix: String(data.invoice_prefix ?? "INV"),
     },
@@ -208,7 +208,7 @@ function validateProfilePayload(profile: ProfilePayload): ProfilePayload {
     business: {
       shopName: sanitizeRequiredText(profile.business?.shopName, 160, "Shop name"),
       gstNumber: sanitizeOptionalText(profile.business?.gstNumber, 30) || "",
-      businessType: sanitizeOptionalText(profile.business?.businessType, 50) || "retail",
+      businessType: sanitizeOptionalText(profile.business?.businessType, 50) || "",
       upiId: sanitizeOptionalText(profile.business?.upiId, 80) || "",
       invoicePrefix: sanitizeOptionalText(profile.business?.invoicePrefix, 20) || "INV",
     },

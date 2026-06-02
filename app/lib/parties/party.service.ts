@@ -12,8 +12,9 @@ import {
   type SalePaymentStatus,
   type SaleRecord,
 } from "@/app/lib/db"
-import { autoSyncToSupabase } from "@/app/lib/autoSupabaseSync.service"
 import { assertFeatureAccess } from "@/app/lib/subscription/subscription.service"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
+import { trimOrUndefined, trimToLowerOrUndefined, trimToUpperOrUndefined } from "@/app/lib/normalization.utils"
 import { en } from "@/app/messages/en"
 
 export type PartyRoleFilter = "all" | PartyType
@@ -75,7 +76,7 @@ function nowIso() {
 }
 
 export function normalizePartyName(value?: string) {
-  return value?.trim().toLowerCase() || ""
+  return trimToLowerOrUndefined(value) || ""
 }
 
 export function includesPartyType(type: PartyType, target: "customer" | "supplier") {
@@ -89,8 +90,7 @@ function mergePartyType(current: PartyType, incoming: PartyType): PartyType {
 }
 
 function sanitizeOptional(value?: string) {
-  const trimmed = value?.trim()
-  return trimmed ? trimmed : undefined
+  return trimOrUndefined(value)
 }
 
 async function assertPartyCapacity(
@@ -116,7 +116,7 @@ function existingTypeHas(type: PartyType | null, target: "customer" | "supplier"
 }
 
 function sanitizePartyInput(input: PartyInput) {
-  const name = input.name.trim()
+  const name = trimOrUndefined(input.name)
   if (!name) {
     throw new Error(en.parties.nameRequired)
   }
@@ -127,7 +127,7 @@ function sanitizePartyInput(input: PartyInput) {
     normalizedName: normalizePartyName(name),
     mobile: sanitizeOptional(input.mobile),
     email: sanitizeOptional(input.email),
-    gstin: sanitizeOptional(input.gstin)?.toUpperCase(),
+    gstin: trimToUpperOrUndefined(input.gstin),
     address: sanitizeOptional(input.address),
     city: sanitizeOptional(input.city),
     state: sanitizeOptional(input.state),
@@ -151,7 +151,8 @@ async function putParty(
   await assertPartyCapacity(input.userId, existing?.type || null, clean.type, options.skipLimits)
 
   if (existing) {
-    const updated: PartyRecord = {
+    const nextType = mergePartyType(existing.type, clean.type)
+    const nextParty: PartyRecord = {
       ...existing,
       businessId: clean.businessId || existing.businessId,
       name: clean.name,
@@ -163,14 +164,40 @@ async function putParty(
       city: clean.city || existing.city,
       state: clean.state || existing.state,
       pincode: clean.pincode || existing.pincode,
-      type: mergePartyType(existing.type, clean.type),
+      type: nextType,
       openingBalance: existing.openingBalance || clean.openingBalance || 0,
       notes: clean.notes || existing.notes,
-      updatedAt: now,
+      updatedAt: existing.updatedAt,
     }
-    await db.parties.put(updated)
-    await syncPartyBalances(input.userId, updated.id)
-    return updated
+    const changed =
+      nextParty.businessId !== existing.businessId ||
+      nextParty.name !== existing.name ||
+      nextParty.normalizedName !== existing.normalizedName ||
+      nextParty.mobile !== existing.mobile ||
+      nextParty.email !== existing.email ||
+      nextParty.gstin !== existing.gstin ||
+      nextParty.address !== existing.address ||
+      nextParty.city !== existing.city ||
+      nextParty.state !== existing.state ||
+      nextParty.pincode !== existing.pincode ||
+      nextParty.type !== existing.type ||
+      nextParty.openingBalance !== existing.openingBalance ||
+      nextParty.notes !== existing.notes
+
+    if (changed) {
+      await db.parties.put({
+        ...nextParty,
+        updatedAt: now,
+      })
+    }
+    const synced = await syncPartyBalances(input.userId, existing.id)
+    if (changed) {
+      return {
+        ...(synced ? await db.parties.get(existing.id) : nextParty),
+        id: existing.id,
+      } as PartyRecord
+    }
+    return (synced ? await db.parties.get(existing.id) : existing) as PartyRecord
   }
 
   const created: PartyRecord = {
@@ -204,11 +231,12 @@ export async function ensurePartyRecord(
   options: { skipLimits?: boolean } = {},
 ) {
   const party = await putParty(input, options)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("party")
   return party
 }
 
 export async function ensurePartiesBackfilled(userId: string) {
+  let changed = false
   const purchases = await db.purchases.where("userId").equals(userId).toArray()
   const sales = await db.sales.where("userId").equals(userId).toArray()
 
@@ -225,6 +253,7 @@ export async function ensurePartiesBackfilled(userId: string) {
     )
     if (purchase.partyId !== party.id) {
       await db.purchases.update(purchase.id, { partyId: party.id })
+      changed = true
     }
   }
 
@@ -248,7 +277,12 @@ export async function ensurePartiesBackfilled(userId: string) {
     )
     if (sale.partyId !== party.id) {
       await db.sales.update(sale.id, { partyId: party.id })
+      changed = true
     }
+  }
+
+  if (changed) {
+    await requestSupabaseSync("party backfill")
   }
 }
 
@@ -310,6 +344,10 @@ export async function syncPartyBalances(userId: string, partyId: string) {
     .filter((sale) => sale.status !== "cancelled")
     .reduce((sum, sale) => sum + Number(sale.dueAmount || 0), 0)
   const payable = openingPayable + purchases.reduce((sum, purchase) => sum + Number(purchase.dueAmount || 0), 0)
+
+  if (party.receivable === receivable && party.payable === payable) {
+    return { receivable, payable }
+  }
 
   const updatedAt = nowIso()
   await db.parties.update(party.id, { receivable, payable, updatedAt })
@@ -493,7 +531,7 @@ export async function recordPartyPayment(input: PartyPaymentInput) {
   }
 
   await syncPartyBalances(input.userId, party.id)
-  await autoSyncToSupabase()
+  await requestSupabaseSync("party payment")
 }
 
 function createLedgerRecord({

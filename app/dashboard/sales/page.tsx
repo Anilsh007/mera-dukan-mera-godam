@@ -2,33 +2,28 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { BarChart3, FilePlus2, Filter, FileText, Search, Users } from "lucide-react"
+import { FilePlus2 } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import PageHeader from "@/app/components/ui/PageHeader"
-import PageActionLinks from "@/app/components/ui/PageActionLinks"
-import ShareActions from "@/app/components/ui/ShareActions"
-import ResponsiveDataTable from "@/app/components/ui/ResponsiveDataTable"
-import PaymentStatusBadge from "@/app/components/ui/PaymentStatusBadge"
-import BaseSelectField from "@/app/components/ui/SelectField"
+import SalesFilters from "@/app/dashboard/sales/SalesFilters"
+import SalesPaginationBar from "@/app/dashboard/sales/SalesPaginationBar"
+import SalesRecords from "@/app/dashboard/sales/SalesRecords"
 import useSales from "@/app/hooks/useSales"
 import { usePagination } from "@/app/hooks/usePagination"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { buildBusinessDocumentProfile } from "@/app/lib/transactionDocument"
-import { buildSaleInvoiceDraftFromRecord, buildSaleTransactionDocument } from "@/app/lib/sales/sale.documents"
+import { buildSaleInvoiceDraftFromRecord } from "@/app/lib/sales/sale.documents"
 import { cancelSale } from "@/app/lib/sales/sale.service"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import { notify as toast } from "@/app/lib/notifications"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
-import { formatCurrency, formatIndianDateTime } from "@/app/lib/formatters"
 import { en } from "@/app/messages/en"
 import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
 import { matchesSearchQuery } from "@/app/lib/search.utils"
 import type { SalePaymentStatus, SaleRecord } from "@/app/lib/db"
-
-const PAGE_SIZES = [5, 10, 20, 50]
 
 export default function SalesPage() {
   const router = useRouter()
@@ -56,6 +51,11 @@ export default function SalesPage() {
     [sales],
   )
 
+  const paymentModes = useMemo(
+    () => Array.from(new Set(sales.map((sale) => sale.paymentMode))),
+    [sales],
+  )
+
   const filteredSales = useMemo(() => {
     const now = new Date()
     const todayKey = now.toISOString().slice(0, 10)
@@ -72,8 +72,7 @@ export default function SalesPage() {
 
       const matchesStatus = statusFilter === "all" || sale.paymentStatus === statusFilter
       const matchesMode = modeFilter === "all" || sale.paymentMode === modeFilter
-      const matchesCustomer =
-        customerFilter === "all" || (sale.customer?.name || "") === customerFilter
+      const matchesCustomer = customerFilter === "all" || (sale.customer?.name || "") === customerFilter
       const matchesDate =
         dateFilter === "all" ||
         (dateFilter === "today" ? sale.saleDate === todayKey : sale.saleDate.startsWith(monthKey))
@@ -106,6 +105,14 @@ export default function SalesPage() {
     }
   }
 
+  const handleCreateReturn = (sale: SaleRecord) => {
+    router.push(`${DASHBOARD_ROUTES.returns}?saleId=${encodeURIComponent(sale.id)}`)
+  }
+
+  const handleCreateExchange = (sale: SaleRecord) => {
+    router.push(`${DASHBOARD_ROUTES.exchange}?saleId=${encodeURIComponent(sale.id)}`)
+  }
+
   const handleCancelSale = async () => {
     if (!cancelTarget) return
 
@@ -128,11 +135,6 @@ export default function SalesPage() {
     }
   }
 
-  const paymentModes = useMemo(
-    () => Array.from(new Set(sales.map((sale) => sale.paymentMode))),
-    [sales],
-  )
-
   return (
     <div className="dashboard-page space-y-6 pb-8">
       <PageHeader
@@ -151,132 +153,32 @@ export default function SalesPage() {
         }
       />
 
-      <PageActionLinks
-        title={en.common.nextActions}
-        description={en.common.nextActionsDescription}
-        actions={[
-          { href: DASHBOARD_ROUTES.quickSale, label: en.sales.createNewSale, description: en.pages.quickSaleDescription, icon: <FilePlus2 size={18} /> },
-          { href: DASHBOARD_ROUTES.gstInvoice, label: en.sales.makeGstInvoice, description: en.sales.makeGstInvoiceHelp, icon: <FileText size={18} /> },
-          { href: DASHBOARD_ROUTES.parties, label: en.sales.goToCustomers, description: en.sales.goToCustomersHelp, icon: <Users size={18} /> },
-          { href: DASHBOARD_ROUTES.reports, label: en.sales.goToReports, description: en.sales.goToReportsHelp, icon: <BarChart3 size={18} /> },
-        ]}
+      <SalesFilters
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        modeFilter={modeFilter}
+        setModeFilter={setModeFilter}
+        customerFilter={customerFilter}
+        setCustomerFilter={setCustomerFilter}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+        paymentModes={paymentModes}
+        customers={customers}
+        onResetPage={resetPage}
       />
 
-      <section className="rounded-[28px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-5">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
-          <div className="relative">
-            <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.sales.searchPlaceholder}</label>
-            <Search size={16} className="pointer-events-none absolute left-3 top-[42px] text-[var(--text-muted)]" />
-            <Input value={search} onChange={(event) => { setSearch(event.target.value); resetPage() }} className="pl-9" />
-          </div>
-
-          <SelectField
-            label={en.sales.paymentStatus}
-            value={statusFilter}
-            onChange={(value) => { setStatusFilter(value as typeof statusFilter); resetPage() }}
-            options={[
-              { value: "all", label: en.sales.allStatuses },
-              { value: "paid", label: en.sales.paid },
-              { value: "partial", label: en.sales.partial },
-              { value: "unpaid", label: en.sales.unpaid },
-            ]}
-          />
-          <SelectField
-            label={en.sales.paymentMode}
-            value={modeFilter}
-            onChange={(value) => { setModeFilter(value as typeof modeFilter); resetPage() }}
-            options={[
-              { value: "all", label: en.sales.allModes },
-              ...paymentModes.map((mode) => ({ value: mode, label: mode })),
-            ]}
-          />
-          <SelectField
-            label={en.sales.customerWise}
-            value={customerFilter}
-            onChange={(value) => { setCustomerFilter(value); resetPage() }}
-            options={[
-              { value: "all", label: en.sales.allCustomers },
-              ...customers.map((customer) => ({ value: customer, label: customer })),
-            ]}
-          />
-          <SelectField
-            label={en.sales.filtersTitle}
-            value={dateFilter}
-            onChange={(value) => { setDateFilter(value as typeof dateFilter); resetPage() }}
-            options={[
-              { value: "all", label: en.sales.clearFilters },
-              { value: "today", label: en.sales.today },
-              { value: "month", label: en.sales.thisMonth },
-            ]}
-          />
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 md:hidden">
-        {paginatedSales.map((sale) => (
-          <article key={sale.id} className="rounded-[28px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{en.sales.receiptNo}</p>
-                <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">{sale.receiptNo}</p>
-              </div>
-              <PaymentStatusBadge status={sale.paymentStatus} cancelled={sale.status === "cancelled"} />
-            </div>
-            <div className="mt-4 space-y-2 text-sm text-[var(--text-secondary)]">
-              <p>{en.sales.customerName}: {sale.customer?.name || en.common.notAvailable}</p>
-              <p>{en.sales.saleDate}: {formatDateTime(sale.saleDateTime)}</p>
-              <p>{en.sales.itemsSummary}: {buildItemsSummary(sale)}</p>
-              <p>{en.sales.totalAmount}: {formatCurrency(sale.totalAmount)}</p>
-              <p>{en.sales.dueAmount}: {formatCurrency(sale.dueAmount)}</p>
-            </div>
-            <div className="mt-4">
-              <ShareActions document={buildSaleTransactionDocument(sale, sellerProfile)} />
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" title={en.sales.createFromThisSale} onClick={() => handleCreateDraft(sale)} />
-              <Button
-                type="button"
-                variant="danger"
-                title={en.sales.cancelSale}
-                onClick={() => setCancelTarget(sale)}
-                disabled={sale.status === "cancelled"}
-              />
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="hidden overflow-hidden rounded-[28px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 shadow-[var(--shadow-card)] backdrop-blur-xl md:block">
-        <ResponsiveDataTable
-          rows={paginatedSales}
-          getRowKey={(sale) => sale.id}
-          minWidth={1120}
-          columns={[
-            { key: "receipt", header: en.sales.receiptNo, render: (sale) => <span className="font-semibold text-[var(--text-primary)]">{sale.receiptNo}</span> },
-            { key: "date", header: en.sales.saleDate, render: (sale) => formatDateTime(sale.saleDateTime), className: "text-[var(--text-secondary)]" },
-            { key: "customer", header: en.sales.customerName, render: (sale) => sale.customer?.name || en.common.notAvailable, className: "text-[var(--text-secondary)]" },
-            { key: "items", header: en.sales.itemsSummary, render: buildItemsSummary, className: "text-[var(--text-secondary)]" },
-            { key: "total", header: en.sales.totalAmount, align: "right", render: (sale) => formatCurrency(sale.totalAmount), className: "font-semibold text-[var(--text-primary)]" },
-            { key: "paid", header: en.sales.amountPaid, align: "right", render: (sale) => formatCurrency(sale.amountPaid), className: "text-[var(--text-secondary)]" },
-            { key: "due", header: en.sales.dueAmount, align: "right", render: (sale) => formatCurrency(sale.dueAmount), className: "text-[var(--text-secondary)]" },
-            { key: "status", header: en.sales.paymentStatus, render: (sale) => <PaymentStatusBadge status={sale.paymentStatus} cancelled={sale.status === "cancelled"} /> },
-            { key: "mode", header: en.sales.paymentMode, render: (sale) => sale.paymentMode, className: "text-[var(--text-secondary)]" },
-            {
-              key: "actions",
-              header: en.common.profile,
-              render: (sale) => (
-                <div className="flex flex-col gap-2">
-                  <ShareActions document={buildSaleTransactionDocument(sale, sellerProfile)} />
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" title={en.sales.createFromThisSale} onClick={() => handleCreateDraft(sale)} />
-                    <Button type="button" variant="danger" title={en.sales.cancelSale} onClick={() => setCancelTarget(sale)} disabled={sale.status === "cancelled"} />
-                  </div>
-                </div>
-              ),
-            },
-          ]}
-        />
-      </section>
+      <SalesRecords
+        paginatedSales={paginatedSales}
+        sellerProfile={sellerProfile}
+        onCreateDraft={handleCreateDraft}
+        onCreateReturn={handleCreateReturn}
+        onCreateExchange={handleCreateExchange}
+        onCancelSale={(sale) => {
+          setCancelTarget(sale)
+        }}
+      />
 
       {!loading && !filteredSales.length ? (
         <div className="rounded-[28px] border border-dashed border-[var(--border-card)] p-6 text-center text-[var(--text-secondary)]">
@@ -285,23 +187,18 @@ export default function SalesPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-[var(--text-secondary)]">{filteredSales.length} {en.sales.pageSummary}</p>
-        <div className="flex flex-wrap gap-2">
-          <SelectField
-            label=""
-            value={String(pageSize)}
-            onChange={(value) => { setPageSize(Number(value)); resetPage() }}
-            options={PAGE_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
-            hideLabel
-          />
-          <Button type="button" variant="outline" title={en.sales.previousPage} onClick={goPrevious} disabled={!canGoPrevious} />
-          <div className="flex items-center rounded-2xl border border-[var(--border-card)] px-4 text-sm text-[var(--text-secondary)]">
-            {currentPage} / {totalPages}
-          </div>
-          <Button type="button" variant="outline" title={en.sales.nextPage} onClick={goNext} disabled={!canGoNext} />
-        </div>
-      </div>
+      <SalesPaginationBar
+        filteredCount={filteredSales.length}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        canGoPrevious={canGoPrevious}
+        canGoNext={canGoNext}
+        goPrevious={goPrevious}
+        goNext={goNext}
+        onResetPage={resetPage}
+      />
 
       <Modal
         open={Boolean(cancelTarget)}
@@ -328,38 +225,4 @@ export default function SalesPage() {
       </Modal>
     </div>
   )
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  hideLabel = false,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: Array<{ value: string; label: string }>
-  hideLabel?: boolean
-}) {
-  return (
-    <BaseSelectField
-      label={!hideLabel ? label || <Filter size={14} /> : undefined}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      options={options}
-    />
-  )
-}
-
-function buildItemsSummary(sale: SaleRecord) {
-  const first = sale.items[0]
-  if (!first) return en.common.notAvailable
-  if (sale.items.length === 1) return `${first.name} x ${first.quantity}`
-  return `${first.name} x ${first.quantity} + ${sale.items.length - 1} ${en.sales.moreItemsSuffix}`
-}
-
-function formatDateTime(value: string) {
-  return formatIndianDateTime(value)
 }

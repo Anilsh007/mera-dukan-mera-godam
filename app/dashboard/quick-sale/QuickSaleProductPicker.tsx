@@ -43,10 +43,10 @@ export default function QuickSaleProductPicker({
         </div>
       </div>
 
-      <div className="mt-4 flex overflow-auto gap-3 w-full">
+      <div className="mt-4 flex overflow-auto gap-3 w-full py-3" aria-label={en.pos.searchResults}>
 
         {filteredProducts.map((product) => (
-          <button key={product.id} type="button" onClick={() => onAddProduct(product)} className="flex w-fit gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)]" >
+          <button key={product.id} type="button" onClick={() => onAddProduct(product)} className="flex w-fit gap-3 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)] cursor-pointer" >
             <div className="w-[max-content]">
               <p className="font-medium capitalize text-[var(--text-primary)] mb-0">{product.name}</p>
               <p className="text-xs text-[var(--text-secondary)]">

@@ -6,7 +6,7 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
-import ShareActions from "@/app/components/ui/ShareActions"
+import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
 import useGstReportsData from "@/app/hooks/useGstReportsData"
@@ -92,7 +92,7 @@ export default function GstReportsPage() {
       <PageHeader
         title={en.gstReports.title}
         description={en.gstReports.description}
-        actions={<ShareActions message={shareMessage} subject={getReportTitle(activeReport)} filename="gst-report-summary.pdf" showPrint={false} />}
+        actions={<TransactionActionPanel message={shareMessage} subject={getReportTitle(activeReport)} filename="gst-report-summary.pdf" showPrint={false} />}
       />
 
       <section className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">

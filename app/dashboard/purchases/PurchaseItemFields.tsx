@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
-import { DEFAULT_QUANTITY_UNIT, QUANTITY_UNITS, formatQuantity } from "@/app/lib/quantityUnit"
+import { QUANTITY_UNITS, formatQuantity } from "@/app/lib/quantityUnit"
 import { formatCurrency } from "./purchase.utils"
 import type { PurchaseRow } from "./purchase.types"
 import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
@@ -25,7 +25,7 @@ export function PurchaseItemFields({
   showRemove: boolean
   onChange: (key: keyof PurchaseRow, value: string) => void
   onRemove: () => void
-}) {
+  }) {
   const { locations } = useInventoryLocations()
 
   return (
@@ -138,7 +138,7 @@ export function PurchaseItemFields({
               }}
               className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]"
             >
-              <option value="">{en.advancedInventory.defaultGodownName}</option>
+              <option value="" disabled>{en.common.select}</option>
               {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
             </select>
           </label>
@@ -167,7 +167,7 @@ export function PurchaseItemFields({
 
 export function ValidationErrors({ errors }: { errors: string[] }) {
   return (
-    <div className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200 sm:p-4">
+    <div className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-600 sm:p-4">
       <p className="font-bold">{en.purchases.fixBeforeSaving}</p>
 
       <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -183,7 +183,7 @@ export function RequiredLabel({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <span>{children}</span>
-      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-700 dark:bg-rose-500/15 dark:text-rose-200">
+      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-700 dark:bg-rose-500/15 dark:text-rose-600">
         {en.purchases.requiredBadge}
       </span>
     </span>
@@ -216,11 +216,12 @@ function QuantityInput({
         />
         <select
           id={unitInputId}
-          value={row.quantityUnit || DEFAULT_QUANTITY_UNIT}
+          value={row.quantityUnit || ""}
           onChange={(event) => onChange("quantityUnit", event.target.value)}
           aria-label={en.purchases.quantityAndUnit}
           className="w-28 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
         >
+          <option value="" disabled>{en.common.select}</option>
           {QUANTITY_UNITS.map((unit) => (
             <option key={unit.value} value={unit.value}>
               {unit.label}

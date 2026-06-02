@@ -1,4 +1,5 @@
 import Input from "@/app/components/ui/Input"
+import SelectField from "@/app/components/ui/SelectField"
 import { MdBusiness } from "react-icons/md"
 import SectionCard from "../components/SectionCard"
 import { en } from "@/app/messages/en"
@@ -48,20 +49,12 @@ export default function BusinessInfo({ data, onChange }: Props) {
           onChange={(e) => onChange("gstNumber", e.target.value.toUpperCase())}
         />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">{en.profile.businessType}</label>
-          <select
-            value={data.businessType}
-            onChange={(e) => onChange("businessType", e.target.value)}
-            className="w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            {BUSINESS_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label={en.profile.businessType}
+          value={data.businessType}
+          onChange={(e) => onChange("businessType", e.target.value)}
+          options={BUSINESS_TYPES}
+        />
 
         <Input
           label={en.profile.upiOptional}

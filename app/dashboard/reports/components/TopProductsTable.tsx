@@ -18,7 +18,7 @@ export default function TopProductsTable({ items }: { items: TopProduct[] }) {
                 <p className="break-words font-semibold capitalize text-[var(--text-primary)]">{item.name}</p>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">{formatNumber(item.quantity)} {en.reports.units}</p>
               </div>
-              <p className="shrink-0 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(item.value)}</p>
+              <p className="shrink-0 text-right font-bold text-emerald-600 dark:text-emerald-600">{formatMoney(item.value)}</p>
             </div>
           </article>
         ))}
@@ -32,7 +32,7 @@ export default function TopProductsTable({ items }: { items: TopProduct[] }) {
         columns={[
           { key: "product", header: en.reports.product, render: (item) => item.name, className: "font-medium capitalize text-[var(--text-primary)]" },
           { key: "units", header: en.reports.units, align: "right", render: (item) => formatNumber(item.quantity), className: "text-[var(--text-secondary)]" },
-          { key: "sales", header: en.reports.sales, align: "right", render: (item) => formatMoney(item.value), className: "font-semibold text-emerald-600 dark:text-emerald-400" },
+          { key: "sales", header: en.reports.sales, align: "right", render: (item) => formatMoney(item.value), className: "font-semibold text-emerald-600 dark:text-emerald-600" },
         ]}
       />
     </>

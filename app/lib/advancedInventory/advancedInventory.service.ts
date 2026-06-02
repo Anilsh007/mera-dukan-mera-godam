@@ -12,6 +12,8 @@ import {
 import { roundCurrency } from "@/app/lib/gst.utils"
 import { normalizeQuantityUnit } from "@/app/lib/quantityUnit"
 import { assertFeatureAccess } from "@/app/lib/subscription/subscription.service"
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
+import { requirePositiveNumber, trimOrUndefined, trimToLowerOrUndefined } from "@/app/lib/normalization.utils"
 import { en } from "@/app/messages/en"
 
 export const DEFAULT_LOCATION_CODE = "MAIN"
@@ -26,6 +28,7 @@ export type LocationStockDeltaInput = {
   oldProductStock: number
   batchNo?: string
   expiry?: string
+  skipImmediateSync?: boolean
 }
 
 export type SaveInventoryLocationInput = {
@@ -50,7 +53,10 @@ export type InventoryLocationOption = {
   isDefault: boolean
 }
 
-export async function ensureDefaultInventoryLocation(userId: string): Promise<InventoryLocationRecord> {
+export async function ensureDefaultInventoryLocation(
+  userId: string,
+  options?: { skipImmediateSync?: boolean },
+): Promise<InventoryLocationRecord> {
   const existing = await db.inventoryLocations
     .where("userId")
     .equals(userId)
@@ -69,11 +75,12 @@ export async function ensureDefaultInventoryLocation(userId: string): Promise<In
     updatedAt: now,
   }
   await db.inventoryLocations.add(location)
+  if (!options?.skipImmediateSync) await requestSupabaseSync("inventory location")
   return location
 }
 
 export async function saveInventoryLocation(input: SaveInventoryLocationInput) {
-  const name = input.name.trim()
+  const name = trimOrUndefined(input.name)
   if (!name) throw new Error(en.advancedInventory.locationNameRequired)
 
   await assertFeatureAccess(input.userId, "godowns", { operation: "create", scope: "premium" })
@@ -87,14 +94,15 @@ export async function saveInventoryLocation(input: SaveInventoryLocationInput) {
   const location: InventoryLocationRecord = {
     id: uuidv4(),
     userId: input.userId,
-    name: name.toLowerCase(),
-    code: input.code?.trim() || undefined,
+    name: trimToLowerOrUndefined(name) || name,
+    code: trimOrUndefined(input.code),
     isDefault: false,
-    notes: input.notes?.trim() || undefined,
+    notes: trimOrUndefined(input.notes),
     createdAt: now,
     updatedAt: now,
   }
   await db.inventoryLocations.add(location)
+  await requestSupabaseSync("inventory location")
   return location
 }
 
@@ -120,7 +128,7 @@ export async function loadStockTransfers(userId: string) {
 export async function adjustAdvancedInventoryStock(input: LocationStockDeltaInput) {
   const location = input.locationId
     ? await db.inventoryLocations.get(input.locationId)
-    : await ensureDefaultInventoryLocation(input.userId)
+    : await ensureDefaultInventoryLocation(input.userId, { skipImmediateSync: input.skipImmediateSync })
   if (!location || location.userId !== input.userId) throw new Error(en.advancedInventory.locationNotFound)
 
   const delta = roundCurrency(Number(input.quantityDelta || 0))
@@ -147,6 +155,8 @@ export async function adjustAdvancedInventoryStock(input: LocationStockDeltaInpu
       expiry: input.expiry,
     })
   }
+
+  if (!input.skipImmediateSync) await requestSupabaseSync("advanced inventory stock")
 }
 
 export async function ensureProductDefaultLocationStock(userId: string, product: Product) {
@@ -163,8 +173,7 @@ export async function ensureProductDefaultLocationStock(userId: string, product:
 }
 
 export async function transferStock(input: StockTransferInput) {
-  const quantity = roundCurrency(Number(input.quantity || 0))
-  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(en.advancedInventory.validTransferQuantity)
+  const quantity = requirePositiveNumber(input.quantity, en.advancedInventory.validTransferQuantity)
   if (input.fromLocationId === input.toLocationId) throw new Error(en.advancedInventory.transferDifferentLocation)
 
   await assertFeatureAccess(input.userId, "godowns", { operation: "update", scope: "premium" })
@@ -200,7 +209,7 @@ export async function transferStock(input: StockTransferInput) {
     toLocationName: toLocation.name,
     quantity,
     quantityUnit: unit,
-    note: input.note?.trim() || undefined,
+    note: trimOrUndefined(input.note),
     createdAt: now,
   }
 
@@ -218,6 +227,8 @@ export async function transferStock(input: StockTransferInput) {
     await db.stockTransfers.add(transfer)
     await db.productLogs.add(buildTransferLog(product, transfer, now))
   })
+
+  await requestSupabaseSync("stock transfer")
 
   return transfer
 }

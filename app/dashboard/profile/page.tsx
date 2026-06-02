@@ -77,7 +77,7 @@ export default function ProfilePage() {
 
       <div className="min-h-[500px]">
         {showEditor ? (
-          <ProfileForm initialData={profile} onSave={handleSave}
+          <ProfileForm key={`${profile.userId || "guest"}:${profile.updatedAt || "initial"}`} initialData={profile} onSave={handleSave}
             onCancel={() => {
               if (!isProfileEmpty) {
                 setIsEditing(false)

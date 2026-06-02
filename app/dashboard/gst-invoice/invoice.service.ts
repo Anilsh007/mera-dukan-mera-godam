@@ -8,6 +8,7 @@ import type { ProfileState } from "@/app/dashboard/profile/useProfile";
 import type { GSTInvoice, GSTInvoiceRecord } from "./types/gst.types";
 import { en } from "@/app/messages/en";
 import { assertFeatureAccess, incrementUsage } from "@/app/lib/subscription/subscription.service";
+import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger";
 
 function requireUserId(userId?: string): string {
   const uid = userId ?? getCurrentUserId();
@@ -107,6 +108,33 @@ export async function saveInvoiceToSupabase(invoice: GSTInvoiceRecord): Promise<
   }
 
   return (await response.json()) as GSTInvoiceRecord;
+}
+
+export async function saveInvoiceWithSync(
+  invoice: GSTInvoice,
+  userId?: string,
+  syncStatus: GSTInvoiceRecord["syncStatus"] = "pending",
+): Promise<GSTInvoiceRecord> {
+  const saved = await saveInvoiceToDb(invoice, userId, syncStatus)
+
+  const synced = await requestSupabaseSync("gst invoice")
+  if (synced) {
+    const syncedRecord: GSTInvoiceRecord = {
+      ...saved,
+      syncStatus: "synced",
+      updatedAt: new Date().toISOString(),
+    }
+    await db.invoices.put(syncedRecord)
+    return syncedRecord
+  }
+
+  const nextStatus: GSTInvoiceRecord["syncStatus"] =
+    typeof window !== "undefined" && !window.navigator.onLine ? "pending" : "failed"
+  await db.invoices.update(saved.id, { syncStatus: nextStatus })
+  return {
+    ...saved,
+    syncStatus: nextStatus,
+  }
 }
 
 export function buildSellerFromProfile(profile: ProfileState) {

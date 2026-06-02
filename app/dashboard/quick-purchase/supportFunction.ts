@@ -1,4 +1,3 @@
-import { DEFAULT_QUANTITY_UNIT } from "@/app/lib/quantityUnit"
 import { v4 as uuidv4 } from "uuid"
 
 export type QuickPurchaseRow = {
@@ -22,7 +21,7 @@ export const createEmptyRow = (): QuickPurchaseRow => ({
     name: "",
     price: "",
     quantity: "",
-    quantityUnit: DEFAULT_QUANTITY_UNIT,
+    quantityUnit: "",
     category: "",
     sku: "",
     hsnCode: "",

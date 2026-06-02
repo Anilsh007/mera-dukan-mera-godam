@@ -55,6 +55,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
       { id: "sales", href: DASHBOARD_ROUTES.sales, label: en.navigation.sales, icon: ReceiptText },
       { id: "estimates", href: DASHBOARD_ROUTES.estimates, label: en.navigation.estimates, icon: FileText },
       { id: "returns", href: DASHBOARD_ROUTES.returns, label: en.navigation.returns, icon: RotateCcw },
+      { id: "exchange", href: DASHBOARD_ROUTES.exchange, label: en.navigation.exchange, icon: RotateCcw },
     ],
   },
   {

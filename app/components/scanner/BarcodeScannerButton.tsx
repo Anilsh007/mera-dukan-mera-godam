@@ -110,7 +110,7 @@ export default function BarcodeScannerButton({
     onDetected(code)
   }, [onDetected, stopCamera])
 
-  const scanFrame = useCallback(async () => {
+  const scanFrame = useCallback(async function scanFrameLoop() {
     if (!scanningRef.current || detectedRef.current) return
 
     const video = videoRef.current
@@ -132,7 +132,9 @@ export default function BarcodeScannerButton({
       }
     }
 
-    animationFrameRef.current = window.requestAnimationFrame(scanFrame)
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      void scanFrameLoop()
+    })
   }, [completeDetection, stopCamera])
 
   const startCamera = useCallback(async () => {
@@ -213,7 +215,7 @@ export default function BarcodeScannerButton({
     } finally {
       setStartingCamera(false)
     }
-  }, [featureGate.allowed, scanFrame, stopCamera])
+  }, [completeDetection, featureGate.allowed, scanFrame, stopCamera])
 
   const handleManualSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -296,14 +298,14 @@ export default function BarcodeScannerButton({
           </div>
 
           {locked ? (
-            <div className="flex gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200" role="alert">
+            <div className="flex gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-600" role="alert">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{en.scanner.scannerLocked}</span>
             </div>
           ) : null}
 
           {cameraError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200" role="alert">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-600" role="alert">
               {cameraError}
             </div>
           ) : null}

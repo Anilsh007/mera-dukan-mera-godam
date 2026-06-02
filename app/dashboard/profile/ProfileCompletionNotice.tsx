@@ -56,7 +56,7 @@ export default function ProfileCompletionNotice() {
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-300" />
             <div>
               <p className="text-sm font-semibold">{en.profile.completeTitle}</p>
-              <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-600">
                 {message}
                 {status.bankMissing && status.requiredMissing.length ? ` ${en.profile.bankHint}` : ""}
               </p>

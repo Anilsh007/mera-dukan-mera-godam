@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { BarChart3, PackagePlus, ReceiptText, Truck } from "lucide-react"
-import { onAuthStateChanged } from "firebase/auth"
+import { auth } from "@/app/lib/firebase"
 import { notify as toast } from "@/app/lib/notifications"
 import Suggestions from "@/app/components/inventory/ProductDatalists"
 import useProducts from "@/app/hooks/useProducts"
-import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import type { PurchasePaymentStatus, PurchaseRecord } from "@/app/lib/db"
 import { completeQuickPurchaseDetails, loadPurchases, savePurchase } from "./purchase.service"
@@ -36,6 +35,7 @@ import Button from "@/app/components/ui/Button"
 import PageActionLinks from "@/app/components/ui/PageActionLinks"
 import PageHeader from "@/app/components/ui/PageHeader"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
+import usePurchases from "@/app/hooks/usePurchases"
 import {
   createTransactionOptions,
   runTransactionDocumentActions,
@@ -46,18 +46,21 @@ export default function PurchasesPage() {
   const { products } = useProducts()
   const { profile } = useProfile()
   const { parties: supplierParties } = useParties("supplier")
+  const { purchases } = usePurchases()
   const [rows, setRows] = useState<PurchaseRow[]>([createPurchaseRow()])
   const [billNo, setBillNo] = useState("")
   const [supplierName, setSupplierName] = useState("")
   const [purchaseDate, setPurchaseDate] = useState(todayDateInput())
-  const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus>("paid")
-  const [paymentMode, setPaymentMode] = useState(DEFAULT_PAYMENT_MODE)
+  const [paymentStatus, setPaymentStatus] = useState<PurchasePaymentStatus | "">("")
+  const [paymentMode, setPaymentMode] = useState<string>(DEFAULT_PAYMENT_MODE)
   const [amountPaid, setAmountPaid] = useState("")
   const [purchaseNote, setPurchaseNote] = useState("")
   const [loading, setLoading] = useState(false)
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([])
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [selectedPendingPurchase, setSelectedPendingPurchase] = useState<PurchaseRecord | null>(null)
+  const [pendingCompleteId, setPendingCompleteId] = useState(() =>
+    typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("complete") || ""),
+  )
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [transactionOptions, setTransactionOptions] = useState<TransactionOptionFlags>(createTransactionOptions())
 
@@ -68,34 +71,18 @@ export default function PurchasesPage() {
   const { paidAmount, dueAmount } = calculatePaymentAmounts(totalAmount, paymentStatus, amountPaid)
   const sellerProfile = buildBusinessDocumentProfile(profile)
   const profileWarnings = getProfileDocumentWarnings(sellerProfile)
+  const activePendingPurchase = useMemo(() => {
+    if (selectedPendingPurchase) return selectedPendingPurchase
+    if (!pendingCompleteId) return null
+    return purchases.find((purchase) => purchase.id === pendingCompleteId && purchase.entryMode === "quick" && purchase.detailsStatus !== "completed") || null
+  }, [pendingCompleteId, purchases, selectedPendingPurchase])
 
-  useEffect(() => {
-    if (!auth) return;
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setPurchases([])
-        return
-      }
-      loadPurchases(requireUserIdentityFromAuthUser(user))
-        .then(setPurchases)
-        .catch(() => toast.error(en.purchases.loadFailed))
-    })
-    return () => unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !purchases.length || selectedPendingPurchase) return
-    const id = new URLSearchParams(window.location.search).get("complete")
-    if (!id) return
-    const pending = purchases.find((purchase) => purchase.id === id && purchase.entryMode === "quick" && purchase.detailsStatus !== "completed")
-    if (pending) setSelectedPendingPurchase(pending)
-  }, [purchases, selectedPendingPurchase])
-
-  useEffect(() => {
-    if (paymentStatus === "paid") setAmountPaid(String(totalAmount || ""))
-    if (paymentStatus === "unpaid") setAmountPaid("0")
-  }, [paymentStatus, totalAmount])
+  const handlePaymentStatusChange = (value: PurchasePaymentStatus | "") => {
+    clearValidation()
+    setPaymentStatus(value)
+    if (value === "paid") setAmountPaid(String(totalAmount || ""))
+    else if (value === "unpaid") setAmountPaid("0")
+  }
 
   const clearValidation = () => {
     if (validationErrors.length) setValidationErrors([])
@@ -121,23 +108,11 @@ export default function PurchasesPage() {
     setBillNo("")
     setSupplierName("")
     setPurchaseDate(todayDateInput())
-    setPaymentStatus("paid")
+      setPaymentStatus("")
     setPaymentMode(DEFAULT_PAYMENT_MODE)
     setAmountPaid("")
     setPurchaseNote("")
     setValidationErrors([])
-  }
-
-  const refreshPurchases = async () => {
-    const userId = requireUserIdentityFromAuthUser(auth?.currentUser)
-    try {
-      setPurchases(await loadPurchases(userId))
-      return true
-    } catch (error) {
-      console.error("Purchase list refresh failed", error)
-      toast.warning(en.purchases.loadFailed)
-      return false
-    }
   }
 
   const pendingPurchases = purchases.filter((purchase) => purchase.entryMode === "quick" && purchase.detailsStatus !== "completed")
@@ -151,11 +126,11 @@ export default function PurchasesPage() {
     amountPaid: number
     note: string
   }) => {
-    if (!selectedPendingPurchase) return
+    if (!activePendingPurchase) return
     if (!ensureValidTransactionOptions(transactionOptions)) return
     try {
       setDetailsLoading(true)
-      const receiptDocument = buildPurchaseDocumentFromRecord(selectedPendingPurchase, {
+      const receiptDocument = buildPurchaseDocumentFromRecord(activePendingPurchase, {
         seller: sellerProfile,
         billNo: values.billNo,
         supplierName: values.supplierName,
@@ -167,14 +142,14 @@ export default function PurchasesPage() {
       })
       await completeQuickPurchaseDetails({
         userId: requireUserIdentityFromAuthUser(auth?.currentUser),
-        purchaseId: selectedPendingPurchase.id,
+        purchaseId: activePendingPurchase.id,
         ...values,
       })
       await runTransactionDocumentActions(receiptDocument, transactionOptions)
       toast.success(en.purchases.quickDetailsCompleted)
       setSelectedPendingPurchase(null)
+      setPendingCompleteId("")
       if (typeof window !== "undefined") window.history.replaceState(null, "", "/dashboard/purchases")
-      await refreshPurchases()
     } catch (error) {
       console.error("Purchase details save failed", error)
       toast.error(error instanceof Error ? error.message : en.purchases.detailsSaveFailed)
@@ -190,7 +165,7 @@ export default function PurchasesPage() {
       supplierName,
       purchaseDate,
       rows,
-      paymentStatus,
+          paymentStatus,
       amountPaid,
       totalAmount,
     })
@@ -201,6 +176,7 @@ export default function PurchasesPage() {
       focusPurchaseField(focusId)
       return
     }
+    if (!paymentStatus) return
 
     if (!ensureValidTransactionOptions(transactionOptions)) return
 
@@ -248,7 +224,6 @@ export default function PurchasesPage() {
       await runTransactionDocumentActions(receiptDocument, transactionOptions)
       toast.success(en.purchases.savedAndUpdated)
       resetForm()
-      await refreshPurchases()
     } catch (error) {
       console.error("Purchase save failed", error)
       toast.error(error instanceof Error ? error.message : en.purchases.saveFailed)
@@ -325,10 +300,7 @@ export default function PurchasesPage() {
             clearValidation()
             setPurchaseDate(value)
           }}
-          onPaymentStatusChange={(value) => {
-            clearValidation()
-            setPaymentStatus(value)
-          }}
+          onPaymentStatusChange={handlePaymentStatusChange}
           onPaymentModeChange={(value) => {
             clearValidation()
             setPaymentMode(value)
@@ -355,12 +327,15 @@ export default function PurchasesPage() {
         />
       </form>
 
-      <CompletePurchaseDetailsModal
-        purchase={selectedPendingPurchase}
-        loading={detailsLoading}
-        onClose={() => setSelectedPendingPurchase(null)}
-        onSave={handleCompleteDetails}
-      />
+        <CompletePurchaseDetailsModal
+          purchase={activePendingPurchase}
+          loading={detailsLoading}
+          onClose={() => {
+            setSelectedPendingPurchase(null)
+            setPendingCompleteId("")
+          }}
+          onSave={handleCompleteDetails}
+        />
     </div>
   )
 }

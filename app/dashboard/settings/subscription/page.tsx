@@ -105,8 +105,12 @@ export default function SubscriptionSettingsPage() {
           if (userId) {
             await refreshSubscriptionFromServer(userId)
           }
-          const response = await fetchSubscriptionStatus()
+          const [response, invoiceResponse] = await Promise.all([
+            fetchSubscriptionStatus(),
+            fetchSubscriptionInvoices(),
+          ])
           setBillingStatus(response)
+          setInvoices(invoiceResponse.invoices)
           router.refresh()
         } catch (error) {
           console.warn("Billing status refresh after payment failed", error)

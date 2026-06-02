@@ -12,7 +12,7 @@ import Input from "@/app/components/ui/Input"
 import { findProductByScannedCode } from "@/app/lib/barcode/barcode.utils"
 import { notify as toast } from "@/app/lib/notifications"
 import Suggestions from "@/app/components/inventory/ProductDatalists"
-import { DEFAULT_QUANTITY_UNIT, normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
+import { normalizeQuantityUnit, QUANTITY_UNITS } from "@/app/lib/quantityUnit"
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { saveQuickPurchase } from "@/app/dashboard/purchases/purchase.service"
@@ -81,8 +81,8 @@ export default function AddProductForm() {
           category: product.category || "",
           sku: product.sku || code,
           hsnCode: product.hsnCode || "",
-          locationId: baseRow.locationId || locations.find((location) => location.isDefault)?.id || "",
-          locationName: baseRow.locationName || locations.find((location) => location.isDefault)?.name || "",
+          locationId: baseRow.locationId || "",
+          locationName: baseRow.locationName || "",
         }
         : {
           ...baseRow,
@@ -151,7 +151,7 @@ export default function AddProductForm() {
           hsnCode: row.hsnCode,
           batchNo: row.batchNo,
           locationId: row.locationId,
-          locationName: locations.find((location) => location.id === row.locationId)?.name || row.locationName,
+          locationName: row.locationName,
           note: row.note,
           supplierName: row.supplierName,
         })),
@@ -234,8 +234,8 @@ export default function AddProductForm() {
 
               <label className="space-y-1 text-sm font-semibold text-[var(--text-secondary)]">
                 <span>{en.advancedInventory.location}</span>
-                <select value={row.locationId || ""} onChange={(event) => { const selected = locations.find((location) => location.id === event.target.value); handleChange(row.id, "locationId", event.target.value); handleChange(row.id, "locationName", selected?.name || "") }} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
-                  <option value="">{en.advancedInventory.defaultGodownName}</option>
+                 <select value={row.locationId || ""} onChange={(event) => { const selected = locations.find((location) => location.id === event.target.value); handleChange(row.id, "locationId", event.target.value); handleChange(row.id, "locationName", selected?.name || "") }} className="min-h-11 w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-input)] px-3 text-[var(--text-primary)]">
+                  <option value="" disabled>{en.common.select}</option>
                   {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
                 </select>
               </label>
@@ -251,10 +251,11 @@ export default function AddProductForm() {
                     onChange={(event) => handleChange(row.id, "quantity", event.target.value)} className="min-w-0 flex-1 bg-transparent p-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none" />
                   <select
                     aria-label={en.quickPurchase.quantityUnit}
-                    value={row.quantityUnit || DEFAULT_QUANTITY_UNIT}
+                    value={row.quantityUnit || ""}
                     onChange={(event) => handleChange(row.id, "quantityUnit", event.target.value)}
                     className="w-28 shrink-0 border-l border-[var(--border-input)] bg-transparent p-2 text-sm font-semibold text-[var(--text-primary)] outline-none"
                   >
+                    <option value="" disabled>{en.common.select}</option>
                     {QUANTITY_UNITS.map((unit) => (
                       <option key={unit.value} value={unit.value}>
                         {unit.label}

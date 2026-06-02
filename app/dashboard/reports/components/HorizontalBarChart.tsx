@@ -19,7 +19,7 @@ export default function HorizontalBarChart({ items }: { items: ChartPoint[] }) {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-xs font-black text-[var(--text-primary)]">{index + 1}</span>
                 <span className="truncate text-sm font-semibold capitalize text-[var(--text-primary)]">{item.label}</span>
               </div>
-              <span className="shrink-0 text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(item.value)}</span>
+              <span className="shrink-0 text-sm font-bold text-emerald-600 dark:text-emerald-600">{formatMoney(item.value)}</span>
             </div>
             <div className="relative h-3 overflow-hidden rounded-full bg-[var(--chart-grid)]">
               <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-500 shadow-sm" style={{ width: `${percent}%` }} />

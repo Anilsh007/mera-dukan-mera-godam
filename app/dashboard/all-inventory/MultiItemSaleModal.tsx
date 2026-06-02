@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { notify as toast } from "@/app/lib/notifications"
 import Button from "@/app/components/ui/Button"
@@ -9,7 +9,6 @@ import Modal from "@/app/components/ui/Modal"
 import StatusBadge from "@/app/components/ui/StatusBadge"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import type { Product } from "@/app/lib/db"
-import { loadInvoicesFromDb } from "@/app/dashboard/gst-invoice/invoice.service"
 import { buildBuyerSuggestions, matchBuyerSuggestion } from "@/app/dashboard/gst-invoice/buyerSuggestions"
 import { saveSaleInvoiceDraft } from "@/app/dashboard/gst-invoice/invoiceDraft.service"
 import useProfile from "@/app/dashboard/profile/useProfile"
@@ -32,7 +31,9 @@ import { buildSaleInvoiceDraftFromRecord, buildSaleTransactionDocument } from "@
 import { auth } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import useParties from "@/app/hooks/useParties"
+import useAuthLiveQuery from "@/app/hooks/useAuthLiveQuery"
 import { DASHBOARD_ROUTES } from "@/app/lib/navigation/dashboardRoutes"
+import { db } from "@/app/lib/db"
 
 type SaleLine = {
   productId: string
@@ -106,26 +107,15 @@ export default function MultiItemSaleModal({
     })
   )
   const [showMore, setShowMore] = useState(false)
-  const [buyerSuggestions, setBuyerSuggestions] = useState<ReturnType<typeof buildBuyerSuggestions>>([])
-
-  useEffect(() => {
-    let mounted = true
-
-    async function loadBuyerHistory() {
-      try {
-        const invoices = await loadInvoicesFromDb()
-        if (!mounted) return
-        setBuyerSuggestions(buildBuyerSuggestions(invoices))
-      } catch {
-        if (mounted) toast.warning(en.gstInvoice.buyerHistoryLoadFailed, { id: "buyer-history-load-failed" })
-      }
-    }
-
-    loadBuyerHistory()
-    return () => {
-      mounted = false
-    }
-  }, [])
+  const { data: buyerInvoices } = useAuthLiveQuery(
+    [],
+    async (userId) => db.invoices.where("userId").equals(userId).toArray(),
+    (error) => {
+      console.error("Buyer history load failed", error)
+      toast.warning(en.gstInvoice.buyerHistoryLoadFailed, { id: "buyer-history-load-failed" })
+    },
+  )
+  const buyerSuggestions = useMemo(() => buildBuyerSuggestions(buyerInvoices), [buyerInvoices])
 
   const validLines = useMemo(
     () =>
@@ -425,7 +415,7 @@ export default function MultiItemSaleModal({
       <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/30 dark:bg-emerald-950/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{validLines.length} {validLines.length > 1 ? en.inventory.readySuffixPlural : en.inventory.readySuffixSingular}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">{en.inventory.multiSaleHint}</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-600">{en.inventory.multiSaleHint}</p>
         </div>
         <StatusBadge tone="success" className="rounded-2xl px-4 py-2 text-sm">
           {formatCurrency(grandTotal)}
