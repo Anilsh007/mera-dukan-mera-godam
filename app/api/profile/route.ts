@@ -157,37 +157,56 @@ function mapProfileToDb(profile: ProfilePayload, userId: string) {
 }
 
 function mapDbToProfile(data: Record<string, unknown>, userId: string) {
+  const payload = data.payload && typeof data.payload === "object"
+    ? data.payload as Record<string, unknown>
+    : null
+  const personal = payload?.personal && typeof payload.personal === "object"
+    ? payload.personal as Record<string, unknown>
+    : null
+  const business = payload?.business && typeof payload.business === "object"
+    ? payload.business as Record<string, unknown>
+    : null
+  const address = payload?.address && typeof payload.address === "object"
+    ? payload.address as Record<string, unknown>
+    : null
+  const banking = payload?.banking && typeof payload.banking === "object"
+    ? payload.banking as Record<string, unknown>
+    : null
+  const settings = payload?.settings && typeof payload.settings === "object"
+    ? payload.settings as Record<string, unknown>
+    : null
+
   return {
     userId,
-    updatedAt: String(data.updated_at ?? ""),
+    updatedAt: String(data.updated_at ?? payload?.updatedAt ?? ""),
     personal: {
-      displayName: String(data.display_name ?? ""),
-      email: String(data.email ?? ""),
-      photoURL: String(data.photo_url ?? ""),
-      phone: String(data.phone ?? ""),
-      alternateEmail: String(data.alternate_email ?? ""),
+      displayName: String(data.display_name ?? personal?.displayName ?? ""),
+      email: String(data.email ?? personal?.email ?? ""),
+      photoURL: String(data.photo_url ?? personal?.photoURL ?? personal?.photoUrl ?? ""),
+      phone: String(data.phone ?? personal?.phone ?? ""),
+      alternateEmail: String(data.alternate_email ?? personal?.alternateEmail ?? ""),
     },
     business: {
-      shopName: String(data.shop_name ?? ""),
-      gstNumber: String(data.gst_number ?? ""),
-      businessType: String(data.business_type ?? ""),
-      upiId: String(data.upi_id ?? ""),
-      invoicePrefix: String(data.invoice_prefix ?? "INV"),
+      shopName: String(data.shop_name ?? business?.shopName ?? ""),
+      gstNumber: String(data.gst_number ?? business?.gstNumber ?? ""),
+      businessType: String(data.business_type ?? business?.businessType ?? ""),
+      upiId: String(data.upi_id ?? business?.upiId ?? ""),
+      invoicePrefix: String(data.invoice_prefix ?? business?.invoicePrefix ?? "INV"),
     },
     address: {
-      address: String(data.address ?? ""),
-      district: String(data.district ?? ""),
-      state: String(data.state ?? ""),
-      pincode: String(data.pincode ?? ""),
+      address: String(data.address ?? address?.address ?? ""),
+      district: String(data.district ?? address?.district ?? ""),
+      state: String(data.state ?? address?.state ?? ""),
+      pincode: String(data.pincode ?? address?.pincode ?? ""),
     },
     banking: {
-      accountHolderName: String(data.account_holder_name ?? ""),
-      accountNumber: String(data.account_number ?? ""),
-      ifscCode: String(data.ifsc_code ?? ""),
-      bankName: String(data.bank_name ?? ""),
+      accountHolderName: String(data.account_holder_name ?? banking?.accountHolderName ?? ""),
+      accountNumber: String(data.account_number ?? banking?.accountNumber ?? ""),
+      ifscCode: String(data.ifsc_code ?? banking?.ifscCode ?? ""),
+      bankName: String(data.bank_name ?? banking?.bankName ?? ""),
     },
     settings: {
-      termsAndConditions: String(data.terms_and_conditions ?? ""),
+      termsAndConditions: String(data.terms_and_conditions ?? settings?.termsAndConditions ?? ""),
     },
   };
 }

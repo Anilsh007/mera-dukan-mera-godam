@@ -46,15 +46,38 @@ const ENTITY_CONFIG: Record<SyncEntityName, EntityConfig> = {
     dbTable: "profiles",
     onConflict: "user_id",
     deleteMatchColumn: "user_id",
-    serialize: (record, userId) => ({
-      user_id: userId,
-      display_name: sanitizeOptionalText(record.displayName, 160),
-      email: sanitizeOptionalText(record.email, 160),
-      phone: sanitizeOptionalText(record.phone, 80),
-      photo_url: sanitizeOptionalText(record.photoURL || record.photoUrl, 500),
-      updated_at: sanitizeOptionalText(record.updatedAt, 80),
-      payload: { ...record, userId },
-    }),
+    serialize: (record, userId) => {
+      const personal = record.personal && typeof record.personal === "object" ? record.personal as Record<string, unknown> : {}
+      const business = record.business && typeof record.business === "object" ? record.business as Record<string, unknown> : {}
+      const address = record.address && typeof record.address === "object" ? record.address as Record<string, unknown> : {}
+      const banking = record.banking && typeof record.banking === "object" ? record.banking as Record<string, unknown> : {}
+      const settings = record.settings && typeof record.settings === "object" ? record.settings as Record<string, unknown> : {}
+
+      return {
+        user_id: userId,
+        display_name: sanitizeOptionalText(personal.displayName, 160),
+        email: sanitizeOptionalText(personal.email, 160),
+        phone: sanitizeOptionalText(personal.phone, 80),
+        alternate_email: sanitizeOptionalText(personal.alternateEmail, 160),
+        photo_url: sanitizeOptionalText(personal.photoURL || personal.photoUrl, 500),
+        shop_name: sanitizeOptionalText(business.shopName, 160),
+        gst_number: sanitizeOptionalText(business.gstNumber, 40),
+        business_type: sanitizeOptionalText(business.businessType, 80),
+        upi_id: sanitizeOptionalText(business.upiId, 120),
+        invoice_prefix: sanitizeOptionalText(business.invoicePrefix, 40),
+        address: sanitizeOptionalText(address.address, 300),
+        district: sanitizeOptionalText(address.district, 120),
+        state: sanitizeOptionalText(address.state, 120),
+        pincode: sanitizeOptionalText(address.pincode, 20),
+        account_holder_name: sanitizeOptionalText(banking.accountHolderName, 160),
+        account_number: sanitizeOptionalText(banking.accountNumber, 80),
+        ifsc_code: sanitizeOptionalText(banking.ifscCode, 40),
+        bank_name: sanitizeOptionalText(banking.bankName, 160),
+        terms_and_conditions: sanitizeOptionalText(settings.termsAndConditions, 3000),
+        updated_at: sanitizeOptionalText(record.updatedAt, 80),
+        payload: { ...record, userId },
+      }
+    },
   },
   invoices: {
     dbTable: "gst_invoices",
