@@ -29,6 +29,7 @@ type ProfilePayload = {
     businessType: string;
     upiId: string;
     invoicePrefix: string;
+    logoUrl?: string;
   };
   address: {
     address: string;
@@ -153,6 +154,10 @@ function mapProfileToDb(profile: ProfilePayload, userId: string) {
     ifsc_code: profile.banking.ifscCode,
     bank_name: profile.banking.bankName,
     terms_and_conditions: profile.settings.termsAndConditions,
+    payload: {
+      ...profile,
+      userId,
+    },
   };
 }
 
@@ -192,6 +197,7 @@ function mapDbToProfile(data: Record<string, unknown>, userId: string) {
       businessType: String(data.business_type ?? business?.businessType ?? ""),
       upiId: String(data.upi_id ?? business?.upiId ?? ""),
       invoicePrefix: String(data.invoice_prefix ?? business?.invoicePrefix ?? "INV"),
+      logoUrl: String(business?.logoUrl ?? ""),
     },
     address: {
       address: String(data.address ?? address?.address ?? ""),
@@ -230,6 +236,7 @@ function validateProfilePayload(profile: ProfilePayload): ProfilePayload {
       businessType: sanitizeOptionalText(profile.business?.businessType, 50) || "",
       upiId: sanitizeOptionalText(profile.business?.upiId, 80) || "",
       invoicePrefix: sanitizeOptionalText(profile.business?.invoicePrefix, 20) || "INV",
+      logoUrl: sanitizeOptionalText(profile.business?.logoUrl, 500) || "",
     },
     address: {
       address: sanitizeRequiredText(profile.address?.address, 300, "Address"),

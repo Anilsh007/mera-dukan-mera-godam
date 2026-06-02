@@ -2,7 +2,7 @@
 
 import { deleteProfileFromDb, loadProfileFromDb, saveProfileToDb } from "./profileDb.service"
 import type { ProfileState } from "@/app/dashboard/profile/useProfile"
-import { saveProfileToSupabase } from "./profileSupabase.service"
+import { deleteProfileFromSupabase, saveProfileToSupabase } from "./profileSupabase.service"
 import { stripProfileMeta } from "./profileSync.utils"
 import { requestSupabaseSync } from "@/app/lib/persistence/supabaseSyncTrigger"
 import { runWithCrudBusy } from "@/app/lib/crudBusy"
@@ -37,6 +37,19 @@ export async function deleteProfileWithSync(userId?: string) {
   return runWithCrudBusy("Deleting profile", async () => {
     await deleteProfileFromDb(userId)
     const cloudSyncSkipped = typeof window !== "undefined" ? !window.navigator.onLine : false
-    return { cloudSyncSkipped }
+
+    if (!cloudSyncSkipped) {
+      try {
+        await deleteProfileFromSupabase()
+        return { cloudSyncSkipped: false }
+      } catch (error) {
+        console.error("Profile cloud delete failed:", error)
+        void requestSupabaseSync("profile delete")
+        return { cloudSyncSkipped: true }
+      }
+    }
+
+    void requestSupabaseSync("profile delete")
+    return { cloudSyncSkipped: true }
   })
 }

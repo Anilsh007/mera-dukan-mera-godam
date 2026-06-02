@@ -36,18 +36,8 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const shouldUseRedirect =
-        typeof window !== "undefined" &&
-        (window.innerWidth < 768 ||
-          /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent));
-
-      if (shouldUseRedirect) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
       await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error: unknown) {
       const code =
         typeof error === "object" && error && "code" in error && typeof error.code === "string"
