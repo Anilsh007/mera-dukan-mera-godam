@@ -1,6 +1,14 @@
 // lib/firebase.js
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  browserPopupRedirectResolver,
+} from "firebase/auth";
 import { en } from "@/app/messages/en";
 
 const firebaseConfig = {
@@ -35,10 +43,21 @@ let firebaseAuthReadyPromise = Promise.resolve();
 if (isFirebaseConfigured) {
   try {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    firebaseAuth = getAuth(firebaseApp);
-    firebaseAuthReadyPromise = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
-      console.warn("Firebase auth persistence could not be enabled:", error);
-    });
+    try {
+      firebaseAuth = initializeAuth(firebaseApp, {
+        persistence: [
+          indexedDBLocalPersistence,
+          browserLocalPersistence,
+          browserSessionPersistence,
+        ],
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+      firebaseAuthReadyPromise = Promise.resolve();
+    } catch (authInitError) {
+      console.warn("Firebase advanced auth initialization fell back to getAuth:", authInitError);
+      firebaseAuth = getAuth(firebaseApp);
+      firebaseAuthReadyPromise = Promise.resolve();
+    }
 
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({
