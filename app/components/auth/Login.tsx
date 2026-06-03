@@ -1,7 +1,7 @@
 "use client";
 
-import { onAuthStateChanged, signInWithPopup, signInWithRedirect } from "firebase/auth";
-import { auth, firebaseErrorMessage, isFirebaseConfigured, provider } from "@/app/lib/firebase";
+import { getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { auth, authReady, firebaseErrorMessage, isFirebaseConfigured, provider } from "@/app/lib/firebase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FcGoogle } from "react-icons/fc";
@@ -14,19 +14,54 @@ import { en } from "@/app/messages/en";
 export default function Login() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [authBootstrapping, setAuthBootstrapping] = useState(Boolean(auth));
 
   useEffect(() => {
     if (!auth) return;
 
-    return onAuthStateChanged(auth, (user) => {
+    let isMounted = true;
+
+    authReady
+      .then(async () => {
+        try {
+          await getRedirectResult(auth);
+        } catch (error: unknown) {
+          const code =
+            typeof error === "object" && error && "code" in error && typeof error.code === "string"
+              ? error.code
+              : "";
+
+          if (code === "auth/unauthorized-domain") {
+            toast.error(en.auth.unauthorizedDomain);
+          } else if (code) {
+            toast.error(en.auth.loginFailed);
+          }
+        } finally {
+          if (isMounted) {
+            setAuthBootstrapping(false);
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAuthBootstrapping(false);
+        }
+      });
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         router.replace("/dashboard");
       }
     });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [router]);
 
   const handleLogin = async () => {
-    if (loading) return;
+    if (loading || authBootstrapping) return;
 
     if (!isFirebaseConfigured || !auth || !provider) {
       toast.error(firebaseErrorMessage || en.auth.loginNotConfigured);
@@ -35,6 +70,7 @@ export default function Login() {
 
     try {
       setLoading(true);
+      await authReady;
 
       await signInWithPopup(auth, provider);
       router.replace("/dashboard");
@@ -52,6 +88,7 @@ export default function Login() {
         toast.message(en.auth.popupFallback);
 
         try {
+          await authReady;
           await signInWithRedirect(auth, provider);
           return;
         } catch {
@@ -97,7 +134,7 @@ export default function Login() {
         )}
 
         <div className="w-full">
-          <Button onClick={handleLogin} disabled={!isFirebaseConfigured || loading} loading={loading} variant="login" icon={<FcGoogle />} title={en.auth.continueWithGoogle} className="w-full justify-center" />
+          <Button onClick={handleLogin} disabled={!isFirebaseConfigured || loading || authBootstrapping} loading={loading || authBootstrapping} variant="login" icon={<FcGoogle />} title={en.auth.continueWithGoogle} className="w-full justify-center" />
         </div>
 
         <div className="grid w-full grid-cols-1 gap-2 text-center text-xs text-white/65">

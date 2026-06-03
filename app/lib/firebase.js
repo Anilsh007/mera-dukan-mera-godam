@@ -30,12 +30,13 @@ let firebaseApp = null;
 let firebaseAuth = null;
 let googleProvider = null;
 let firebaseConfigError = "";
+let firebaseAuthReadyPromise = Promise.resolve();
 
 if (isFirebaseConfigured) {
   try {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
     firebaseAuth = getAuth(firebaseApp);
-    setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
+    firebaseAuthReadyPromise = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
       console.warn("Firebase auth persistence could not be enabled:", error);
     });
 
@@ -55,6 +56,7 @@ export const db = null;
 export const auth = firebaseAuth;
 export const provider = googleProvider;
 export const firebaseErrorMessage = firebaseConfigError;
+export const authReady = firebaseAuthReadyPromise;
 
 export function requireFirebaseAuth() {
   if (!auth) {

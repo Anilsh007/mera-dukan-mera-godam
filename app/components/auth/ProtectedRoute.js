@@ -11,8 +11,6 @@ export default function ProtectedRoute({ children }) {
 
   useEffect(() => {
     if (!auth) {
-      setAuthResolved(true);
-      setIsAuthenticated(false);
       router.push("/");
       return;
     }
