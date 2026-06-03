@@ -2,6 +2,7 @@ const isGithub = process.env.GITHUB_ACTIONS === "true"
 const isDevelopment = process.env.NODE_ENV !== "production"
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
 const isHttpsProduction = !isDevelopment && siteUrl.startsWith("https://")
+const firebaseHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ""
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -61,6 +62,22 @@ const nextConfig = {
       {
         source: "/:all*(svg|jpg|jpeg|png|webp|avif|ico|js|css|woff2)",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ]
+  },
+  async rewrites() {
+    if (!firebaseHelperDomain) {
+      return []
+    }
+
+    return [
+      {
+        source: "/__/auth/:path*",
+        destination: `https://${firebaseHelperDomain}/__/auth/:path*`,
+      },
+      {
+        source: "/__/firebase/init.json",
+        destination: `https://${firebaseHelperDomain}/__/firebase/init.json`,
       },
     ]
   },

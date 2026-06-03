@@ -11,9 +11,44 @@ import {
 } from "firebase/auth";
 import { en } from "@/app/messages/en";
 
+function resolveFirebaseAuthDomain() {
+  const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  const configuredSiteHost = configuredSiteUrl
+    ? safelyReadHostFromUrl(configuredSiteUrl)
+    : null;
+  if (configuredSiteHost && configuredSiteHost !== configuredAuthDomain) {
+    return configuredSiteHost;
+  }
+
+  if (typeof window !== "undefined") {
+    const runtimeHost = window.location.host;
+    const runtimeHostname = window.location.hostname;
+    const isLocalRuntime =
+      runtimeHostname === "localhost" ||
+      runtimeHostname === "127.0.0.1" ||
+      runtimeHostname === "[::1]";
+
+    if (!isLocalRuntime && runtimeHost && runtimeHost !== configuredAuthDomain) {
+      return runtimeHost;
+    }
+  }
+
+  return configuredAuthDomain;
+}
+
+function safelyReadHostFromUrl(value) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return null;
+  }
+}
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: resolveFirebaseAuthDomain(),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
