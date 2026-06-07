@@ -2,10 +2,13 @@ import type { Metadata } from "next"
 import { getLocalizedSeoCopy } from "@/app/messages/locales/seo"
 import { en } from "@/app/messages/en"
 
-// Keep the custom domain disabled until the real domain is purchased and configured.
-// After domain setup, set NEXT_PUBLIC_SITE_URL=https://your-domain.com in production.
 const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-export const SITE_URL = configuredSiteUrl && /^https?:\/\//i.test(configuredSiteUrl) ? configuredSiteUrl.replace(/\/$/, "") : "http://localhost:3000"
+const defaultProductionSiteUrl = "https://dugam.in"
+export const SITE_URL = configuredSiteUrl && /^https?:\/\//i.test(configuredSiteUrl)
+  ? configuredSiteUrl.replace(/\/$/, "")
+  : process.env.NODE_ENV === "production"
+    ? defaultProductionSiteUrl
+    : "http://localhost:3000"
 export const APP_NAME = "Mera Dukan Mera Godam"
 export const APP_SHORT_NAME = "MDMG"
 export const APP_DESCRIPTION = getLocalizedSeoCopy("en").appDescription
