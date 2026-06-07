@@ -72,6 +72,16 @@ export default function Login() {
       setLoading(true);
       await authReady;
 
+      const shouldPreferRedirect =
+        typeof window !== "undefined" &&
+        (window.innerWidth < 768 ||
+          /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent));
+
+      if (shouldPreferRedirect) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
       await signInWithPopup(auth, provider);
       router.replace("/dashboard");
     } catch (error: unknown) {

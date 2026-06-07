@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.supabase.co wss://*.supabase.co https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://cdn.razorpay.com https://lumberjack.razorpay.com",
-  "frame-src https://accounts.google.com https://*.firebaseapp.com https://checkout.razorpay.com https://api.razorpay.com",
+  "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://checkout.razorpay.com https://api.razorpay.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
