@@ -2,7 +2,7 @@ const isGithub = process.env.GITHUB_ACTIONS === "true"
 const isDevelopment = process.env.NODE_ENV !== "production"
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
 const isHttpsProduction = !isDevelopment && siteUrl.startsWith("https://")
-const firebaseHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ""
+const firebaseHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN || process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ""
 
 const contentSecurityPolicy = [
   "default-src 'self'",

@@ -1,24 +1,29 @@
-// lib/firebase.js
+﻿// lib/firebase.js
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  initializeAuth,
-  indexedDBLocalPersistence,
+  setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-  browserPopupRedirectResolver,
+  indexedDBLocalPersistence,
 } from "firebase/auth";
 import { en } from "@/app/messages/en";
 
 function resolveFirebaseAuthDomain() {
   const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  const configuredHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN || configuredAuthDomain;
   const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  const isLocalEnv = process.env.NODE_ENV !== "production";
+  if (isLocalEnv) {
+    return configuredAuthDomain || configuredHelperDomain;
+  }
 
   const configuredSiteHost = configuredSiteUrl
     ? safelyReadHostFromUrl(configuredSiteUrl)
     : null;
-  if (configuredSiteHost && configuredSiteHost !== configuredAuthDomain) {
+  if (configuredSiteHost && configuredSiteHost !== configuredHelperDomain) {
     return configuredSiteHost;
   }
 
@@ -30,12 +35,12 @@ function resolveFirebaseAuthDomain() {
       runtimeHostname === "127.0.0.1" ||
       runtimeHostname === "[::1]";
 
-    if (!isLocalRuntime && runtimeHost && runtimeHost !== configuredAuthDomain) {
+    if (!isLocalRuntime && runtimeHost && runtimeHost !== configuredHelperDomain) {
       return runtimeHost;
     }
   }
 
-  return configuredAuthDomain;
+  return configuredAuthDomain || configuredHelperDomain;
 }
 
 function safelyReadHostFromUrl(value) {
@@ -78,20 +83,21 @@ let firebaseAuthReadyPromise = Promise.resolve();
 if (isFirebaseConfigured) {
   try {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    try {
-      firebaseAuth = initializeAuth(firebaseApp, {
-        persistence: [
-          indexedDBLocalPersistence,
-          browserLocalPersistence,
-          browserSessionPersistence,
-        ],
-        popupRedirectResolver: browserPopupRedirectResolver,
-      });
-      firebaseAuthReadyPromise = Promise.resolve();
-    } catch (authInitError) {
-      console.warn("Firebase advanced auth initialization fell back to getAuth:", authInitError);
-      firebaseAuth = getAuth(firebaseApp);
-      firebaseAuthReadyPromise = Promise.resolve();
+    firebaseAuth = getAuth(firebaseApp);
+
+    if (typeof window !== "undefined") {
+      firebaseAuthReadyPromise = setPersistence(firebaseAuth, indexedDBLocalPersistence)
+        .catch((indexedDbError) => {
+          console.warn("IndexedDB auth persistence unavailable, falling back to local persistence:", indexedDbError);
+          return setPersistence(firebaseAuth, browserLocalPersistence);
+        })
+        .catch((localError) => {
+          console.warn("Local auth persistence unavailable, falling back to session persistence:", localError);
+          return setPersistence(firebaseAuth, browserSessionPersistence);
+        })
+        .catch((sessionError) => {
+          console.warn("Firebase auth persistence could not be enabled:", sessionError);
+        });
     }
 
     googleProvider = new GoogleAuthProvider();
@@ -125,3 +131,4 @@ export function requireGoogleProvider() {
   }
   return provider;
 }
+

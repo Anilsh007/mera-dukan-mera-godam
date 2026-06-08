@@ -24,7 +24,12 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Production domain is `https://dugam.in`. Set `NEXT_PUBLIC_SITE_URL=https://dugam.in` and `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=dugam.in` in deployed environments.
+Production domain is `https://dugam.in`. In production, set:
+- `NEXT_PUBLIC_SITE_URL=https://dugam.in`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=dugam.in`
+- `NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN=my-shop-31c96.firebaseapp.com`
+
+For local development, keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` and use the Firebase helper domain as the auth domain.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
