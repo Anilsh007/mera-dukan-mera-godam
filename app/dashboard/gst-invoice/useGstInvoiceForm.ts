@@ -60,7 +60,7 @@ export function useGstInvoiceForm() {
     async (userId) => loadInvoicesFromDb(userId),
     (error) => {
       console.error("GST invoice history load failed", error)
-      toast.error(en.common.loadFailed)
+      toast.error("Could not load GST invoices.")
     },
   )
 
@@ -335,4 +335,5 @@ export function useGstInvoiceForm() {
     loadInvoiceFromHistory,
   }
 }
+
 
