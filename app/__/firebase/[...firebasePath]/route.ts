@@ -39,8 +39,10 @@ async function proxyFirebaseAsset(
     );
   }
 
+  const resolvedHelperDomain = helperDomain!;
+
   const headers = new Headers(request.headers);
-  headers.set("host", helperDomain);
+  headers.set("host", resolvedHelperDomain);
 
   const response = await fetch(targetUrl, {
     headers,
@@ -68,3 +70,5 @@ export async function GET(request: NextRequest, context: FirebaseRouteContext) {
 export async function HEAD(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAsset(request, context);
 }
+
+

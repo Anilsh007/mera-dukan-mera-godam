@@ -39,8 +39,10 @@ async function proxyFirebaseAuth(
     );
   }
 
+  const resolvedHelperDomain = helperDomain!;
+
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("host", helperDomain);
+  requestHeaders.set("host", resolvedHelperDomain);
 
   const response = await fetch(targetUrl, {
     method: request.method,
@@ -92,3 +94,5 @@ export async function HEAD(request: NextRequest, context: FirebaseRouteContext) 
 export async function OPTIONS(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
+
+
