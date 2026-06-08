@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "mera-dukan-mera-godam",
   "version": "0.1.0",
   "private": true,
@@ -40,10 +40,10 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.31.1"
+    "lightningcss-linux-x64-gnu": "1.31.1",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.2.1"
   },
   "engines": {
     "node": ">=20.9.0"
   }
 }
-
