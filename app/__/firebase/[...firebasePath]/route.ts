@@ -1,10 +1,16 @@
-﻿import { NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+
+type FirebaseRouteContext = {
+  params: {
+    firebasePath?: string[];
+  };
+};
 
 const helperDomain =
   process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN ||
   process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 
-function buildTargetUrl(pathSegments, searchParams) {
+function buildTargetUrl(pathSegments: string[], searchParams: URLSearchParams): URL | null {
   if (!helperDomain) {
     return null;
   }
@@ -19,7 +25,10 @@ function buildTargetUrl(pathSegments, searchParams) {
   return targetUrl;
 }
 
-async function proxyFirebaseAsset(request, context) {
+async function proxyFirebaseAsset(
+  request: NextRequest,
+  context: FirebaseRouteContext,
+): Promise<NextResponse> {
   const pathSegments = context.params?.firebasePath || [];
   const targetUrl = buildTargetUrl(pathSegments, request.nextUrl.searchParams);
 
@@ -30,29 +39,32 @@ async function proxyFirebaseAsset(request, context) {
     );
   }
 
+  const headers = new Headers(request.headers);
+  headers.set("host", helperDomain);
+
   const response = await fetch(targetUrl, {
-    headers: request.headers,
+    headers,
     cache: "no-store",
     redirect: "manual",
   });
 
-  const headers = new Headers(response.headers);
-  headers.delete("content-encoding");
-  headers.delete("content-length");
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
 
   return new NextResponse(response.body, {
     status: response.status,
-    headers,
+    headers: responseHeaders,
   });
 }
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(request, context) {
+export async function GET(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAsset(request, context);
 }
 
-export async function HEAD(request, context) {
+export async function HEAD(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAsset(request, context);
 }

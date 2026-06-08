@@ -1,10 +1,16 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
+type FirebaseRouteContext = {
+  params: {
+    firebasePath?: string[];
+  };
+};
+
 const helperDomain =
   process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN ||
   process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 
-function buildTargetUrl(pathSegments, searchParams) {
+function buildTargetUrl(pathSegments: string[], searchParams: URLSearchParams): URL | null {
   if (!helperDomain) {
     return null;
   }
@@ -19,7 +25,10 @@ function buildTargetUrl(pathSegments, searchParams) {
   return targetUrl;
 }
 
-async function proxyFirebaseAuth(request, context) {
+async function proxyFirebaseAuth(
+  request: NextRequest,
+  context: FirebaseRouteContext,
+): Promise<NextResponse> {
   const pathSegments = context.params?.firebasePath || [];
   const targetUrl = buildTargetUrl(pathSegments, request.nextUrl.searchParams);
 
@@ -36,9 +45,10 @@ async function proxyFirebaseAuth(request, context) {
   const response = await fetch(targetUrl, {
     method: request.method,
     headers: requestHeaders,
-    body: request.method === "GET" || request.method === "HEAD"
-      ? undefined
-      : await request.arrayBuffer(),
+    body:
+      request.method === "GET" || request.method === "HEAD"
+        ? undefined
+        : await request.arrayBuffer(),
     redirect: "manual",
   });
 
@@ -55,30 +65,30 @@ async function proxyFirebaseAuth(request, context) {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(request, context) {
+export async function GET(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function POST(request, context) {
+export async function POST(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function PUT(request, context) {
+export async function PUT(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function PATCH(request, context) {
+export async function PATCH(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function DELETE(request, context) {
+export async function DELETE(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function HEAD(request, context) {
+export async function HEAD(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
 
-export async function OPTIONS(request, context) {
+export async function OPTIONS(request: NextRequest, context: FirebaseRouteContext) {
   return proxyFirebaseAuth(request, context);
 }
