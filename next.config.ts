@@ -1,4 +1,3 @@
-const isGithub = process.env.GITHUB_ACTIONS === "true"
 const isDevelopment = process.env.NODE_ENV !== "production"
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
 const isHttpsProduction = !isDevelopment && siteUrl.startsWith("https://")
@@ -34,15 +33,10 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
-  ...(isGithub && {
-    output: "export",
-    basePath: "/Mera-Dukan-Mera-Godam",
-  }),
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
   images: {
-    unoptimized: isGithub,
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     deviceSizes: [360, 414, 640, 768, 1024, 1280, 1536],
