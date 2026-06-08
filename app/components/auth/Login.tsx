@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect } from "firebase/auth";
 import { auth, authReady, firebaseErrorMessage, isFirebaseConfigured, provider } from "@/app/lib/firebase";
@@ -19,12 +19,13 @@ export default function Login() {
   useEffect(() => {
     if (!auth) return;
 
+    const firebaseAuth = auth;
     let isMounted = true;
 
     authReady
       .then(async () => {
         try {
-          await getRedirectResult(auth);
+          await getRedirectResult(firebaseAuth);
         } catch (error: unknown) {
           const code =
             typeof error === "object" && error && "code" in error && typeof error.code === "string"
@@ -48,7 +49,7 @@ export default function Login() {
         }
       });
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       if (user) {
         router.replace("/dashboard");
       }
@@ -158,3 +159,4 @@ export default function Login() {
     </div>
   );
 }
+
