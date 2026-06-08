@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -60,9 +60,11 @@ export function useGstInvoiceForm() {
     async (userId) => loadInvoicesFromDb(userId),
     (error) => {
       console.error("GST invoice history load failed", error)
-      toast.error(en.gstInvoice.loadFailed)
+      toast.error(en.common.loadFailed)
     },
   )
+
+  const invoices = invoiceHistory
 
   const isInterState = isInterStateSupply({
     seller: draftInvoice.seller,
@@ -85,8 +87,6 @@ export function useGstInvoiceForm() {
       toast.warning(en.gstInvoice.hsnLookupUnavailable, { id: "gst-hsn-lookup-warning" })
     })
   }, [])
-
-  const invoices = invoiceHistory
 
   useEffect(() => {
     if (!profile || hasInitializedDraftRef.current) return
@@ -335,3 +335,4 @@ export function useGstInvoiceForm() {
     loadInvoiceFromHistory,
   }
 }
+
