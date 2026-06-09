@@ -13,28 +13,13 @@ import { en } from "@/app/messages/en";
 function resolveFirebaseAuthDomain() {
   const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
   const configuredHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN || configuredAuthDomain;
-  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const configuredSiteHost = configuredSiteUrl ? safelyReadHostFromUrl(configuredSiteUrl) : null;
 
   const isLocalEnv = process.env.NODE_ENV !== "production";
   if (isLocalEnv) {
     return configuredAuthDomain || configuredHelperDomain;
   }
 
-  if (typeof window !== "undefined") {
-    const runtimeHostname = window.location.hostname;
-    const isLocalRuntime =
-      runtimeHostname === "localhost" ||
-      runtimeHostname === "127.0.0.1" ||
-      runtimeHostname === "[::1]";
-    const isDugamDomain = /(^|\.)dugam\.in$/i.test(runtimeHostname);
-
-    if (!isLocalRuntime && isDugamDomain) {
-      return window.location.host;
-    }
-  }
-
-  return configuredSiteHost || configuredAuthDomain || configuredHelperDomain;
+  return configuredAuthDomain || configuredHelperDomain;
 }
 
 function safelyReadHostFromUrl(value) {
@@ -125,6 +110,7 @@ export function requireGoogleProvider() {
   }
   return provider;
 }
+
 
 
 
