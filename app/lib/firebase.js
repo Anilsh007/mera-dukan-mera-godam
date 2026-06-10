@@ -22,14 +22,6 @@ function resolveFirebaseAuthDomain() {
   return configuredAuthDomain || configuredHelperDomain;
 }
 
-function safelyReadHostFromUrl(value) {
-  try {
-    return new URL(value).host;
-  } catch {
-    return null;
-  }
-}
-
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: resolveFirebaseAuthDomain(),
@@ -110,6 +102,7 @@ export function requireGoogleProvider() {
   }
   return provider;
 }
+
 
 
 

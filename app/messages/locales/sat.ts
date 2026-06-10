@@ -1,58 +1,58 @@
-import type { LocalizedSeoCopy } from "./types"
+﻿import type { LocalizedSeoCopy } from "./types"
 
 export const languageCode = "sat"
 
 export const satSeoCopy: LocalizedSeoCopy = {
-  "softwareName": "ᱢᱮᱨᱟ ᱫᱩᱠᱟᱱ ᱢᱮᱨᱟ ᱜᱚᱫᱟᱢ",
-  "appDescription": "ᱵᱷᱟᱨᱚᱛᱤᱭᱟ ᱫᱩᱠᱟᱱ, ᱨᱤᱴᱮᱞᱟᱨ, ᱦᱚᱞᱥᱮᱞᱟᱨ ᱟᱨ ᱦᱩᱰᱤᱧ ᱵᱮᱯᱟᱨ ᱞᱟᱹᱜᱤᱫ ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ, ᱥᱴᱚᱠ, ᱥᱮᱞ, ᱮᱠᱥᱯᱟᱭᱨᱤ ᱟᱞᱟᱨᱴ ᱟᱨ GST ᱵᱤᱞᱤᱝ ᱥᱚᱯᱷᱴᱣᱮᱨ।",
+  "softwareName": "á±¢á±®á±¨á±Ÿ á±«á±©á± á±Ÿá±± á±¢á±®á±¨á±Ÿ á±œá±šá±«á±Ÿá±¢",
+  "appDescription": "á±µá±·á±Ÿá±¨á±šá±›á±¤á±­á±Ÿ á±«á±©á± á±Ÿá±±, á±¨á±¤á±´á±®á±žá±Ÿá±¨, á±¦á±šá±žá±¥á±®á±žá±Ÿá±¨ á±Ÿá±¨ á±¦á±©á±°á±¤á±§ á±µá±®á±¯á±Ÿá±¨ á±žá±Ÿá±¹á±œá±¤á±« á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤, á±¥á±´á±šá± , á±¥á±®á±ž, á±®á± á±¥á±¯á±Ÿá±­á±¨á±¤ á±Ÿá±žá±Ÿá±¨á±´ á±Ÿá±¨ GST á±µá±¤á±žá±¤á± á±¥á±šá±¯á±·á±´á±£á±®á±¨à¥¤",
   "pages": {
     "/": {
-      "title": "ᱫᱩᱠᱟᱱ ᱞᱟᱹᱜᱤᱫ ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱟᱨ GST ᱵᱤᱞᱤᱝ ᱮᱯ",
-      "description": "ᱢᱮᱨᱟ ᱫᱩᱠᱟᱱ ᱢᱮᱨᱟ ᱜᱚᱫᱟᱢ ᱛᱮ ᱥᱴᱚᱠ ᱢᱮᱱᱮᱡ ᱢᱮ, ᱥᱮᱞ ᱴᱨᱮᱠ ᱢᱮ, ᱮᱠᱥᱯᱟᱭᱨᱤ ᱟᱞᱟᱨᱴ ᱧᱟᱢ ᱢᱮ ᱟᱨ GST ᱤᱱᱵᱷᱚᱭᱥ ᱵᱮᱱᱟᱣ ᱢᱮ।",
+      "title": "á±«á±©á± á±Ÿá±± á±žá±Ÿá±¹á±œá±¤á±« á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±Ÿá±¨ GST á±µá±¤á±žá±¤á± á±®á±¯",
+      "description": "á±¢á±®á±¨á±Ÿ á±«á±©á± á±Ÿá±± á±¢á±®á±¨á±Ÿ á±œá±šá±«á±Ÿá±¢ á±›á±® á±¥á±´á±šá±  á±¢á±®á±±á±®á±¡ á±¢á±®, á±¥á±®á±ž á±´á±¨á±®á±  á±¢á±®, á±®á± á±¥á±¯á±Ÿá±­á±¨á±¤ á±Ÿá±žá±Ÿá±¨á±´ á±§á±Ÿá±¢ á±¢á±® á±Ÿá±¨ GST á±¤á±±á±µá±·á±šá±­á±¥ á±µá±®á±±á±Ÿá±£ á±¢á±®à¥¤",
       "keywords": [
-        "GST ᱵᱤᱞᱤᱝ ᱮᱯ",
-        "ᱫᱩᱠᱟᱱ ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱮᱯ",
-        "ᱥᱴᱚᱠ ᱢᱮᱱᱮᱡᱢᱮᱱᱴ"
+        "GST á±µá±¤á±žá±¤á± á±®á±¯",
+        "á±«á±©á± á±Ÿá±± á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±®á±¯",
+        "á±¥á±´á±šá±  á±¢á±®á±±á±®á±¡á±¢á±®á±±á±´"
       ]
     },
     "/about": {
-      "title": "ᱢᱮᱨᱟ ᱫᱩᱠᱟᱱ ᱢᱮᱨᱟ ᱜᱚᱫᱟᱢ ᱵᱟᱵᱚᱛ",
-      "description": "ᱱᱚᱶᱟ ᱮᱯ ᱫᱩᱠᱟᱱ ᱠᱚ ᱥᱴᱚᱠ, GST ᱵᱤᱞᱤᱝ, ᱠᱤᱱᱟᱣ, ᱥᱟᱯᱞᱟᱭᱟᱨ ᱵᱟᱠᱤ ᱟᱨ ᱨᱤᱯᱚᱨᱴ ᱢᱮᱱᱮᱡ ᱨᱮ ᱜᱚᱲᱚ ᱮᱢᱟᱭ।",
+      "title": "á±¢á±®á±¨á±Ÿ á±«á±©á± á±Ÿá±± á±¢á±®á±¨á±Ÿ á±œá±šá±«á±Ÿá±¢ á±µá±Ÿá±µá±šá±›",
+      "description": "á±±á±šá±¶á±Ÿ á±®á±¯ á±«á±©á± á±Ÿá±± á± á±š á±¥á±´á±šá± , GST á±µá±¤á±žá±¤á±, á± á±¤á±±á±Ÿá±£, á±¥á±Ÿá±¯á±žá±Ÿá±­á±Ÿá±¨ á±µá±Ÿá± á±¤ á±Ÿá±¨ á±¨á±¤á±¯á±šá±¨á±´ á±¢á±®á±±á±®á±¡ á±¨á±® á±œá±šá±²á±š á±®á±¢á±Ÿá±­à¥¤",
       "keywords": [
-        "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱥᱚᱯᱷᱴᱣᱮᱨ",
-        "ᱫᱩᱠᱟᱱ ᱢᱮᱱᱮᱡᱢᱮᱱᱴ"
+        "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±¥á±šá±¯á±·á±´á±£á±®á±¨",
+        "á±«á±©á± á±Ÿá±± á±¢á±®á±±á±®á±¡á±¢á±®á±±á±´"
       ]
     },
     "/faq": {
-      "title": "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱟᱨ GST ᱵᱤᱞᱤᱝ FAQ",
-      "description": "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ, GST ᱤᱱᱵᱷᱚᱭᱥ, ᱥᱴᱚᱠ ᱦᱤᱥᱴᱨᱤ, ᱮᱠᱥᱯᱟᱭᱨᱤ ᱟᱞᱟᱨᱴ, ᱥᱟᱯᱞᱟᱭᱟᱨ ᱵᱟᱠᱤ ᱟᱨ ᱨᱤᱯᱚᱨᱴ ᱨᱮᱭᱟᱜ ᱠᱩᱠᱞᱤ ᱨᱮᱭᱟᱜ ᱩᱛᱛᱚᱨ।",
+      "title": "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±Ÿá±¨ GST á±µá±¤á±žá±¤á± FAQ",
+      "description": "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤, GST á±¤á±±á±µá±·á±šá±­á±¥, á±¥á±´á±šá±  á±¦á±¤á±¥á±´á±¨á±¤, á±®á± á±¥á±¯á±Ÿá±­á±¨á±¤ á±Ÿá±žá±Ÿá±¨á±´, á±¥á±Ÿá±¯á±žá±Ÿá±­á±Ÿá±¨ á±µá±Ÿá± á±¤ á±Ÿá±¨ á±¨á±¤á±¯á±šá±¨á±´ á±¨á±®á±­á±Ÿá±œ á± á±©á± á±žá±¤ á±¨á±®á±­á±Ÿá±œ á±©á±›á±›á±šá±¨à¥¤",
       "keywords": [
-        "GST ᱵᱤᱞᱤᱝ FAQ",
-        "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱠᱩᱠᱞᱤ"
+        "GST á±µá±¤á±žá±¤á± FAQ",
+        "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á± á±©á± á±žá±¤"
       ]
     },
     "/privacy-policy": {
-      "title": "ᱯᱨᱟᱭᱵᱷᱮᱥᱤ ᱱᱤᱛᱤ",
-      "description": "ᱵᱮᱯᱟᱨ, ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱟᱨ ᱟᱠᱟᱣᱱᱴ ᱰᱟᱴᱟ ᱪᱮᱫ ᱞᱮᱠᱟ ᱦᱟᱱᱰᱞ ᱦᱩᱭᱩᱜ ᱯᱟᱲᱦᱟᱣ ᱢᱮ।",
+      "title": "á±¯á±¨á±Ÿá±­á±µá±·á±®á±¥á±¤ á±±á±¤á±›á±¤",
+      "description": "á±µá±®á±¯á±Ÿá±¨, á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±Ÿá±¨ á±Ÿá± á±Ÿá±£á±±á±´ á±°á±Ÿá±´á±Ÿ á±ªá±®á±« á±žá±®á± á±Ÿ á±¦á±Ÿá±±á±°á±ž á±¦á±©á±­á±©á±œ á±¯á±Ÿá±²á±¦á±Ÿá±£ á±¢á±®à¥¤",
       "keywords": [
-        "ᱯᱨᱟᱭᱵᱷᱮᱥᱤ ᱱᱤᱛᱤ",
-        "ᱰᱟᱴᱟ ᱥᱮᱠᱭᱩᱨᱤᱴᱤ"
+        "á±¯á±¨á±Ÿá±­á±µá±·á±®á±¥á±¤ á±±á±¤á±›á±¤",
+        "á±°á±Ÿá±´á±Ÿ á±¥á±®á± á±­á±©á±¨á±¤á±´á±¤"
       ]
     },
     "/support": {
-      "title": "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ, ᱥᱴᱚᱠ ᱟᱨ GST ᱵᱤᱞᱤᱝ ᱥᱟᱯᱚᱨᱴ",
-      "description": "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱥᱮᱴᱟᱯ, GST ᱤᱱᱵᱷᱚᱭᱥ, ᱨᱤᱯᱚᱨᱴ, ᱥᱟᱯᱞᱟᱭᱟᱨ ᱵᱟᱠᱤ ᱟᱨ ᱰᱮᱥᱵᱚᱨᱰ ᱮ ᱜᱚᱲᱚ ᱧᱟᱢ ᱢᱮ।",
+      "title": "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤, á±¥á±´á±šá±  á±Ÿá±¨ GST á±µá±¤á±žá±¤á± á±¥á±Ÿá±¯á±šá±¨á±´",
+      "description": "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±¥á±®á±´á±Ÿá±¯, GST á±¤á±±á±µá±·á±šá±­á±¥, á±¨á±¤á±¯á±šá±¨á±´, á±¥á±Ÿá±¯á±žá±Ÿá±­á±Ÿá±¨ á±µá±Ÿá± á±¤ á±Ÿá±¨ á±°á±®á±¥á±µá±šá±¨á±° á±® á±œá±šá±²á±š á±§á±Ÿá±¢ á±¢á±®à¥¤",
       "keywords": [
-        "ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱮᱯ ᱥᱟᱯᱚᱨᱴ",
-        "GST ᱵᱤᱞᱤᱝ ᱥᱟᱯᱚᱨᱴ"
+        "á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±®á±¯ á±¥á±Ÿá±¯á±šá±¨á±´",
+        "GST á±µá±¤á±žá±¤á± á±¥á±Ÿá±¯á±šá±¨á±´"
       ]
     },
     "/terms": {
-      "title": "ᱱᱤᱭᱚᱢ ᱟᱨ ᱥᱟᱨᱛ",
-      "description": "ᱢᱮᱨᱟ ᱫᱩᱠᱟᱱ ᱢᱮᱨᱟ ᱜᱚᱫᱟᱢ ᱤᱱᱵᱷᱮᱱᱴᱚᱨᱤ ᱟᱨ GST ᱵᱤᱞᱤᱝ ᱥᱚᱯᱷᱴᱣᱮᱨ ᱵᱮᱵᱚᱦᱟᱨ ᱨᱮᱭᱟᱜ ᱥᱟᱨᱛ ᱯᱟᱲᱦᱟᱣ ᱢᱮ।",
+      "title": "á±±á±¤á±­á±šá±¢ á±Ÿá±¨ á±¥á±Ÿá±¨á±›",
+      "description": "á±¢á±®á±¨á±Ÿ á±«á±©á± á±Ÿá±± á±¢á±®á±¨á±Ÿ á±œá±šá±«á±Ÿá±¢ á±¤á±±á±µá±·á±®á±±á±´á±šá±¨á±¤ á±Ÿá±¨ GST á±µá±¤á±žá±¤á± á±¥á±šá±¯á±·á±´á±£á±®á±¨ á±µá±®á±µá±šá±¦á±Ÿá±¨ á±¨á±®á±­á±Ÿá±œ á±¥á±Ÿá±¨á±› á±¯á±Ÿá±²á±¦á±Ÿá±£ á±¢á±®à¥¤",
       "keywords": [
-        "ᱮᱯ ᱱᱤᱭᱚᱢ",
-        "GST ᱥᱟᱨᱛ"
+        "á±®á±¯ á±±á±¤á±­á±šá±¢",
+        "GST á±¥á±Ÿá±¨á±›"
       ]
     }
   }
@@ -610,7 +610,7 @@ export const exactUiText = {
   "Authenticated user is missing an email address": "Authenticated user is missing an email address",
   ": ": ": ",
   ",\n      ": ",\n      ",
-  "Average response time: 24â72 hours": "Average response time: 24â72 hours",
+  "Average response time: 24Ã¢Â€Â“72 hours": "Average response time: 24Ã¢Â€Â“72 hours",
   "Bag": "Bag",
   "Box": "Box",
   "Bug Reports": "Bug Reports",
@@ -832,7 +832,7 @@ export const exactUiText = {
   "Support | Inventory Management System": "Support | Inventory Management System",
   "Support, suggestions, and feedback are always welcome.": "Support, suggestions, and feedback are always welcome.",
   "Support, suggestions, bug reports, and feedback are always welcome. Since the platform is actively evolving, user feedback plays an important role in improving the experience.": "Support, suggestions, bug reports, and feedback are always welcome. Since the platform is actively evolving, user feedback plays an important role in improving the experience.",
-  "support@yourdomain.com": "support@yourdomain.com",
+  "mdmg.ind@gmail.com": "mdmg.ind@gmail.com",
   "Sync payload exceeds allowed size": "Sync payload exceeds allowed size",
   "Tax Invoice": "Tax Invoice",
   "Taxable Value": "Taxable Value",
@@ -853,9 +853,9 @@ export const exactUiText = {
   "This platform helps businesses manage inventory, stock tracking, purchases, suppliers, invoices, and reports in a modern and organized way.": "This platform helps businesses manage inventory, stock tracking, purchases, suppliers, invoices, and reports in a modern and organized way.",
   "This platform is an independently built inventory management system designed to help users manage stock, purchases, suppliers, invoices, reports, and related business data.": "This platform is an independently built inventory management system designed to help users manage stock, purchases, suppliers, invoices, reports, and related business data.",
   "This platform is currently being independently developed and maintained as a solo startup project.": "This platform is currently being independently developed and maintained as a solo startup project.",
-  "This platform is provided on an âas availableâ and âas isâ basis without warranties of any kind.": "This platform is provided on an âas availableâ and âas isâ basis without warranties of any kind.",
+  "This platform is provided on an Ã¢Â€Âœas availableÃ¢Â€Â and Ã¢Â€Âœas isÃ¢Â€Â basis without warranties of any kind.": "This platform is provided on an Ã¢Â€Âœas availableÃ¢Â€Â and Ã¢Â€Âœas isÃ¢Â€Â basis without warranties of any kind.",
   "This platform provides tools and features for inventory management, including stock tracking, purchases, supplier management, invoices, reports, and related operational workflows.": "This platform provides tools and features for inventory management, including stock tracking, purchases, supplier management, invoices, reports, and related operational workflows.",
-  "This platform was created with a simple goal â to make inventory management easier, faster, and more organized for growing businesses.": "This platform was created with a simple goal â to make inventory management easier, faster, and more organized for growing businesses.",
+  "This platform was created with a simple goal Ã¢Â€Â” to make inventory management easier, faster, and more organized for growing businesses.": "This platform was created with a simple goal Ã¢Â€Â” to make inventory management easier, faster, and more organized for growing businesses.",
   "This Privacy Policy may be updated from time to time as the platform evolves. Any changes will be posted on this page with an updated revision date.": "This Privacy Policy may be updated from time to time as the platform evolves. Any changes will be posted on this page with an updated revision date.",
   "This will permanently remove the item, its stock, and its history entries.": "This will permanently remove the item, its stock, and its history entries.",
   "Tip: Check the URL, or use the sidebar to navigate to Backup, Download, or other dashboard sections.": "Tip: Check the URL, or use the sidebar to navigate to Backup, Download, or other dashboard sections.",
@@ -876,7 +876,7 @@ export const exactUiText = {
   "Users are responsible for maintaining the confidentiality of their account credentials and for all activities performed through their account.": "Users are responsible for maintaining the confidentiality of their account credentials and for all activities performed through their account.",
   "Users may not copy, distribute, reverse engineer, or reproduce parts of the platform without permission.": "Users may not copy, distribute, reverse engineer, or reproduce parts of the platform without permission.",
   "Users should take appropriate measures to protect account access, passwords, devices, and sensitive business information.": "Users should take appropriate measures to protect account access, passwords, devices, and sensitive business information.",
-  "Usually within 24â72 hours": "Usually within 24â72 hours",
+  "Usually within 24Ã¢Â€Â“72 hours": "Usually within 24Ã¢Â€Â“72 hours",
   "void showSelection?: boolean selectedIds?: Set": "void showSelection?: boolean selectedIds?: Set",
   "We do not sell your personal or business information. Information may only be shared when required to operate the platform, comply with legal obligations, protect the service, or with your consent.": "We do not sell your personal or business information. Information may only be shared when required to operate the platform, comply with legal obligations, protect the service, or with your consent.",
   "We may also collect basic technical information such as browser type, device information, IP address, usage activity, and error logs to improve performance, security, and reliability.": "We may also collect basic technical information such as browser type, device information, IP address, usage activity, and error logs to improve performance, security, and reliability.",
@@ -913,3 +913,4 @@ export const exactUiText = {
 } as const
 
 export const messageOverlay = {} as const
+

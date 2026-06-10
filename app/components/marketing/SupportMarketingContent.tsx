@@ -1,4 +1,4 @@
-import Link from "next/link"
+﻿import Link from "next/link"
 import { Mail, MessageSquare, Bug, HelpCircle } from "lucide-react"
 import { en } from "@/app/messages/en"
 
@@ -69,7 +69,7 @@ export default function SupportMarketingContent() {
             <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-6 shadow-[var(--shadow-card)]">
               <h2 className="text-lg font-semibold">{en.seo.emailSupport}</h2>
               <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
-                {en.uiText["support@yourdomain.com"]}
+                {en.uiText["mdmg.ind@gmail.com"]}
               </p>
             </div>
           </aside>
@@ -78,3 +78,4 @@ export default function SupportMarketingContent() {
     </main>
   )
 }
+

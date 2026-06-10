@@ -1,4 +1,4 @@
-// components/layout/Footer.tsx
+﻿// components/layout/Footer.tsx
 
 import Link from "next/link";
 import {
@@ -54,7 +54,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="mailto:support@yourdomain.com"
+                href="mailto:mdmg.ind@gmail.com"
                 aria-label={en.seo.emailSupport}
                 className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-elevated)] p-3 text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-soft-strong)] hover:text-[var(--text-primary)]"
               >
@@ -154,7 +154,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="flex flex-col gap-4 text-sm text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>
-            © {new Date().getFullYear()} {en.seo.inventoryManagementSystem}. {en.seo.allRightsReserved}
+            Â© {new Date().getFullYear()} {en.seo.inventoryManagementSystem}. {en.seo.allRightsReserved}
           </p>
 
           <div className="flex items-center gap-6">
@@ -184,3 +184,4 @@ export default function Footer() {
     </footer>
   );
 }
+

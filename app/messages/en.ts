@@ -1,4 +1,4 @@
-import { createMessageProxy } from "@/app/messages/translationRuntime";
+﻿import { createMessageProxy } from "@/app/messages/translationRuntime";
 
 const baseMessages = {
   common: {
@@ -2913,7 +2913,7 @@ const baseMessages = {
     "available in this expiry batch": "available in this expiry batch",
     "Available Now": "Available Now",
     "Available now:": "Available now:",
-    "Average response time: 24–72 hours": "Average response time: 24–72 hours",
+    "Average response time: 24â€“72 hours": "Average response time: 24â€“72 hours",
     "Avg rate": "Avg rate",
     "Back": "Back",
     "Back to Home": "Back to Home",
@@ -3464,7 +3464,7 @@ const baseMessages = {
     "Support | Inventory Management System": "Support | Inventory Management System",
     "Support, suggestions, and feedback are always welcome.": "Support, suggestions, and feedback are always welcome.",
     "Support, suggestions, bug reports, and feedback are always welcome. Since the platform is actively evolving, user feedback plays an important role in improving the experience.": "Support, suggestions, bug reports, and feedback are always welcome. Since the platform is actively evolving, user feedback plays an important role in improving the experience.",
-    "support@yourdomain.com": "support@yourdomain.com",
+    "mdmg.ind@gmail.com": "mdmg.ind@gmail.com",
     "Sync payload exceeds allowed size": "Sync payload exceeds allowed size",
     "Tax Invoice": "Tax Invoice",
     "Tax Type": "Tax Type",
@@ -3489,9 +3489,9 @@ const baseMessages = {
     "This platform helps businesses manage inventory, stock tracking, purchases, suppliers, invoices, and reports in a modern and organized way.": "This platform helps businesses manage inventory, stock tracking, purchases, suppliers, invoices, and reports in a modern and organized way.",
     "This platform is an independently built inventory management system designed to help users manage stock, purchases, suppliers, invoices, reports, and related business data.": "This platform is an independently built inventory management system designed to help users manage stock, purchases, suppliers, invoices, reports, and related business data.",
     "This platform is currently being independently developed and maintained as a solo startup project.": "This platform is currently being independently developed and maintained as a solo startup project.",
-    "This platform is provided on an “as available” and “as is” basis without warranties of any kind.": "This platform is provided on an “as available” and “as is” basis without warranties of any kind.",
+    "This platform is provided on an â€œas availableâ€ and â€œas isâ€ basis without warranties of any kind.": "This platform is provided on an â€œas availableâ€ and â€œas isâ€ basis without warranties of any kind.",
     "This platform provides tools and features for inventory management, including stock tracking, purchases, supplier management, invoices, reports, and related operational workflows.": "This platform provides tools and features for inventory management, including stock tracking, purchases, supplier management, invoices, reports, and related operational workflows.",
-    "This platform was created with a simple goal — to make inventory management easier, faster, and more organized for growing businesses.": "This platform was created with a simple goal — to make inventory management easier, faster, and more organized for growing businesses.",
+    "This platform was created with a simple goal â€” to make inventory management easier, faster, and more organized for growing businesses.": "This platform was created with a simple goal â€” to make inventory management easier, faster, and more organized for growing businesses.",
     "This Privacy Policy may be updated from time to time as the platform evolves. Any changes will be posted on this page with an updated revision date.": "This Privacy Policy may be updated from time to time as the platform evolves. Any changes will be posted on this page with an updated revision date.",
     "This selection is ready for a GST bill.": "This selection is ready for a GST bill.",
     "This will permanently remove the item, its stock, and its history entries.": "This will permanently remove the item, its stock, and its history entries.",
@@ -3545,7 +3545,7 @@ const baseMessages = {
     "Users are responsible for maintaining the confidentiality of their account credentials and for all activities performed through their account.": "Users are responsible for maintaining the confidentiality of their account credentials and for all activities performed through their account.",
     "Users may not copy, distribute, reverse engineer, or reproduce parts of the platform without permission.": "Users may not copy, distribute, reverse engineer, or reproduce parts of the platform without permission.",
     "Users should take appropriate measures to protect account access, passwords, devices, and sensitive business information.": "Users should take appropriate measures to protect account access, passwords, devices, and sensitive business information.",
-    "Usually within 24–72 hours": "Usually within 24–72 hours",
+    "Usually within 24â€“72 hours": "Usually within 24â€“72 hours",
     "View HSN or SAC details": "View HSN or SAC details",
     "View in Inventory": "View in Inventory",
     "View inventory health, sales snapshots, and category trends at a glance.": "View inventory health, sales snapshots, and category trends at a glance.",
@@ -3597,3 +3597,4 @@ const baseMessages = {
 
 export const en = createMessageProxy(baseMessages) as typeof baseMessages;
 export type AppMessages = typeof baseMessages;
+
