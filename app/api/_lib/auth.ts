@@ -26,8 +26,8 @@ export class ApiError extends Error {
  * This client bypasses RLS policies and should only be used in trusted server environments
  */
 export function createSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "")
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error("Supabase credentials not configured")
@@ -82,7 +82,7 @@ export async function verifyFirebaseToken(token: string): Promise<FirebaseTokenP
 
   const header = parseFirebaseTokenPart<{ alg?: string; kid?: string }>(encodedHeader)
   const payload = parseFirebaseTokenPart<FirebaseTokenPayload>(encodedPayload)
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim()
 
   if (!projectId) {
     throw new Error("Firebase project id is not configured")

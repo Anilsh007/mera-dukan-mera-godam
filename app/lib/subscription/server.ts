@@ -27,9 +27,9 @@ function addMonths(date: Date, months: number) {
 
 export function hasRazorpayServerConfig() {
   return Boolean(
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID &&
-      process.env.RAZORPAY_KEY_SECRET &&
-      process.env.RAZORPAY_WEBHOOK_SECRET,
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim() &&
+      process.env.RAZORPAY_KEY_SECRET?.trim() &&
+      process.env.RAZORPAY_WEBHOOK_SECRET?.trim(),
   )
 }
 
@@ -98,11 +98,11 @@ export function mapSubscriptionRecordToRow(record: SubscriptionRecord & { billin
 }
 
 export function getRazorpayKeySecret() {
-  return process.env.RAZORPAY_KEY_SECRET || ""
+  return process.env.RAZORPAY_KEY_SECRET?.trim() || ""
 }
 
 export function getRazorpayWebhookSecret() {
-  return process.env.RAZORPAY_WEBHOOK_SECRET || ""
+  return process.env.RAZORPAY_WEBHOOK_SECRET?.trim() || ""
 }
 
 export function verifyRazorpayPaymentSignature(orderId: string, paymentId: string, signature: string) {
@@ -145,7 +145,7 @@ export function getSubscriptionEndDate(startIso: string, billingCycle: Subscript
 
 export function getRazorpayPlanId(plan: PaidSubscriptionPlanId, billingCycle: SubscriptionBillingCycle) {
   const key = `RAZORPAY_PLAN_ID_${plan.toUpperCase()}_${billingCycle.toUpperCase()}`
-  return process.env[key] || ""
+  return process.env[key]?.trim() || ""
 }
 
 export function isRazorpayPlanConfigured(plan: PaidSubscriptionPlanId, billingCycle: SubscriptionBillingCycle) {
@@ -165,11 +165,11 @@ export async function createRazorpaySubscriptionCheckout(input: {
   userId: string
   returnUrl?: string
 }) {
-  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""
+  const normalizedKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim() || ""
   const keySecret = getRazorpayKeySecret()
   const planId = getRazorpayPlanId(input.plan, input.billingCycle)
 
-  if (!keyId || !keySecret || !planId) {
+  if (!normalizedKeyId || !keySecret || !planId) {
     return null
   }
 
@@ -177,7 +177,7 @@ export async function createRazorpaySubscriptionCheckout(input: {
   const response = await fetch("https://api.razorpay.com/v1/subscriptions", {
     method: "POST",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
+      Authorization: `Basic ${Buffer.from(`${normalizedKeyId}:${keySecret}`).toString("base64")}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -211,7 +211,7 @@ export async function createRazorpaySubscriptionCheckout(input: {
 }
 
 export async function fetchRazorpayPlanPricing(plan: PaidSubscriptionPlanId, billingCycle: SubscriptionBillingCycle) {
-  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim() || ""
   const keySecret = getRazorpayKeySecret()
   const planId = getRazorpayPlanId(plan, billingCycle)
 
@@ -263,9 +263,13 @@ export async function getResolvedBillingCatalog() {
 
   await Promise.all(
     planEntries.map(async ({ plan, billingCycle }) => {
-      const pricing = await fetchRazorpayPlanPricing(plan, billingCycle)
-      if (pricing) {
-        resolvedCatalog[plan].prices[billingCycle] = pricing
+      try {
+        const pricing = await fetchRazorpayPlanPricing(plan, billingCycle)
+        if (pricing) {
+          resolvedCatalog[plan].prices[billingCycle] = pricing
+        }
+      } catch (error) {
+        console.warn("Razorpay pricing lookup failed", { plan, billingCycle, error })
       }
     }),
   )
@@ -274,8 +278,13 @@ export async function getResolvedBillingCatalog() {
 }
 
 export async function resolveBillingPrice(plan: PaidSubscriptionPlanId, billingCycle: SubscriptionBillingCycle) {
-  const livePricing = await fetchRazorpayPlanPricing(plan, billingCycle)
-  return livePricing || BILLING_PLAN_CATALOG[plan].prices[billingCycle]
+  try {
+    const livePricing = await fetchRazorpayPlanPricing(plan, billingCycle)
+    return livePricing || BILLING_PLAN_CATALOG[plan].prices[billingCycle]
+  } catch (error) {
+    console.warn("Razorpay pricing resolution failed", { plan, billingCycle, error })
+    return BILLING_PLAN_CATALOG[plan].prices[billingCycle]
+  }
 }
 
 export async function ensureServerSubscriptionRecord(supabase: SupabaseClient, userId: string) {
