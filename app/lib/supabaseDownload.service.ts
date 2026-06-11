@@ -72,6 +72,7 @@ export async function syncSupabaseToDexie() {
   if (!user) throw new Error(en.profile.signInRequired)
 
   const token = await user.getIdToken()
+  if (!token) throw new Error(en.profile.signInRequired)
   const userId = getUserIdentityFromAuthUser(user)
   if (!userId) throw new Error(en.profile.signInRequired)
   await syncDexieToSupabase()
