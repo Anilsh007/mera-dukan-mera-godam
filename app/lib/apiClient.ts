@@ -9,7 +9,11 @@ export async function getFirebaseIdToken() {
   return user.getIdToken()
 }
 
-export function authHeaders(token: string, json = false) {
+export function authHeaders(token: string | null, json = false) {
+  if (!token) {
+    throw new Error("Missing auth token")
+  }
+
   return {
     ...(json ? { "Content-Type": "application/json" } : {}),
     Authorization: `Bearer ${token}`,
