@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, Boxes, IndianRupee, PackageOpen, ReceiptText, TrendingUp } from "lucide-react"
-import { onAuthStateChanged } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import DashboardStatCard from "./components/DashboardStatCard"
 import QuickActionCard from "./components/QuickActionCard"
@@ -63,9 +62,7 @@ export default function DashboardHome() {
   }, [router])
 
   useEffect(() => {
-    if (!auth) return undefined
-
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = auth.onAuthStateChanged((user) => {
       setUserName(user?.displayName?.split(" ")[0] || "")
     })
     return () => unsub()

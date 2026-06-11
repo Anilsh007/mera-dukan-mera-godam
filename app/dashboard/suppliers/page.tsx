@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { liveQuery } from "dexie"
-import { onAuthStateChanged } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useInventoryData from "@/app/hooks/useInventoryData"
@@ -39,7 +38,7 @@ export default function SuppliersPage() {
       }
     }
 
-    const authSubscription = onAuthStateChanged(auth, (user) => {
+    const authSubscription = auth.onAuthStateChanged((user) => {
       purchaseSubscription?.unsubscribe()
       purchaseSubscription = null
 

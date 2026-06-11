@@ -1,121 +1,71 @@
-﻿"use client";
+"use client";
 
-import { getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect } from "firebase/auth";
-import { auth, authReady, firebaseErrorMessage, isFirebaseConfigured, provider } from "@/app/lib/firebase";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { FcGoogle } from "react-icons/fc";
 import { useEffect, useState } from "react";
-import logo from "../../../assets/logo.webp";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { FcGoogle } from "react-icons/fc";
 import Button from "@/app/components/ui/Button";
+import { supabase, isSupabaseConfigured } from "@/app/lib/supabase";
+import { auth } from "@/app/lib/firebase";
 import { notify as toast } from "@/app/lib/notifications";
 import { en } from "@/app/messages/en";
+import logo from "../../../assets/logo.webp";
 
 export default function Login() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [authBootstrapping, setAuthBootstrapping] = useState(Boolean(auth));
+  const [authBootstrapping, setAuthBootstrapping] = useState(true);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth) {
+      setAuthBootstrapping(false);
+      return;
+    }
 
-    const firebaseAuth = auth;
-    let isMounted = true;
-
-    authReady
-      .then(async () => {
-        try {
-          await getRedirectResult(firebaseAuth);
-        } catch (error: unknown) {
-          const code =
-            typeof error === "object" && error && "code" in error && typeof error.code === "string"
-              ? error.code
-              : "";
-
-          if (code === "auth/unauthorized-domain") {
-            toast.error(en.auth.unauthorizedDomain);
-          } else if (code) {
-            toast.error(en.auth.loginFailed);
-          }
-        } finally {
-          if (isMounted) {
-            setAuthBootstrapping(false);
-          }
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setAuthBootstrapping(false);
-        }
-      });
-
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         router.replace("/dashboard");
+        return;
       }
+
+      setAuthBootstrapping(false);
     });
 
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [router]);
 
   const handleLogin = async () => {
     if (loading || authBootstrapping) return;
 
-    if (!isFirebaseConfigured || !auth || !provider) {
-      toast.error(firebaseErrorMessage || en.auth.loginNotConfigured);
+    if (!isSupabaseConfigured) {
+      toast.error(en.auth.loginNotConfigured);
       return;
     }
 
     try {
       setLoading(true);
-      await authReady;
 
-      const shouldPreferRedirect =
-        typeof window !== "undefined" &&
-        (window.innerWidth < 768 ||
-          /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent));
-
-      if (shouldPreferRedirect) {
-        await signInWithRedirect(auth, provider);
-        return;
+      if (typeof window === "undefined") {
+        throw new Error(en.auth.loginFailed);
       }
 
-      await signInWithPopup(auth, provider);
-      router.replace("/dashboard");
-    } catch (error: unknown) {
-      const code =
-        typeof error === "object" && error && "code" in error && typeof error.code === "string"
-          ? error.code
-          : "";
+      const redirectTo = `${window.location.origin}/dashboard`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
 
-      if (
-        code === "auth/popup-blocked" ||
-        code === "auth/popup-closed-by-user" ||
-        code === "auth/cancelled-popup-request"
-      ) {
-        toast.message(en.auth.popupFallback);
-
-        try {
-          await authReady;
-          await signInWithRedirect(auth, provider);
-          return;
-        } catch {
-          toast.error(en.auth.redirectLoginFailed);
-        }
+      if (error) {
+        throw error;
       }
-
-      if (code === "auth/unauthorized-domain") {
-        toast.error(en.auth.unauthorizedDomain);
-      } else if (code === "auth/invalid-api-key") {
-        toast.error(en.auth.invalidApiKey);
-      } else {
-        toast.error(en.auth.loginFailed);
-      }
-
-    } finally {
+    } catch (error) {
+      console.error("Supabase Google login failed:", error);
+      toast.error(error instanceof Error ? error.message : en.auth.loginFailed);
       setLoading(false);
     }
   };
@@ -130,7 +80,7 @@ export default function Login() {
       </div>
 
       <div className="relative z-10 flex w-full max-w-[420px] flex-col items-center gap-6 rounded-[32px] border border-white/10 bg-white/8 p-6 shadow-2xl backdrop-blur-3xl sm:gap-8 sm:p-10">
-        <Image src={logo} alt={en.profile.logoAlt} width={64} height={64} className="" priority />
+        <Image src={logo} alt={en.profile.logoAlt} width={64} height={64} priority />
 
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white sm:text-3xl">{en.auth.title}</h1>
@@ -138,14 +88,22 @@ export default function Login() {
           <p className="mt-3 text-sm leading-6 text-white/75">{en.auth.description}</p>
         </div>
 
-        {!isFirebaseConfigured && (
+        {!isSupabaseConfigured && (
           <div className="w-full rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-center text-xs leading-5 text-amber-100">
-            {en.auth.firebaseNotConfigured}
+            {en.auth.loginNotConfigured}
           </div>
         )}
 
         <div className="w-full">
-          <Button onClick={handleLogin} disabled={!isFirebaseConfigured || loading || authBootstrapping} loading={loading || authBootstrapping} variant="login" icon={<FcGoogle />} title={en.auth.continueWithGoogle} className="w-full justify-center" />
+          <Button
+            onClick={handleLogin}
+            disabled={!isSupabaseConfigured || loading || authBootstrapping}
+            loading={loading || authBootstrapping}
+            variant="login"
+            icon={<FcGoogle />}
+            title={en.auth.continueWithGoogle}
+            className="w-full justify-center"
+          />
         </div>
 
         <div className="grid w-full grid-cols-1 gap-2 text-center text-xs text-white/65">
@@ -159,4 +117,3 @@ export default function Login() {
     </div>
   );
 }
-

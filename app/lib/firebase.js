@@ -1,109 +1,90 @@
-﻿// lib/firebase.js
-import { initializeApp, getApps, getApp } from "firebase/app";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence,
-  indexedDBLocalPersistence,
-} from "firebase/auth";
+// lib/firebase.js
 import { en } from "@/app/messages/en";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
-function resolveFirebaseAuthDomain() {
-  const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
-  const configuredHelperDomain = process.env.NEXT_PUBLIC_FIREBASE_HELPER_DOMAIN || configuredAuthDomain;
+function mapSupabaseUser(user) {
+  if (!user) return null;
 
-  const isLocalEnv = process.env.NODE_ENV !== "production";
-  if (isLocalEnv) {
-    return configuredAuthDomain || configuredHelperDomain;
-  }
-
-  return configuredAuthDomain || configuredHelperDomain;
+  return {
+    uid: user.id,
+    email: user.email ?? null,
+    displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email || "",
+    photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture || "",
+    async getIdToken() {
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token || null;
+    },
+  };
 }
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: resolveFirebaseAuthDomain(),
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+let currentUser = null;
+const authReady = (async () => {
+  if (typeof window === "undefined" || !isSupabaseConfigured) return null;
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    currentUser = mapSupabaseUser(data.session?.user ?? null);
+    return currentUser;
+  } catch (error) {
+    console.warn("Supabase auth session bootstrap failed:", error);
+    currentUser = null;
+    return null;
+  }
+})();
+
+export const isFirebaseConfigured = isSupabaseConfigured;
+export const firebaseErrorMessage = isSupabaseConfigured ? "" : en.auth.firebaseNotConfigured;
+export const app = null;
+export const db = null;
+export const provider = null;
+export { authReady };
+
+export const auth = {
+  get currentUser() {
+    return currentUser;
+  },
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+  },
+  onAuthStateChanged(callback) {
+    let active = true;
+    let subscription = null;
+
+    authReady
+      .then(() => {
+        if (!active) return;
+
+        callback(currentUser);
+
+        const result = supabase.auth.onAuthStateChange((_event, session) => {
+          currentUser = mapSupabaseUser(session?.user ?? null);
+          if (active) {
+            callback(currentUser);
+          }
+        });
+
+        subscription = result.data.subscription;
+      })
+      .catch(() => {
+        if (active) {
+          callback(currentUser);
+        }
+      });
+
+    return () => {
+      active = false;
+      subscription?.unsubscribe();
+    };
+  },
 };
 
-function hasValidFirebaseConfig(config) {
-  const requiredValues = [config.apiKey, config.authDomain, config.projectId, config.appId];
-  const hasRequiredValues = requiredValues.every((value) => typeof value === "string" && value.trim().length > 0);
-  const apiKey = String(config.apiKey || "").trim();
-
-  return hasRequiredValues &&
-    apiKey.startsWith("AIza") &&
-    !apiKey.includes("your_") &&
-    !apiKey.includes("undefined") &&
-    apiKey.toLowerCase() !== "test";
-}
-
-export const isFirebaseConfigured = hasValidFirebaseConfig(firebaseConfig);
-
-let firebaseApp = null;
-let firebaseAuth = null;
-let googleProvider = null;
-let firebaseConfigError = "";
-let firebaseAuthReadyPromise = Promise.resolve();
-
-if (isFirebaseConfigured) {
-  try {
-    firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    firebaseAuth = getAuth(firebaseApp);
-
-    if (typeof window !== "undefined") {
-      firebaseAuthReadyPromise = setPersistence(firebaseAuth, indexedDBLocalPersistence)
-        .catch((indexedDbError) => {
-          console.warn("IndexedDB auth persistence unavailable, falling back to local persistence:", indexedDbError);
-          return setPersistence(firebaseAuth, browserLocalPersistence);
-        })
-        .catch((localError) => {
-          console.warn("Local auth persistence unavailable, falling back to session persistence:", localError);
-          return setPersistence(firebaseAuth, browserSessionPersistence);
-        })
-        .catch((sessionError) => {
-          console.warn("Firebase auth persistence could not be enabled:", sessionError);
-        });
-    }
-
-    googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({
-      prompt: "select_account",
-    });
-  } catch (error) {
-    firebaseConfigError = error instanceof Error ? error.message : en.auth.firebaseInitFailed;
-  }
-} else {
-  firebaseConfigError = en.auth.firebaseNotConfigured;
-}
-
-export const app = firebaseApp;
-export const db = null;
-export const auth = firebaseAuth;
-export const provider = googleProvider;
-export const firebaseErrorMessage = firebaseConfigError;
-export const authReady = firebaseAuthReadyPromise;
-
 export function requireFirebaseAuth() {
-  if (!auth) {
-    throw new Error(firebaseErrorMessage || en.auth.firebaseAuthUnavailable);
-  }
   return auth;
 }
 
 export function requireGoogleProvider() {
-  if (!provider) {
-    throw new Error(firebaseErrorMessage || en.auth.googleProviderUnavailable);
-  }
-  return provider;
+  throw new Error(firebaseErrorMessage || en.auth.googleProviderUnavailable);
 }
-
-
-
-
-

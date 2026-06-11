@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { liveQuery } from "dexie"
-import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/app/lib/firebase"
 import { loadProfileFromDb, saveProfileToDb } from "@/app/lib/profile/profileDb.service"
 import { loadProfileFromSupabase } from "@/app/lib/profile/profileSupabase.service"
@@ -101,7 +100,7 @@ export default function useProfile() {
       }
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!isMounted) return
       unsubscribeLocalProfile?.unsubscribe()
       unsubscribeLocalProfile = null

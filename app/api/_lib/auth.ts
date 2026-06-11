@@ -42,10 +42,16 @@ export async function getUserIdentityFromRequest(request: NextRequest) {
   const authorization = request.headers.get("authorization")
 
   if (!authorization?.startsWith("Bearer ")) {
-    throw new ApiError("Missing Firebase token", 401)
+    throw new ApiError("Missing auth token", 401)
   }
 
   const token = authorization.slice("Bearer ".length)
+  const supabaseIdentity = await getSupabaseIdentityFromToken(token)
+
+  if (supabaseIdentity) {
+    return supabaseIdentity
+  }
+
   const payload = await verifyFirebaseToken(token)
 
   if (!payload.email) {
@@ -53,6 +59,33 @@ export async function getUserIdentityFromRequest(request: NextRequest) {
   }
 
   return normalizeUserIdentity(payload.email)
+}
+
+async function getSupabaseIdentityFromToken(token: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "")
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return null
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    })
+
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data.user?.email) {
+      return null
+    }
+
+    return normalizeUserIdentity(data.user.email)
+  } catch {
+    return null
+  }
 }
 
 export function toApiErrorResponse(error: unknown, fallbackMessage: string) {

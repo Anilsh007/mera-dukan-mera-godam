@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { liveQuery } from "dexie"
-import { onAuthStateChanged } from "firebase/auth"
 import { AlertTriangle, DatabaseBackup, FileDown, FileUp, RefreshCw, ShieldCheck } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -39,7 +38,7 @@ export default function BackupRestorePage() {
 
     let unsubscribeCounts: { unsubscribe: () => void } | null = null
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       unsubscribeCounts?.unsubscribe()
       unsubscribeCounts = null
 

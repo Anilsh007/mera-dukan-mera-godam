@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { signOut, onAuthStateChanged, User } from "firebase/auth";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { auth } from "@/app/lib/firebase";
@@ -10,6 +9,12 @@ import Link from "next/link";
 import { LogOut, Menu, User as UserIcon, UserCog, X } from "lucide-react";
 import logo from "@/assets/logo.webp";
 import { en } from "@/app/messages/en";
+
+type AuthUser = {
+  displayName?: string | null;
+  email?: string | null;
+  photoURL?: string | null;
+};
 
 const accountMenuId = "account-menu";
 const publicNavItems = [
@@ -26,7 +31,7 @@ function isPublicLoginRoute(pathname: string) {
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(!auth);
   const [accountMenuPath, setAccountMenuPath] = useState<string | null>(null);
   const [mobileNavPath, setMobileNavPath] = useState<string | null>(null);
@@ -38,7 +43,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   useEffect(() => {
     if (!auth) return;
 
-    return onAuthStateChanged(auth, (currentUser) => {
+    return auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
       setAuthChecked(true);
     });
@@ -68,7 +73,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const handleLogout = async () => {
     if (!auth) return;
-    await signOut(auth);
+    await auth.signOut();
     router.push("/");
   };
 

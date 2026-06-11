@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { onAuthStateChanged } from "firebase/auth"
 import { autoSyncToSupabase } from "./autoSupabaseSync.service"
 import { syncSupabaseToDexie } from "./supabaseDownload.service"
 import { auth } from "./firebase"
@@ -27,7 +26,7 @@ export default function SupabaseSyncManager() {
   useEffect(() => {
     if (!auth) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) return
 
       try {
