@@ -1,8 +1,8 @@
-import type { User } from "firebase/auth"
 import { db } from "./db"
+import type { AuthUser } from "./firebase"
 import { getUserIdentityFromAuthUser } from "./userIdentity"
 
-export async function migrateLocalUserData(user: User) {
+export async function migrateLocalUserData(user: AuthUser) {
   const emailIdentity = getUserIdentityFromAuthUser(user)
   if (!emailIdentity || emailIdentity === user.uid) return
 

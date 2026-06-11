@@ -8,6 +8,7 @@ import { loadProfileFromSupabase } from "@/app/lib/profile/profileSupabase.servi
 import { saveProfileWithSync, deleteProfileWithSync } from "@/app/lib/profile/profilePersistence.service"
 import { stripProfileMeta } from "@/app/lib/profile/profileSync.utils"
 import { migrateLocalUserData } from "@/app/lib/userDataMigration"
+import type { AuthUser } from "@/app/lib/firebase"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { notify as toast } from "@/app/lib/notifications"
 import { en } from "@/app/messages/en"
@@ -210,7 +211,7 @@ export default function useProfile() {
   }
 }
 
-function buildFirebaseProfile(user: import("firebase/auth").User): ProfileState {
+function buildFirebaseProfile(user: AuthUser): ProfileState {
   const userId = requireUserIdentityFromAuthUser(user)
 
   return {
@@ -227,7 +228,7 @@ function buildFirebaseProfile(user: import("firebase/auth").User): ProfileState 
 
 function mergeWithFirebaseProfile(
   profileData: ProfileState,
-  user: import("firebase/auth").User
+  user: AuthUser
 ): ProfileState {
   const userId = requireUserIdentityFromAuthUser(user)
 
