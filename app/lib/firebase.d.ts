@@ -4,6 +4,7 @@ declare module "@/app/lib/firebase" {
     email: string | null
     displayName: string
     photoURL: string
+    phoneNumber: string | null
     getIdToken: () => Promise<string | null>
   }
 

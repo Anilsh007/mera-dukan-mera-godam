@@ -10,6 +10,7 @@ function mapSupabaseUser(user) {
     email: user.email ?? null,
     displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email || "",
     photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture || "",
+    phoneNumber: user.phone ?? user.user_metadata?.phone ?? null,
     async getIdToken() {
       const { data } = await supabase.auth.getSession();
       return data.session?.access_token || null;
