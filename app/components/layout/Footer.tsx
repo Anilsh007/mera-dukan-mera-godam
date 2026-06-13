@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Github,
   Mail,
   ShieldCheck,
   FileText,
@@ -19,16 +18,16 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_74%,#ec4899_26%))] text-lg font-bold text-white shadow-[var(--button-shadow)]">
-                {en.seo.inventoryManagementSystem.split(" ").map((word) => word[0]).join("")}
+                {en.common.dugam.split(" ").map((word) => word[0]).join("")}
               </div>
 
               <div>
                 <h2 className="text-lg font-semibold">
-                  {en.seo.inventoryManagementSystem}
+                  {en.common.dugam}
                 </h2>
 
                 <p className="text-sm text-[var(--text-muted)]">
-                  {en.seo.modernInventoryManagementPlatform}
+                  {en.common.tagLine}
                 </p>
               </div>
             </div>
@@ -43,15 +42,7 @@ export default function Footer() {
 
             {/* Socials */}
             <div className="mt-6 flex items-center gap-4">
-              <a
-                href="https://github.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={en.seo.githubProfile}
-                className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-elevated)] p-3 text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-soft-strong)] hover:text-[var(--text-primary)]"
-              >
-                <Github size={18} aria-hidden="true" />
-              </a>
+              
 
               <a
                 href="mailto:mdmg.ind@gmail.com"
@@ -154,7 +145,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="flex flex-col gap-4 text-sm text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>
-            Â© {new Date().getFullYear()} {en.seo.inventoryManagementSystem}. {en.seo.allRightsReserved}
+            Â© {new Date().getFullYear()} {en.common.dugam}. {en.seo.allRightsReserved}
           </p>
 
           <div className="flex items-center gap-6">

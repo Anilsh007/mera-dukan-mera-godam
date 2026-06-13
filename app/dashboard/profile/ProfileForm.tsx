@@ -26,11 +26,11 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
   const [profile, setProfile] = useState<ProfileState>(initialData)
   const [saving, setSaving] = useState(false)
 
-  const handleChange = (section: EditableProfileSection, field: string, value: string) => {
+  const handleChange = (section: EditableProfileSection, field: string, value: string | boolean) => {
     setProfile((prev) => ({
       ...prev,
       [section]: {
-        ...(prev[section] as Record<string, string | undefined>),
+        ...(prev[section] as Record<string, string | boolean | undefined>),
         [field]: value,
       },
     }))
@@ -81,7 +81,12 @@ export default function ProfileForm({ initialData, onSave, onCancel }: ProfileFo
 
       <BankingInfo data={profile.banking} onChange={(field, value) => handleChange("banking", field, value)} />
 
-      <TermsSection value={profile.settings.termsAndConditions} onChange={(val) => handleChange("settings", "termsAndConditions", val)} />
+      <TermsSection
+        value={profile.settings.termsAndConditions}
+        onChange={(val) => handleChange("settings", "termsAndConditions", val)}
+        reminderEnabled={profile.settings.profileCompletionReminderEnabled}
+        onReminderToggle={(nextValue) => handleChange("settings", "profileCompletionReminderEnabled", nextValue)}
+      />
 
       <div className="fixed inset-x-3 bottom-3 z-50 flex flex-col gap-2 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-3 py-3 shadow-lg backdrop-blur-xl sm:left-1/2 sm:right-auto sm:bottom-6 sm:-translate-x-1/2 sm:flex-row sm:rounded-full sm:px-6">
         <Button variant="outline" icon={<MdClose />} title={en.profile.cancel} onClick={onCancel} />

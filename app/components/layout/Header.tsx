@@ -94,41 +94,41 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }, [authChecked, pathname, user]);
 
   const navLinkClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-2xl border px-3 py-2 text-sm font-semibold transition ${active
-      ? "border-[color-mix(in_srgb,var(--accent)_54%,white_10%)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--surface-primary)_28%,var(--accent)_72%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_38%,var(--accent)_62%))] text-white shadow-[var(--button-shadow-hover)]"
-      : "border-[var(--border-card)] bg-[linear-gradient(145deg,var(--bg-card-strong),color-mix(in_srgb,var(--surface-primary)_82%,#020611_18%))] text-[var(--text-secondary)] shadow-[var(--button-shadow)] hover:border-[var(--accent)] hover:bg-[linear-gradient(145deg,var(--surface-primary),color-mix(in_srgb,var(--accent-soft)_38%,transparent))] hover:text-[var(--text-primary)]"
+    `inline-flex items-center px-5 py-4 text-sm font-semibold hover:bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] hover:text-white transition ${active
+      ? "bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white"
+      : "border-[var(--border-card)] hover:text-[var(--text-primary)]"
     }`;
 
   const actionLinkClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition ${active
-      ? "border-[color-mix(in_srgb,var(--accent)_58%,white_12%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow-hover)]"
-      : "border-[color-mix(in_srgb,var(--accent)_58%,white_12%)] bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] text-white shadow-[var(--button-shadow)] hover:-translate-y-0.5 hover:border-[var(--accent-secondary,#8b5cf6)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_80%,white_20%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_82%,white_18%))] hover:shadow-[var(--button-shadow-hover)]"
+    `inline-flex items-center justify-center px-5 py-4 text-sm font-semibold hover:bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] hover:text-white transition ${active
+      ? ""
+      : "text-white hover:border-[var(--accent-secondary,#8b5cf6)] hover:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_80%,white_20%),color-mix(in_srgb,var(--accent-secondary,#8b5cf6)_82%,white_18%))] hover:"
     }`;
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 flex min-h-16 min-w-0 items-center justify-between gap-2 border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_84%,transparent)] px-3 py-2 shadow-[var(--shadow-header)] backdrop-blur-2xl sm:gap-3 sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
-        <div className="flex min-w-0 flex-1 items-center lg:justify-between gap-2">
+      <header className="fixed inset-x-0 top-0 z-40 flex min-w-0 items-center justify-between border-b border-[var(--border-card)] bg-[color-mix(in_srgb,var(--bg-header)_84%,transparent)] shadow-[var(--shadow-header)] backdrop-blur-2xl sm:px-4 lg:sticky lg:bg-[var(--bg-header)]">
+        <div className="flex min-w-0 flex-1 items-center lg:justify-between">
           {isDashboardHeader ? (
             <button type="button" onClick={onMenuClick} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--bg-elevated)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] lg:hidden" aria-label={en.common.openMenu} aria-haspopup="true" aria-expanded={mobileNavOpen} aria-controls="dashboard-mobile-navigation"> <Menu size={22} aria-hidden="true" /> </button>
           ) : (
-            <button type="button" onClick={() => setMobileNavPath((current) => (current === pathname ? null : pathname))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-card)] bg-[var(--bg-header)] text-[var(--text-primary)] shadow-[var(--button-shadow)] transition hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--button-shadow-hover)] lg:hidden" aria-label={mobileNavOpen ? en.common.closeMenu : en.common.openMenu} aria-expanded={mobileNavOpen} aria-controls="public-mobile-navigation" >
+            <button type="button" onClick={() => setMobileNavPath((current) => (current === pathname ? null : pathname))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-card)] bg-[var(--bg-header)] text-[var(--text-primary)] shadow-[var(--button-shadow)] transition hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)] hover: lg:hidden" aria-label={mobileNavOpen ? en.common.closeMenu : en.common.openMenu} aria-expanded={mobileNavOpen} aria-controls="public-mobile-navigation" >
               {mobileNavOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
             </button>
           )}
 
           {!isDashboardHeader ? (
             <Link href={user ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2 rounded-2xl">
-              <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.appName} priority />
+              <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.dugam} priority />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
-                <p className="hidden text-xs text-[var(--text-muted)] sm:block">{en.navigation.workspaceTagline}</p>
+                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.dugam}</p>
+                <p className="hidden text-xs text-[var(--text-muted)] sm:block">{en.common.tagLine}</p>
               </div>
             </Link>
           ) : null}
 
           {!isDashboardHeader ? (
-            <nav aria-label={en.navigation.mainNavigation} className="ml-3 hidden min-w-0 items-center gap-1 lg:flex">
+            <nav aria-label={en.navigation.mainNavigation} className="hidden min-w-0 items-center lg:flex">
               {publicNavItems.map((item) => {
                 const active = pathname === item.href;
                 return (
@@ -203,14 +203,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             {publicNavItems.map((item) => {
               const active = pathname === item.href;
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={navLinkClass(active)}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {item.label}
-                </Link>
+                <Link key={item.href} href={item.href} className={navLinkClass(active)} aria-current={active ? "page" : undefined} >{item.label} </Link>
               );
             })}
 

@@ -43,6 +43,7 @@ export type ProfileState = {
   }
   settings: {
     termsAndConditions: string
+    profileCompletionReminderEnabled: boolean
   }
   userId?: string
   updatedAt?: string
@@ -83,6 +84,7 @@ const defaultState: ProfileState = {
   },
   settings: {
     termsAndConditions: "Goods once sold will not be taken back or exchanged.",
+    profileCompletionReminderEnabled: true,
   },
 }
 
@@ -223,6 +225,9 @@ function buildFirebaseProfile(user: AuthUser): ProfileState {
       email: user.email || "",
       photoURL: user.photoURL || "",
     },
+    settings: {
+      ...defaultState.settings,
+    },
   }
 }
 
@@ -242,6 +247,12 @@ function mergeWithFirebaseProfile(
       displayName: user.displayName || profileData.personal?.displayName || "",
       email: user.email || profileData.personal?.email || "",
       photoURL: user.photoURL || profileData.personal?.photoURL || "",
+    },
+    settings: {
+      ...defaultState.settings,
+      ...profileData.settings,
+      profileCompletionReminderEnabled:
+        profileData.settings?.profileCompletionReminderEnabled ?? defaultState.settings.profileCompletionReminderEnabled,
     },
   }
 }

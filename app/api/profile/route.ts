@@ -45,6 +45,7 @@ type ProfilePayload = {
   };
   settings: {
     termsAndConditions: string;
+    profileCompletionReminderEnabled: boolean;
   };
 };
 
@@ -213,6 +214,10 @@ function mapDbToProfile(data: Record<string, unknown>, userId: string) {
     },
     settings: {
       termsAndConditions: String(data.terms_and_conditions ?? settings?.termsAndConditions ?? ""),
+      profileCompletionReminderEnabled:
+        Boolean(data.payload && typeof data.payload === "object" && "settings" in data.payload
+          ? (data.payload as { settings?: { profileCompletionReminderEnabled?: unknown } }).settings?.profileCompletionReminderEnabled
+          : settings?.profileCompletionReminderEnabled ?? true),
     },
   };
 }
@@ -252,6 +257,10 @@ function validateProfilePayload(profile: ProfilePayload): ProfilePayload {
     },
     settings: {
       termsAndConditions: sanitizeOptionalText(profile.settings?.termsAndConditions, 3000) || "",
+      profileCompletionReminderEnabled:
+        typeof profile.settings?.profileCompletionReminderEnabled === "boolean"
+          ? profile.settings.profileCompletionReminderEnabled
+          : true,
     },
   };
 }

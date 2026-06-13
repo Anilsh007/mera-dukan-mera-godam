@@ -6,18 +6,15 @@ const icons = [HelpCircle, Bug, MessageSquare, Mail]
 
 export default function SupportMarketingContent() {
   return (
-    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <span className="inline-flex rounded-full border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 py-1 text-sm font-medium text-[var(--text-secondary)]">
-            {en.marketing.support.badge}
-          </span>
-          <h1 className="mt-6 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">{en.marketing.support.title}</h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.support.description}</p>
+    <main className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)] lg:px-30 px-5">
+        <div className="py-20 text-center">
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl">{en.marketing.support.title}</h1>
+          <p className="mt-6 text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.support.description}</p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+      <section className="py-16 lg:px-30 px-5">
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-8 shadow-[var(--shadow-card)]">

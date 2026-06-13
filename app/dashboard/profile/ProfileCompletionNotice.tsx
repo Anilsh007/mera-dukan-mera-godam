@@ -6,6 +6,7 @@ import { AlertCircle, ArrowRight } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Modal from "@/app/components/ui/Modal"
 import StatusBadge from "@/app/components/ui/StatusBadge"
+import { notify as toast } from "@/app/lib/notifications"
 import useProfile from "./useProfile"
 import { en } from "@/app/messages/en"
 
@@ -16,7 +17,7 @@ function isBlank(value?: string) {
 export default function ProfileCompletionNotice() {
   const router = useRouter()
   const pathname = usePathname()
-  const { profile, loading } = useProfile()
+  const { profile, loading, saveProfile, saving } = useProfile()
   const [dialogDismissed, setDialogDismissed] = useState(false)
 
   const status = useMemo(() => {
@@ -40,6 +41,7 @@ export default function ProfileCompletionNotice() {
   }, [profile])
 
   if (loading || pathname === "/dashboard/profile") return null
+  if (profile.settings.profileCompletionReminderEnabled === false) return null
   if (!status.requiredMissing.length && !status.bankMissing) return null
 
   const message = status.requiredMissing.length
@@ -47,6 +49,22 @@ export default function ProfileCompletionNotice() {
     : en.profile.bankOptionalDescription
 
   const goToProfile = () => router.push("/dashboard/profile")
+
+  const toggleReminder = async () => {
+    try {
+      await saveProfile({
+        ...profile,
+        settings: {
+          ...profile.settings,
+          profileCompletionReminderEnabled: !profile.settings.profileCompletionReminderEnabled,
+        },
+      })
+      setDialogDismissed(true)
+    } catch (error) {
+      console.error("Profile reminder toggle failed", error)
+      toast.error(en.profile.saveFailed)
+    }
+  }
 
   return (
     <>
@@ -63,13 +81,24 @@ export default function ProfileCompletionNotice() {
             </div>
           </div>
 
-          <Button
-            title={en.profile.completeAction}
-            variant="outline"
-            icon={<ArrowRight size={16} />}
-            onClick={goToProfile}
-            className="shrink-0"
-          />
+          <div className="flex flex-col gap-2 sm:items-end">
+            <Button
+              title={en.profile.completeAction}
+              variant="outline"
+              icon={<ArrowRight size={16} />}
+              onClick={goToProfile}
+              className="shrink-0"
+            />
+            <button
+              type="button"
+              onClick={toggleReminder}
+              disabled={saving}
+              aria-pressed={profile.settings.profileCompletionReminderEnabled}
+              className="inline-flex items-center justify-center rounded-full border border-amber-400/60 bg-white/70 px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100"
+            >
+              {profile.settings.profileCompletionReminderEnabled ? en.profile.turnOffReminder : en.profile.turnOnReminder}
+            </button>
+          </div>
         </div>
       </div>
 

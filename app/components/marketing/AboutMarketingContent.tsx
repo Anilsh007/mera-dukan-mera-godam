@@ -3,15 +3,15 @@ import { en } from "@/app/messages/en"
 
 export default function AboutMarketingContent() {
   return (
-    <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] w-96">
-      <section className="px-4 sm:px-6 border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
-        <div className="mx-auto px-4 py-10">
-          <h1 className="mt-6 text-4xl font-bold leading-tight md:text-5xl">{en.marketing.about.title}</h1>
+    <main className="bg-[var(--bg-primary)] text-[var(--text-primary)] ">
+      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)] lg:px-30 px-5">
+        <div className="py-20 text-center">
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl">{en.marketing.about.title}</h1>
           <p className="mt-6 text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.about.description}</p>
         </div>
       </section>
 
-      <section className="mx-auto  px-4 py-16 sm:px-6">
+      <section className="mx-auto py-16 lg:px-30 px-5">
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="space-y-10 lg:col-span-2">
             <article className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-8 shadow-[var(--shadow-card)]">

@@ -34,17 +34,14 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 export default function FaqMarketingContent() {
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)]">
-        <div className="mx-auto  px-4 py-20 text-center sm:px-6">
-          <span className="inline-flex rounded-full border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-4 py-1 text-sm font-medium text-[var(--text-secondary)]">
-            {en.marketing.faq.badge}
-          </span>
-          <h1 className="mt-6 text-4xl font-bold md:text-5xl">{en.marketing.faq.title}</h1>
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.faq.description}</p>
+      <section className="border-b border-[var(--border-card)] bg-[var(--surface-subtle)] lg:px-30 px-5">
+        <div className="py-20 text-center">
+          <h1 className="text-4xl font-bold md:text-5xl">{en.marketing.faq.title}</h1>
+          <p className="mt-6 text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.faq.description}</p>
         </div>
       </section>
 
-      <section className="mx-auto  px-4 py-16 sm:px-6">
+      <section className="py-16 lg:px-30 px-5">
         <div className="space-y-5">
           {en.marketing.faqItems.map((faq) => (
             <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />

@@ -30,5 +30,6 @@ export interface ProfileData {
   };
   settings: {
     termsAndConditions: string;
+    profileCompletionReminderEnabled: boolean;
   };
 }

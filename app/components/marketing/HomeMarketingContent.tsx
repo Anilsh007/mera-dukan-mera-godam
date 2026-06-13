@@ -4,7 +4,7 @@ import { en } from "@/app/messages/en"
 export default function HomeMarketingContent() {
   return (
     <section className="bg-[var(--bg-primary)] py-16 text-[var(--text-primary)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6">
+      <div className="mx-auto flex flex-col gap-12 lg:px-30 px-5">
         <div className="rounded-[32px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-6 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-8">
           <span className="inline-flex rounded-full border border-[var(--border-card)] bg-[var(--surface-subtle)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
             {en.marketing.home.badge}
@@ -28,7 +28,7 @@ export default function HomeMarketingContent() {
           </div>
         </div>
 
-        <section className="rounded-[32px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-6 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-8">
+        <section className="rounded-[32px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-6 shadow-[var(--shadow-card)] backdrop-blur-xl lg:px-30 px-5">
           <h2 className="text-2xl font-bold sm:text-3xl">{en.marketing.home.featureSectionTitle}</h2>
           <p className="mt-3 max-w-4xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
             {en.marketing.home.featureSectionDescription}

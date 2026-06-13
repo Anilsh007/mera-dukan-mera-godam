@@ -14,8 +14,10 @@ export default async function LoginPage({ searchParams }: PageProps) {
   const language = await resolveSeoLanguage(searchParams)
 
   return (
-    <PublicPageShell path="/login" language={language}>
+    // <PublicPageShell path="/login" language={language}>
+    //   <Login />
+    // </PublicPageShell>
+
       <Login />
-    </PublicPageShell>
   )
 }
