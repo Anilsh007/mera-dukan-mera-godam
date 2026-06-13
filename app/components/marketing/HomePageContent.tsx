@@ -128,8 +128,8 @@ export default function HomePageContent() {
                 <div className="flex items-center gap-3">
                   <Image src={logo} alt={en.profile.logoAlt} width={52} height={52} priority className="rounded-2xl" />
                   <div>
-                    <p className="text-sm font-black text-[var(--text-primary)]">{en.common.appName}</p>
-                    <p className="text-xs font-semibold text-[var(--text-secondary)]">{en.navigation.workspaceTagline}</p>
+                    <p className="text-sm font-black text-[var(--text-primary)]">{en.common.dugam}</p>
+                    <p className="text-xs font-semibold text-[var(--text-secondary)]">{en.common.tagLine}</p>
                   </div>
                 </div>
                 <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold text-[var(--accent)]">

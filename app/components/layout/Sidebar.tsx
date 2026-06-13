@@ -233,7 +233,7 @@ export default function Sidebar({
       )}
 
       <aside
-        aria-label={en.navigation.workspaceTagline}
+        aria-label={en.common.tagLine}
         className={`sidebar-shell fixed top-0 left-0 border border-[var(--border-color)] bg-[var(--bg-sidebar)] shadow-[var(--shadow-card)] backdrop-blur-xl flex h-[100dvh] flex-col p-1 transition-all duration-300 shrink-0 ${
           isMobile
             ? `fixed inset-y-0 left-0 z-50 m-2 ${isOpen ? "translate-x-0" : "-translate-x-[120%]"} w-[min(88vw,260px)] rounded-[24px]`
@@ -242,11 +242,11 @@ export default function Sidebar({
       >
         <div className="relative mb-2 flex items-center justify-start px-2">
           <div className="flex w-full items-center justify-center border-b border-[var(--border-color)] pb-3">
-            <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.appName} priority />
+            <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.dugam} priority />
             {(!isCollapsed || isMobile) && (
               <div className="ml-2 hidden min-w-0 flex-col items-start sm:flex">
-                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
-                <p className="hidden text-[11px] text-[var(--text-muted)] sm:block">{en.navigation.workspaceTagline}</p>
+                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.dugam}</p>
+                <p className="hidden text-[11px] text-[var(--text-muted)] sm:block">{en.common.tagLine}</p>
               </div>
             )}
           </div>
