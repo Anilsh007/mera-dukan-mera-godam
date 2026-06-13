@@ -119,9 +119,9 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
           {!isDashboardHeader ? (
             <Link href={user ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2 rounded-2xl">
-              <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.dugam} priority />
+              <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.appName} priority />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.dugam}</p>
+                <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
                 <p className="hidden text-xs text-[var(--text-muted)] sm:block">{en.common.tagLine}</p>
               </div>
             </Link>

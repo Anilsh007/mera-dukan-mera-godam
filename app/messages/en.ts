@@ -2,7 +2,7 @@
 
 const baseMessages = {
   common: {
-    dugam: "Dugam",
+    appName: "Dugam",
     tagLine: "Mera Dukan Mera Godam",
     close: "Close",
     cancel: "Cancel",

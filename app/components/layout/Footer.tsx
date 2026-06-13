@@ -18,12 +18,12 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_74%,#ec4899_26%))] text-lg font-bold text-white shadow-[var(--button-shadow)]">
-                {en.common.dugam.split(" ").map((word) => word[0]).join("")}
+                {en.common.appName.split(" ").map((word) => word[0]).join("")}
               </div>
 
               <div>
                 <h2 className="text-lg font-semibold">
-                  {en.common.dugam}
+                  {en.common.appName}
                 </h2>
 
                 <p className="text-sm text-[var(--text-muted)]">
@@ -145,7 +145,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="flex flex-col gap-4 text-sm text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>
-            Â© {new Date().getFullYear()} {en.common.dugam}. {en.seo.allRightsReserved}
+            Â© {new Date().getFullYear()} {en.common.appName}. {en.seo.allRightsReserved}
           </p>
 
           <div className="flex items-center gap-6">
