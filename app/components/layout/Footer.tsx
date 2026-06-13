@@ -145,7 +145,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="flex flex-col gap-4 text-sm text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>
-            Â© {new Date().getFullYear()} {en.common.appName}. {en.seo.allRightsReserved}
+            © {new Date().getFullYear()} {en.common.appName}. {en.seo.allRightsReserved}
           </p>
 
           <div className="flex items-center gap-6">

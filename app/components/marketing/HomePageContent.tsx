@@ -16,6 +16,7 @@ import {
   Truck,
 } from "lucide-react"
 import logo from "@/assets/logo.webp"
+import PricingSection from "@/app/components/marketing/PricingSection"
 import { en } from "@/app/messages/en"
 
 const heroHighlights = en.auth.keywords
@@ -224,6 +225,10 @@ export default function HomePageContent() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="py-8 sm:py-12">
+          <PricingSection />
         </section>
 
         <section className="sm:pb-20">
