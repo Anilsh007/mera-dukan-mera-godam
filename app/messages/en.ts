@@ -2461,7 +2461,7 @@ const baseMessages = {
     newStock: "New stock",
   },
   seo: {
-    appName: "Mera Dukan Mera Godam",
+    appName: "Dugam",
     defaultTitle: "Inventory and GST billing app for Indian shops",
     navigation: "Navigation",
     modernInventoryManagementPlatform: "Modern inventory management platform",
@@ -2478,7 +2478,7 @@ const baseMessages = {
     privacy: "Privacy",
     terms: "Terms",
     allRightsReserved: "All rights reserved.",
-    defaultDescription: "Use Mera Dukan Mera Godam to manage inventory, track stock, monitor sales, handle expiry alerts, and create GST invoices for your shop or warehouse.",
+    defaultDescription: "Use Dugam to manage inventory, track stock, monitor sales, handle expiry alerts, and create GST invoices for your shop or warehouse.",
     homeTitle: "Inventory Management and GST Billing App for Indian Shops",
     homeDescription: "Manage stock, sales, purchases, suppliers, expiry alerts, reports, and GST invoices from one simple dashboard.",
     keywords: [
@@ -2487,7 +2487,7 @@ const baseMessages = {
       "stock management software",
       "shop billing software",
     ],
-    ogImageAlt: "Mera Dukan Mera Godam inventory, stock and GST billing dashboard",
+    ogImageAlt: "Dugam inventory, stock and GST billing dashboard",
     emailSupport: "Email support",
     whatsappSupport: "WhatsApp support",
     manifest: {
@@ -2545,7 +2545,7 @@ const baseMessages = {
       badge: "Stock inventory management system for Indian businesses",
       title: "Inventory, GST billing, receipts, and stock control for Indian shops",
       description:
-        "Mera Dukan Mera Godam helps Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses manage stock, purchases, sales, GST invoices, printable receipts, reports, and sharing from one simple web app.",
+        "Dugam helps Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses manage stock, purchases, sales, GST invoices, printable receipts, reports, and sharing from one simple web app.",
       useCasesTitle: "Useful for many Indian shops and business types",
       useCasesDescription:
         "This app is built for kirana stores, grocery shops, general stores, hardware shops, paint shops, plumbing and fitting shops, sanitary shops, tiles shops, cement shops, iron and steel stores, electrical shops, electronics shops, automobile spare parts shops, garment stores, wholesalers, distributors, showrooms, warehouse teams, and small businesses that need practical stock and billing tools.",
@@ -2639,10 +2639,10 @@ const baseMessages = {
       },
     },
     about: {
-      badge: "About Mera Dukan Mera Godam",
+      badge: "About Dugam",
       title: "Simple inventory and GST billing for Indian shops, retailers, wholesalers, and showrooms",
       description:
-        "Mera Dukan Mera Godam is designed to make stock management, purchases, sales, GST billing, printable receipts, and business reporting easier for Indian businesses that want a practical and low-technical workflow.",
+        "Dugam is designed to make stock management, purchases, sales, GST billing, printable receipts, and business reporting easier for Indian businesses that want a practical and low-technical workflow.",
       storyTitle: "Why this product exists",
       storyParagraphs: [
         "Many businesses still manage stock with notebooks, spreadsheets, or mixed systems that make purchase, sale, and billing work harder than it should be.",
@@ -2698,7 +2698,7 @@ const baseMessages = {
     },
     faq: {
       badge: "Inventory and GST billing FAQ",
-      title: "Frequently asked questions for shops, wholesalers, and stock managers",
+      title: "Dugam - FAQ & Support",
       description:
         "Find answers about inventory stock, purchases, sales, GST invoices, receipts, sharing, reports, and supported shop types before you start using the app.",
       moreHelpTitle: "Need help with a specific stock or billing issue?",
@@ -2745,9 +2745,9 @@ const baseMessages = {
     },
     faqItems: [
       {
-        question: "What is Mera Dukan Mera Godam?",
+        question: "What is Dugam?",
         answer:
-          "Mera Dukan Mera Godam is a web-based inventory, purchase, sale, GST billing, receipt printing, sharing, and reporting system for Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses.",
+          "Dugam is a web-based inventory, purchase, sale, GST billing, receipt printing, sharing, and reporting system for Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses.",
       },
       {
         question: "Which shops can use this inventory app?",
@@ -3222,7 +3222,7 @@ const baseMessages = {
     "Maintenance, updates, technical issues, or external factors may temporarily affect service availability.": "Maintenance, updates, technical issues, or external factors may temporarily affect service availability.",
     "Manage stock, track sales, create GST invoices, monitor expiry alerts and organize shop inventory from one dashboard.": "Manage stock, track sales, create GST invoices, monitor expiry alerts and organize shop inventory from one dashboard.",
     "Many businesses still rely on spreadsheets or outdated systems to manage stock, purchases, and reports. This project aims to provide a cleaner and more modern solution that saves time and reduces operational complexity.": "Many businesses still rely on spreadsheets or outdated systems to manage stock, purchases, and reports. This project aims to provide a cleaner and more modern solution that saves time and reduces operational complexity.",
-    "Mera Dukan Mera Godam": "Mera Dukan Mera Godam",
+    "Dugam": "Dugam",
     "Missing Firebase token": "Missing Firebase token",
     "Modern inventory management platform": "Modern inventory management platform",
     "More details": "More details",
@@ -3544,7 +3544,7 @@ const baseMessages = {
     "Update your business details to personalize the app and generate accurate invoices.": "Update your business details to personalize the app and generate accurate invoices.",
     "UPI ID (Optional)": "UPI ID (Optional)",
     "UPI Payment ID": "UPI Payment ID",
-    "Use Mera Dukan Mera Godam to manage inventory, track stock, monitor sales, handle expiry alerts and create GST invoices for your shop or warehouse.": "Use Mera Dukan Mera Godam to manage inventory, track stock, monitor sales, handle expiry alerts and create GST invoices for your shop or warehouse.",
+    "Use Dugam to manage inventory, track stock, monitor sales, handle expiry alerts and create GST invoices for your shop or warehouse.": "Use Dugam to manage inventory, track stock, monitor sales, handle expiry alerts and create GST invoices for your shop or warehouse.",
     "User": "User",
     "User not authenticated": "User not authenticated",
     "User not logged in": "User not logged in",

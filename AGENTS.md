@@ -1,12 +1,12 @@
-# AGENTS.md - Mera Dukan Mera Godam Project Rules
+# AGENTS.md - Dugam Project Rules
 
-These durable rules apply to all current and future phases of the **Mera Dukan Mera Godam** project.
+These durable rules apply to all current and future phases of the **Dugam** project.
 
 Project type: Next.js / React / TypeScript stock inventory management, GST billing, purchase/sale, reports, print/receipt web app for Indian small shopkeepers and low-technical users.
 
 ## Project Identity
 
-1. This project is **Mera Dukan Mera Godam / MDMG**.
+1. This project is **Dugam / MDMG**.
 2. It is a Next.js / React / TypeScript inventory, GST billing, purchase, sale, reports, print/receipt web app for Indian small shopkeepers and low-technical users.
 3. Keep one permanent rule system in this root `AGENTS.md` so future phases do not need duplicated rule prompts.
 4. Treat `docs/MDMG_PHASE_ROADMAP.md` and `docs/PHASE_STATUS.md` as the durable phase planning/status sources for future work.

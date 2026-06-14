@@ -122,7 +122,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <Image src={logo} width={28} height={28} className="h-7 w-7 object-contain" alt={en.common.appName} priority />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{en.common.appName}</p>
-                <p className="hidden text-xs text-[var(--text-muted)] sm:block">{en.common.tagLine}</p>
+                <span className="hidden text-xs text-[var(--text-muted)]">{en.common.tagLine}</span>
               </div>
             </Link>
           ) : null}

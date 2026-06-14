@@ -45,7 +45,7 @@ for (const plan of planDefinitions) {
         name: plan.name,
         amount: plan.amount,
         currency: "INR",
-        description: `${plan.name} test plan for Mera Dukan Mera Godam`,
+        description: `${plan.name} test plan for Dugam`,
       },
       notes: {
         envKey: `RAZORPAY_PLAN_ID_${plan.code}`,

@@ -3,7 +3,7 @@ import Link from "next/link"
 import PricingSection from "@/app/components/marketing/PricingSection"
 
 export const metadata: Metadata = {
-  title: "Affordable Pricing Plans | Mera Dukan Mera Godam",
+  title: "Affordable Pricing Plans | Dugam",
   description:
     "Choose the best plan for your shop. Manage inventory, dukan, and godam stock with GST billing starting at just ₹99/month or ₹3.33/day. 14-day free trial.",
 }

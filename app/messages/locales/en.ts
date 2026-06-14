@@ -3,8 +3,8 @@ import type { LocalizedSeoCopy } from "./types"
 export const languageCode = "en"
 
 export const enSeoCopy: LocalizedSeoCopy = {
-  "softwareName": "Mera Dukan Mera Godam",
-  "appDescription": "Mera Dukan Mera Godam is a stock inventory management, GST billing, purchase, sale, receipt printing, sharing, and reporting app for Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses.",
+  "softwareName": "Dugam",
+  "appDescription": "Dugam is a stock inventory management, GST billing, purchase, sale, receipt printing, sharing, and reporting app for Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses.",
   "pages": {
     "/": {
       "title": "Stock Inventory Management System with GST Billing for Indian Shops",
@@ -18,7 +18,7 @@ export const enSeoCopy: LocalizedSeoCopy = {
     },
     "/about": {
       "title": "About the Inventory, GST Billing, and Stock Management Platform",
-      "description": "Learn how Mera Dukan Mera Godam helps Indian shops, retailers, wholesalers, showrooms, and storekeepers manage stock, GST billing, receipts, purchases, sales, and reports with a simple workflow.",
+      "description": "Learn how Dugam helps Indian shops, retailers, wholesalers, showrooms, and storekeepers manage stock, GST billing, receipts, purchases, sales, and reports with a simple workflow.",
       "keywords": [
         "inventory billing software for shops",
         "stock management software for retailers",
@@ -36,7 +36,7 @@ export const enSeoCopy: LocalizedSeoCopy = {
     },
     "/privacy-policy": {
       "title": "Privacy Policy",
-      "description": "Read the privacy policy for Mera Dukan Mera Godam to understand how account, inventory, billing, and business data is handled.",
+      "description": "Read the privacy policy for Dugam to understand how account, inventory, billing, and business data is handled.",
       "keywords": [
         "privacy policy inventory app",
         "business data privacy"
@@ -53,7 +53,7 @@ export const enSeoCopy: LocalizedSeoCopy = {
     },
     "/terms": {
       "title": "Terms and Conditions",
-      "description": "Review the terms and conditions for using Mera Dukan Mera Godam inventory, stock management, GST billing, receipt, and reporting software.",
+      "description": "Review the terms and conditions for using Dugam inventory, stock management, GST billing, receipt, and reporting software.",
       "keywords": [
         "terms inventory app",
         "GST billing software terms"
