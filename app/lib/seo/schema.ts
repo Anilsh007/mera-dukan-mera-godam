@@ -11,6 +11,21 @@ type FaqSchemaItem = {
   answer: string
 }
 
+const pricingFaqItems: FaqSchemaItem[] = [
+  {
+    question: "What is Dugam?",
+    answer: "Dugam is an inventory management and GST billing platform for Indian retail shops, wholesalers, and godown workflows.",
+  },
+  {
+    question: "Which shops can use this inventory app?",
+    answer: "Kirana stores, hardware shops, stationery shops, wholesale counters, showrooms, and small warehouse teams can use it.",
+  },
+  {
+    question: "Can I create GST invoices?",
+    answer: "Yes. You can create GST invoices, manage stock, and handle billing workflows from the same platform.",
+  },
+]
+
 export type LocalBusinessSchemaInput = {
   name: string
   url?: string
@@ -67,6 +82,7 @@ export function createBaseSchema(): JsonLdGraph {
         name: APP_NAME,
         alternateName: APP_SHORT_NAME,
         url: SITE_URL,
+        description: APP_DESCRIPTION,
         logo: absoluteUrl("/icons/icon.svg"),
         image: absoluteUrl("/og-image.svg"),
         areaServed: { "@type": "Country", name: "India" },
@@ -100,14 +116,22 @@ export function createBaseSchema(): JsonLdGraph {
         alternateName: APP_SHORT_NAME,
         applicationCategory: "BusinessApplication",
         applicationSubCategory: seoSchemaText.applicationSubCategory,
-        operatingSystem: "Web",
+        operatingSystem: "All",
         browserRequirements: seoSchemaText.browserRequirements,
         url: SITE_URL,
         image: absoluteUrl("/og-image.svg"),
-        description: APP_DESCRIPTION,
+        description: "Modern inventory management and GST billing app for Indian small businesses.",
         inLanguage: languages,
         countryOfOrigin: "IN",
         featureList,
+        priceRange: "Starts at ₹3 per day",
+        offers: {
+          "@type": "Offer",
+          price: "3",
+          priceCurrency: "INR",
+          description: "Starts at ₹3 per day",
+          url: absoluteUrl("/pricing"),
+        },
         audience: [
           { "@type": "BusinessAudience", audienceType: seoSchemaText.retailerAudience },
           { "@type": "BusinessAudience", audienceType: seoSchemaText.wholesalerAudience },
@@ -133,11 +157,22 @@ export function createPageSchema(path: string, language = "en"): JsonLdGraph {
     buildBreadcrumbSchema(page),
   ]
 
-  if (normalizedPath === "/faq") {
-    graph.push(buildFaqSchema(locale))
-  }
-
   return { "@context": "https://schema.org", "@graph": graph }
+}
+
+export function createFaqPageSchema(language = "en"): JsonLdGraph {
+  const locale = SEO_LANGUAGES.find((item) => item.code === language)?.locale || "en-IN"
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        "@id": `${absoluteUrl("/faq")}#faq`,
+        inLanguage: locale,
+        mainEntity: pricingFaqItems.map((item) => buildQuestion(item.question, item.answer)),
+      },
+    ],
+  }
 }
 
 export function createLocalBusinessSchema(input: LocalBusinessSchemaInput): JsonLdGraph {
@@ -239,8 +274,6 @@ function getPageType(path: string) {
   switch (path) {
     case "/about":
       return "AboutPage"
-    case "/faq":
-      return "FAQPage"
     case "/support":
       return "ContactPage"
     case "/privacy-policy":
