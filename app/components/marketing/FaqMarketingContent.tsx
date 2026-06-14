@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react"
 import Link from "next/link"
-import { ChevronDown } from "lucide-react"
+import { ArrowRight, ChevronDown } from "lucide-react"
 import { en } from "@/app/messages/en"
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -38,6 +38,10 @@ export default function FaqMarketingContent() {
         <div className="py-20 text-center">
           <h1 className="text-4xl font-bold md:text-5xl">{en.marketing.faq.title}</h1>
           <p className="mt-6 text-lg leading-8 text-[var(--text-secondary)]">{en.marketing.faq.description}</p>
+          <Link href="/?scrollTo=pricing" className="mt-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] px-6 py-3 text-sm font-bold text-white shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]" scroll={true}>
+            {en.marketing.home.links.dayPlan}
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 

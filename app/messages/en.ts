@@ -246,6 +246,7 @@ const baseMessages = {
     billingDescription:
       "Review your current plan, trial status, limits, and future billing placeholders from one page.",
     pricingTitle: "Plans and Upgrade",
+    pricingTable:"Pricing table",
     pricingDescription:
       "Choose the right plan for your shop. The subscription backend scaffold is ready, and Razorpay API calls can be connected here next.",
     activeStatus: "Subscription active",
@@ -2488,6 +2489,7 @@ const baseMessages = {
     ],
     ogImageAlt: "Mera Dukan Mera Godam inventory, stock and GST billing dashboard",
     emailSupport: "Email support",
+    whatsappSupport: "WhatsApp support",
     manifest: {
       openDashboardName: "Open dashboard",
       openDashboardShortName: "Dashboard",
@@ -2633,6 +2635,7 @@ const baseMessages = {
         faq: "View inventory and GST billing FAQ",
         support: "Get support for stock, invoice, print, and report issues",
         login: "Sign in to the inventory dashboard",
+        dayPlan: "Start with a 3inr per day plan",
       },
     },
     about: {

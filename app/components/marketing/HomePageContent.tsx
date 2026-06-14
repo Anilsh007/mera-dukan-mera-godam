@@ -1,3 +1,4 @@
+"use client"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -18,6 +19,8 @@ import {
 import logo from "@/assets/logo.webp"
 import PricingSection from "@/app/components/marketing/PricingSection"
 import { en } from "@/app/messages/en"
+import { useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 
 const heroHighlights = en.auth.keywords
 
@@ -78,6 +81,21 @@ const trustCards = [
 ]
 
 export default function HomePageContent() {
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const section = searchParams.get("scrollTo")
+
+    if (section) {
+      requestAnimationFrame(() => {
+        document
+          .getElementById(section)
+          ?.scrollIntoView({ behavior: "smooth" })
+      })
+    }
+  }, [searchParams])
+
   return (
     <div className="relative isolate overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -97,17 +115,15 @@ export default function HomePageContent() {
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/login"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-              >
+              <Link href="/login" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]" >
                 {en.marketing.home.links.login}
                 <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </Link>
-              <Link
-                href="/about"
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-6 py-3 text-sm font-bold text-[var(--text-primary)] shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-              >
+              <Link href="#pricing" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary,#8b5cf6))] px-6 py-3 text-sm font-bold text-white shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]" >
+                {en.marketing.home.links.dayPlan}
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+              <Link href="/about" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] px-6 py-3 text-sm font-bold text-[var(--text-primary)] shadow-[var(--button-shadow)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]" >
                 {en.marketing.home.links.about}
               </Link>
             </div>
@@ -227,7 +243,7 @@ export default function HomePageContent() {
           </div>
         </section>
 
-        <section className="py-8 sm:py-12">
+        <section className="py-8 sm:py-12" id="pricing">
           <PricingSection />
         </section>
 

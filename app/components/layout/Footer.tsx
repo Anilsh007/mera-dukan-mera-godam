@@ -8,6 +8,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { en } from "@/app/messages/en";
+import { BsWhatsapp } from "react-icons/bs";
 
 export default function Footer() {
   return (
@@ -42,41 +43,27 @@ export default function Footer() {
 
             {/* Socials */}
             <div className="mt-6 flex items-center gap-4">
-              
-
-              <a
-                href="mailto:mdmg.ind@gmail.com"
-                aria-label={en.seo.emailSupport}
-                className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-elevated)] p-3 text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-soft-strong)] hover:text-[var(--text-primary)]"
-              >
+              <a href="mailto:mdmg.ind@gmail.com" target="_blank" rel="noopener noreferrer" aria-label={en.seo.emailSupport} className="rounded-xl border border-[var(--border-card)] p-3 text-[#EA4335] transition hover:border-[var(--accent)] hover:bg-[#EA4335] hover:text-[#ffffff]" >
                 <Mail size={18} aria-hidden="true" />
+              </a>
+
+              <a href="https://wa.me/9301848229" target="_blank" rel="noopener noreferrer" aria-label={en.seo.whatsappSupport} className="rounded-xl border border-[var(--border-card)]  p-3 text-[#25D366] transition hover:border-[var(--accent)] hover:bg-[#25D366] hover:text-[#ffffff]" >
+                <BsWhatsapp size={18} aria-hidden="true" />
               </a>
             </div>
           </div>
 
           {/* {en.seo.navigation} */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-primary)]">
-              {en.seo.navigation}
-            </h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-primary)]">{en.seo.navigation}</h3>
 
             <ul className="mt-5 space-y-4 text-sm text-[var(--text-secondary)]">
               <li>
-                <Link
-                  href="/about"
-                  className="transition hover:text-[var(--text-primary)]"
-                >
-                  {en.seo.about}
-                </Link>
+                <Link href="/about" className="transition hover:text-[var(--text-primary)]">{en.seo.about}</Link>
               </li>
 
               <li>
-                <Link
-                  href="/faq"
-                  className="transition hover:text-[var(--text-primary)]"
-                >
-                  {en.seo.faq}
-                </Link>
+                <Link href="/faq" className="transition hover:text-[var(--text-primary)]">{en.seo.faq}</Link>
               </li>
 
               <li>
