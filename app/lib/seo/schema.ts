@@ -1,5 +1,6 @@
 import { en } from "@/app/messages/en"
 import { APP_DESCRIPTION, APP_NAME, APP_SHORT_NAME, SEO_LANGUAGES, SITE_URL, absoluteUrl, getSeoPage, normalizePath, type SeoPage } from "./site"
+import { dugamSEOData } from "@/src/config/seoConfig"
 
 export type JsonLdGraph = {
   "@context": "https://schema.org"
@@ -141,7 +142,11 @@ export function createBaseSchema(): JsonLdGraph {
           { "@type": "BusinessAudience", audienceType: seoSchemaText.shopkeeperAudience },
           { "@type": "BusinessAudience", audienceType: seoSchemaText.storekeeperAudience },
         ],
-        keywords: APP_DESCRIPTION,
+        keywords: [
+          ...dugamSEOData.primaryKeywords,
+          ...dugamSEOData.businessKeywords,
+          ...dugamSEOData.pricingKeywords,
+        ].join(", "),
         publisher: { "@id": organizationId },
       },
     ],
@@ -170,6 +175,114 @@ export function createFaqPageSchema(language = "en"): JsonLdGraph {
         "@id": `${absoluteUrl("/faq")}#faq`,
         inLanguage: locale,
         mainEntity: pricingFaqItems.map((item) => buildQuestion(item.question, item.answer)),
+      },
+    ],
+  }
+}
+
+export function createPricingPageSchema(language = "en"): JsonLdGraph {
+  const locale = SEO_LANGUAGES.find((item) => item.code === language)?.locale || "en-IN"
+  const monthly = 99
+  const quarterly = 299
+  const halfYearly = 599
+  const yearly = 999
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        "@id": `${absoluteUrl("/pricing")}#product`,
+        name: `${APP_NAME} Pricing`,
+        description: "Affordable inventory management and GST billing plans for Indian shops and MSMEs.",
+        brand: {
+          "@type": "Brand",
+          name: APP_NAME,
+        },
+        offers: [
+          {
+            "@type": "Offer",
+            name: "Monthly",
+            price: monthly,
+            priceCurrency: "INR",
+            url: absoluteUrl("/pricing"),
+          },
+          {
+            "@type": "Offer",
+            name: "Quarterly",
+            price: quarterly,
+            priceCurrency: "INR",
+            url: absoluteUrl("/pricing"),
+          },
+          {
+            "@type": "Offer",
+            name: "Half-Yearly",
+            price: halfYearly,
+            priceCurrency: "INR",
+            url: absoluteUrl("/pricing"),
+          },
+          {
+            "@type": "Offer",
+            name: "Yearly",
+            price: yearly,
+            priceCurrency: "INR",
+            url: absoluteUrl("/pricing"),
+          },
+        ],
+      },
+      {
+        "@type": "AggregateOffer",
+        "@id": `${absoluteUrl("/pricing")}#aggregate-offer`,
+        priceCurrency: "INR",
+        lowPrice: monthly,
+        highPrice: yearly,
+        offerCount: 4,
+        url: absoluteUrl("/pricing"),
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${absoluteUrl("/pricing")}#faq`,
+        inLanguage: locale,
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "Is there a free trial?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Yes. Dugam includes a trial or launch offer so shop owners can explore the app before subscribing.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "Can I upgrade later?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Yes. You can start with a lower plan and move to a higher plan as your shop grows.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "Does it work for kirana and wholesale businesses?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Yes. The pricing and product are designed for kirana stores, wholesalers, distributors, and other Indian MSMEs.",
+            },
+          },
+        ],
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${absoluteUrl("/pricing")}#software`,
+        name: APP_NAME,
+        operatingSystem: "All",
+        applicationCategory: "BusinessApplication",
+        description: dugamSEOData.appDescription,
+        offers: {
+          "@type": "Offer",
+          price: yearly,
+          priceCurrency: "INR",
+          url: absoluteUrl("/pricing"),
+        },
       },
     ],
   }

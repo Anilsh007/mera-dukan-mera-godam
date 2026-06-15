@@ -27,7 +27,7 @@ const themeInitScript = `
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${APP_NAME} | Stock Inventory Management System with GST Billing`,
+    default: `${APP_NAME} | Inventory Management Software, GST Billing App & Affordable Alternative`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,

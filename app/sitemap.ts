@@ -1,11 +1,9 @@
 import type { MetadataRoute } from "next"
-import { SEO_LAST_MODIFIED, absoluteUrl, buildLanguageAlternates, normalizePath } from "@/app/lib/seo/site"
-
-const SITEMAP_PATHS = ["/", "/about", "/faq", "/support", "/privacy-policy", "/terms"]
+import { PUBLIC_SEO_PAGES, SEO_LAST_MODIFIED, absoluteUrl, buildLanguageAlternates, normalizePath } from "@/app/lib/seo/site"
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date(SEO_LAST_MODIFIED)
-  const uniquePaths = Array.from(new Set(SITEMAP_PATHS.map((path) => normalizePath(path))))
+  const uniquePaths = Array.from(new Set(PUBLIC_SEO_PAGES.map((page) => normalizePath(page.path))))
 
   return uniquePaths.map((path) => ({
     url: absoluteUrl(path),

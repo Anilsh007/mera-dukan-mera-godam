@@ -2543,9 +2543,9 @@ const baseMessages = {
   marketing: {
     home: {
       badge: "Stock inventory management system for Indian businesses",
-      title: "Inventory, GST billing, receipts, and stock control for Indian shops",
+      title: "Free Inventory Management Software & GST Billing App for Indian Businesses",
       description:
-        "Dugam helps Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses manage stock, purchases, sales, GST invoices, printable receipts, reports, and sharing from one simple web app.",
+        "Manage inventory, stock tracking, GST billing, purchases and sales with seamless mobile and desktop synchronization. Built for Kirana Stores, Retail Shops, Wholesalers and MSMEs.",
       useCasesTitle: "Useful for many Indian shops and business types",
       useCasesDescription:
         "This app is built for kirana stores, grocery shops, general stores, hardware shops, paint shops, plumbing and fitting shops, sanitary shops, tiles shops, cement shops, iron and steel stores, electrical shops, electronics shops, automobile spare parts shops, garment stores, wholesalers, distributors, showrooms, warehouse teams, and small businesses that need practical stock and billing tools.",
@@ -2635,9 +2635,9 @@ const baseMessages = {
         faq: "View inventory and GST billing FAQ",
         support: "Get support for stock, invoice, print, and report issues",
         login: "Sign in to the inventory dashboard",
-        dayPlan: "Start with a 3inr per day plan",
+          dayPlan: "Start with ₹2.74/day",
+        },
       },
-    },
     about: {
       badge: "About Dugam",
       title: "Simple inventory and GST billing for Indian shops, retailers, wholesalers, and showrooms",
@@ -3603,4 +3603,3 @@ const baseMessages = {
 
 export const en = createMessageProxy(baseMessages) as typeof baseMessages;
 export type AppMessages = typeof baseMessages;
-

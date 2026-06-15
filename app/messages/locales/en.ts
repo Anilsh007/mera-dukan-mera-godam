@@ -4,16 +4,19 @@ export const languageCode = "en"
 
 export const enSeoCopy: LocalizedSeoCopy = {
   "softwareName": "Dugam",
-  "appDescription": "Dugam is a stock inventory management, GST billing, purchase, sale, receipt printing, sharing, and reporting app for Indian shops, retailers, wholesalers, showrooms, storekeepers, and small businesses.",
+  "appDescription": "Dugam is an affordable inventory management and GST billing app for Indian MSMEs, kirana stores, wholesalers, retailers, and small business teams.",
   "pages": {
     "/": {
-      "title": "Stock Inventory Management System with GST Billing for Indian Shops",
-      "description": "Manage stock, purchases, sales, GST invoices, printable receipts, WhatsApp or email sharing, reports, and business details from one simple inventory billing app for Indian shops and small businesses.",
+      "title": "Inventory Management Software, GST Billing App & Affordable Alternative",
+      "description": "Manage stock inventory, GST billing, purchases, sales and shop operations using Dugam. Affordable business software for Indian MSMEs at just ₹99/month or ₹999/year.",
       "keywords": [
         "stock inventory management system",
         "inventory management software India",
         "shop billing software with GST",
-        "stock purchase sale management app"
+        "stock purchase sale management app",
+        "inventory management software",
+        "GST billing software",
+        "retail billing software"
       ]
     },
     "/about": {
@@ -32,6 +35,15 @@ export const enSeoCopy: LocalizedSeoCopy = {
         "GST invoice software India FAQ",
         "inventory management software questions",
         "shop billing software FAQ"
+      ]
+    },
+    "/pricing": {
+      "title": "Affordable Pricing Plans for Inventory Management and GST Billing",
+      "description": "Compare pricing for Dugam and start with an affordable plan for Indian shops. Choose ₹99/month or ₹999/year for inventory and GST billing software.",
+      "keywords": [
+        "affordable GST billing software",
+        "inventory software under 999 rupees",
+        "billing software under 1000 rupees"
       ]
     },
     "/privacy-policy": {

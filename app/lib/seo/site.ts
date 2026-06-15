@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 import { getLocalizedSeoCopy } from "@/app/messages/locales/seo"
 import { en } from "@/app/messages/en"
+import { dugamSEOData } from "@/src/config/seoConfig"
 
 const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-const defaultProductionSiteUrl = "https://dugam.in"
+const defaultProductionSiteUrl = dugamSEOData.siteUrl
 export const SITE_URL = configuredSiteUrl && /^https?:\/\//i.test(configuredSiteUrl)
   ? configuredSiteUrl.replace(/\/$/, "")
   : process.env.NODE_ENV === "production"
@@ -11,8 +12,8 @@ export const SITE_URL = configuredSiteUrl && /^https?:\/\//i.test(configuredSite
     : "http://localhost:3000"
 export const APP_NAME = "Mera Dukan Mera Godam"
 export const APP_SHORT_NAME = "MDMG"
-export const APP_DESCRIPTION = getLocalizedSeoCopy("en").appDescription
-export const SEO_LAST_MODIFIED = "2026-05-14"
+export const APP_DESCRIPTION = dugamSEOData.appDescription || getLocalizedSeoCopy("en").appDescription
+export const SEO_LAST_MODIFIED = new Date().toISOString().split("T")[0]
 export const SEO_LOCALE = "en-IN"
 export const OG_IMAGE_PATH = "/og-image.svg"
 export const APP_ICON_PATH = "/icons/icon.svg"
@@ -25,28 +26,34 @@ export const DEFAULT_OG_IMAGE = {
   alt: en.seo.ogImageAlt,
 }
 
-export const SEO_KEYWORDS = [
-  "stock inventory management system",
-  "inventory management software India",
-  "stock management app for small business",
-  "GST billing software for shopkeepers",
-  "GST invoice software India",
-  "purchase and sales management software",
-  "inventory billing software",
-  "shop billing software with GST",
-  "stock register software",
-  "small business inventory app India",
-  "print receipt and GST invoice software",
-  "WhatsApp invoice sharing software",
-  "simple inventory software for Indian shops",
-  "stock purchase sale management app",
-  "inventory and billing software for retail shops",
-  "wholesale inventory management software",
-  "warehouse stock management app",
-  "showroom billing software",
-  "supplier payment tracking software",
-  "low stock alert inventory app",
-]
+export const SEO_KEYWORDS = Array.from(
+  new Set([
+    ...dugamSEOData.primaryKeywords,
+    ...dugamSEOData.businessKeywords,
+    ...dugamSEOData.pricingKeywords,
+    ...dugamSEOData.competitorKeywords,
+    "stock inventory management system",
+    "inventory management software India",
+    "stock management app for small business",
+    "GST billing software for shopkeepers",
+    "GST invoice software India",
+    "purchase and sales management software",
+    "inventory billing software",
+    "shop billing software with GST",
+    "stock register software",
+    "small business inventory app India",
+    "print receipt and GST invoice software",
+    "WhatsApp invoice sharing software",
+    "simple inventory software for Indian shops",
+    "stock purchase sale management app",
+    "inventory and billing software for retail shops",
+    "wholesale inventory management software",
+    "warehouse stock management app",
+    "showroom billing software",
+    "supplier payment tracking software",
+    "low stock alert inventory app",
+  ]),
+)
 
 export const SEO_LANGUAGES = [
   { code: "en", locale: "en-IN", label: "English" },
@@ -92,6 +99,7 @@ const pageDefaults: Array<Pick<SeoPage, "path" | "priority" | "changeFrequency">
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/about", priority: 0.75, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.72, changeFrequency: "monthly" },
+  { path: "/pricing", priority: 0.8, changeFrequency: "monthly" },
   { path: "/support", priority: 0.7, changeFrequency: "monthly" },
   { path: "/privacy-policy", priority: 0.55, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.55, changeFrequency: "yearly" },
