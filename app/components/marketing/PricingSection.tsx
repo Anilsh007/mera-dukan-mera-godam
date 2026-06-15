@@ -53,10 +53,10 @@ export default function PricingSection({ compact = false }: PricingSectionProps)
                                     </div>
                                 </div>
 
-                                <div className="mt-6">
+                                {/* <div className="mt-6">
                                     <Link href="/login" className={["inline-flex min-h-11 w-full items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition",
                                     ].join(" ")} aria-label={`Start 14-Day Free Trial for ${plan.name} plan`} >Start 14-Day Free Trial </Link>
-                                </div>
+                                </div> */}
                             </div>
                         </article>
                     ))}
