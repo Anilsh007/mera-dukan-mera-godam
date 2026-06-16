@@ -23,7 +23,7 @@ export type SubscriptionFeatureLimit = number | boolean | null
 
 export type PlanFeatureConfig = Record<SubscriptionFeatureKey, SubscriptionFeatureLimit>
 
-export const TRIAL_DAYS = 90
+export const TRIAL_DAYS = 14
 
 export const TRIAL_LIMITS: PlanFeatureConfig = {
   products: 500,
