@@ -37,6 +37,24 @@ export const enSeoCopy: LocalizedSeoCopy = {
         "shop billing software FAQ"
       ]
     },
+    "/alternatives": {
+      "title": "Inventory and GST Billing Software Alternatives",
+      "description": "Compare Dugam with popular inventory and billing software alternatives for Indian shops and MSMEs.",
+      "keywords": [
+        "inventory software alternative",
+        "GST billing alternative",
+        "shop software comparison"
+      ]
+    },
+    "/industries": {
+      "title": "Industry-Specific Inventory and Billing Pages",
+      "description": "Find industry-specific pages for kirana, hardware, electronics, mobile, wholesale, and godown workflows.",
+      "keywords": [
+        "industry inventory software",
+        "shop billing software",
+        "wholesale inventory software"
+      ]
+    },
     "/pricing": {
       "title": "Affordable Pricing Plans for Inventory Management and GST Billing",
       "description": "Compare pricing for Dugam and start with an affordable plan for Indian shops. Choose ₹99/month or ₹999/year for inventory and GST billing software.",

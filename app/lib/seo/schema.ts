@@ -1,6 +1,6 @@
 import { en } from "@/app/messages/en"
 import { APP_DESCRIPTION, APP_NAME, APP_SHORT_NAME, SEO_LANGUAGES, SITE_URL, absoluteUrl, getSeoPage, normalizePath, type SeoPage } from "./site"
-import { dugamSEOData } from "@/src/config/seoConfig"
+import { dugamSEOData, type ProgrammaticFaq } from "@/src/config/seoConfig"
 
 export type JsonLdGraph = {
   "@context": "https://schema.org"
@@ -12,20 +12,10 @@ type FaqSchemaItem = {
   answer: string
 }
 
-const pricingFaqItems: FaqSchemaItem[] = [
-  {
-    question: "What is Dugam?",
-    answer: "Dugam is an inventory management and GST billing platform for Indian retail shops, wholesalers, and godown workflows.",
-  },
-  {
-    question: "Which shops can use this inventory app?",
-    answer: "Kirana stores, hardware shops, stationery shops, wholesale counters, showrooms, and small warehouse teams can use it.",
-  },
-  {
-    question: "Can I create GST invoices?",
-    answer: "Yes. You can create GST invoices, manage stock, and handle billing workflows from the same platform.",
-  },
-]
+const faqSchemaItems: FaqSchemaItem[] = en.marketing.faqItems.map((item) => ({
+  question: item.question,
+  answer: item.answer,
+}))
 
 export type LocalBusinessSchemaInput = {
   name: string
@@ -45,7 +35,6 @@ export type LocalBusinessSchemaInput = {
 }
 
 const languages = SEO_LANGUAGES.map((language) => language.locale)
-
 const seoSchemaText = en.seo.schema
 
 const featureList = [
@@ -64,10 +53,6 @@ const featureList = [
   seoSchemaText.businessReportsFeature,
   seoSchemaText.multiLanguageFeature,
 ]
-const faqSchemaItems: FaqSchemaItem[] = en.marketing.faqItems.map((item) => ({
-  question: item.question,
-  answer: item.answer,
-}))
 
 export function createBaseSchema(): JsonLdGraph {
   const organizationId = `${SITE_URL}/#organization`
@@ -125,12 +110,12 @@ export function createBaseSchema(): JsonLdGraph {
         inLanguage: languages,
         countryOfOrigin: "IN",
         featureList,
-        priceRange: "Starts at ₹3 per day",
+        priceRange: dugamSEOData.pricing.daily,
         offers: {
           "@type": "Offer",
-          price: "3",
+          price: "2.74",
           priceCurrency: "INR",
-          description: "Starts at ₹3 per day",
+          description: dugamSEOData.pricing.daily,
           url: absoluteUrl("/pricing"),
         },
         audience: [
@@ -157,12 +142,13 @@ export function createPageSchema(path: string, language = "en"): JsonLdGraph {
   const normalizedPath = normalizePath(path)
   const page = getSeoPage(normalizedPath, language)
   const locale = SEO_LANGUAGES.find((item) => item.code === language)?.locale || "en-IN"
-  const graph: Array<Record<string, unknown>> = [
-    buildWebPageSchema(page, locale),
-    buildBreadcrumbSchema(page),
-  ]
-
-  return { "@context": "https://schema.org", "@graph": graph }
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildWebPageSchema(page, locale),
+      buildBreadcrumbSchema(page),
+    ],
+  }
 }
 
 export function createFaqPageSchema(language = "en"): JsonLdGraph {
@@ -174,7 +160,7 @@ export function createFaqPageSchema(language = "en"): JsonLdGraph {
         "@type": "FAQPage",
         "@id": `${absoluteUrl("/faq")}#faq`,
         inLanguage: locale,
-        mainEntity: pricingFaqItems.map((item) => buildQuestion(item.question, item.answer)),
+        mainEntity: faqSchemaItems.map((item) => buildQuestion(item.question, item.answer)),
       },
     ],
   }
@@ -288,6 +274,162 @@ export function createPricingPageSchema(language = "en"): JsonLdGraph {
   }
 }
 
+export function createCompetitorComparisonPageSchema(input: {
+  path: string
+  title: string
+  description: string
+  competitorName: string
+  faqItems: ProgrammaticFaq[]
+}): JsonLdGraph {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${absoluteUrl(input.path)}#webpage`,
+        url: absoluteUrl(input.path),
+        name: input.title,
+        description: input.description,
+        about: {
+          "@type": "SoftwareApplication",
+          name: APP_NAME,
+          applicationCategory: "BusinessApplication",
+        },
+      },
+      {
+        "@type": "Article",
+        "@id": `${absoluteUrl(input.path)}#article`,
+        headline: input.title,
+        description: input.description,
+        mainEntityOfPage: { "@id": `${absoluteUrl(input.path)}#webpage` },
+        author: {
+          "@type": "Organization",
+          name: APP_NAME,
+          url: SITE_URL,
+        },
+        publisher: {
+          "@type": "Organization",
+          name: APP_NAME,
+          url: SITE_URL,
+        },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${absoluteUrl(input.path)}#faq`,
+        mainEntity: input.faqItems.map((item) => buildQuestion(item.question, item.answer)),
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${absoluteUrl(input.path)}#software`,
+        name: APP_NAME,
+        alternateName: APP_SHORT_NAME,
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "All",
+        description: `${APP_NAME} comparison page for ${input.competitorName}.`,
+        offers: {
+          "@type": "Offer",
+          price: 99,
+          priceCurrency: "INR",
+          url: absoluteUrl("/pricing"),
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${absoluteUrl(input.path)}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Alternatives",
+            item: absoluteUrl("/alternatives"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: input.competitorName,
+            item: absoluteUrl(input.path),
+          },
+        ],
+      },
+    ],
+  }
+}
+
+export function createIndustryPageSchema(input: {
+  path: string
+  title: string
+  description: string
+  industryName: string
+  faqItems: ProgrammaticFaq[]
+}): JsonLdGraph {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": `${absoluteUrl(input.path)}#page`,
+        url: absoluteUrl(input.path),
+        name: input.title,
+        description: input.description,
+        about: {
+          "@type": "Thing",
+          name: input.industryName,
+        },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${absoluteUrl(input.path)}#faq`,
+        mainEntity: input.faqItems.map((item) => buildQuestion(item.question, item.answer)),
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${absoluteUrl(input.path)}#software`,
+        name: APP_NAME,
+        alternateName: APP_SHORT_NAME,
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "All",
+        description: APP_DESCRIPTION,
+        offers: {
+          "@type": "Offer",
+          price: 99,
+          priceCurrency: "INR",
+          url: absoluteUrl("/pricing"),
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${absoluteUrl(input.path)}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Industries",
+            item: absoluteUrl("/industries"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: input.industryName,
+            item: absoluteUrl(input.path),
+          },
+        ],
+      },
+    ],
+  }
+}
+
 export function createLocalBusinessSchema(input: LocalBusinessSchemaInput): JsonLdGraph {
   const graph: Array<Record<string, unknown>> = [
     {
@@ -338,15 +480,6 @@ function buildBreadcrumbSchema(page: SeoPage) {
     "@type": "BreadcrumbList",
     "@id": `${absoluteUrl(page.path)}#breadcrumb`,
     itemListElement: buildBreadcrumb(page),
-  }
-}
-
-function buildFaqSchema(locale: string) {
-  return {
-    "@type": "FAQPage",
-    "@id": `${absoluteUrl("/faq")}#faq`,
-    inLanguage: locale,
-    mainEntity: faqSchemaItems.map((item) => buildQuestion(item.question, item.answer)),
   }
 }
 

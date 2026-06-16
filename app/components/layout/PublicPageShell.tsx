@@ -8,12 +8,16 @@ type PublicPageShellProps = {
   path: string
   children: ReactNode
   language?: string
+  schemaData?: Record<string, unknown>
 }
 
-export default function PublicPageShell({ path, children, language = "en" }: PublicPageShellProps) {
+export default function PublicPageShell({ path, children, language = "en", schemaData }: PublicPageShellProps) {
   return (
     <>
-      <JsonLd id={`page-schema-${path.replace(/[^a-z0-9]/gi, "-") || "home"}`} data={createPageSchema(path, language)} />
+      <JsonLd
+        id={`page-schema-${path.replace(/[^a-z0-9]/gi, "-") || "home"}`}
+        data={schemaData || createPageSchema(path, language)}
+      />
       <Header />
       <div id="main-content" className="public-content pt-14 lg:pt-0">{children}</div>
       <Footer />

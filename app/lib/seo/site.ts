@@ -100,6 +100,8 @@ const pageDefaults: Array<Pick<SeoPage, "path" | "priority" | "changeFrequency">
   { path: "/about", priority: 0.75, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.72, changeFrequency: "monthly" },
   { path: "/pricing", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/alternatives", priority: 0.74, changeFrequency: "monthly" },
+  { path: "/industries", priority: 0.74, changeFrequency: "monthly" },
   { path: "/support", priority: 0.7, changeFrequency: "monthly" },
   { path: "/privacy-policy", priority: 0.55, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.55, changeFrequency: "yearly" },
