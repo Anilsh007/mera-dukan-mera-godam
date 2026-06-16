@@ -142,8 +142,8 @@ export default function PosCheckout({
         <p className="mt-2 text-sm text-amber-600 dark:text-amber-600">{en.pos.printShareLocked}</p>
       ) : null}
 
-      <div className="mt-5 flex justify-end align-center gap-3">
-        <TransactionActionPanel value={transactionOptions} onChange={setTransactionOptions} profileWarnings={profileWarnings} allowGstInvoice allowPrint={printShareAllowed} allowDownloadPdf={printShareAllowed} allowShareWhatsApp={printShareAllowed} allowShareEmail={printShareAllowed} allowCopyDetails={printShareAllowed} disabled={saving} />
+      <div className="mt-5 flex justify-end align-center items-center gap-3">
+        <TransactionActionPanel value={transactionOptions} onChange={setTransactionOptions} profileWarnings={profileWarnings} allowGstInvoice allowPrint={printShareAllowed} allowDownloadPdf={printShareAllowed} allowShareWhatsApp={printShareAllowed} allowShareEmail={printShareAllowed} allowCopyDetails={printShareAllowed} disabled={saving} className="flex items-center gap-3" />
         <Button type="button" variant="primary" title={saving ? en.pos.completingBill : en.pos.completeBill} onClick={onSave} loading={saving} disabled={saving || !canSaveSale} className="w-full sm:w-auto" />
       </div>
     </GuidedStepCard>

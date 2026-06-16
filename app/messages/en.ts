@@ -230,17 +230,22 @@ const baseMessages = {
     premiumActionRequiresUpgrade:
       "This action needs an active paid plan after your trial ends.",
     readOnlyExpiredMessage:
-      "Your trial has ended. Your data is still safe and visible, but premium create or update actions are locked until you subscribe.",
+      "Your trial or subscription has ended. Your dashboard stays visible, and each locked action can still be used up to 5 times in suspended mode before it fully locks.",
+    suspendedUsageLimitReached:
+      "Your subscription has ended. {feature} is limited to {limit} uses in suspended mode. Renew to restore full access.",
     keepDataSafeTitle: "Your data stays safe",
     keepDataSafeDescription:
       "Old inventory, purchases, invoices, and reports remain visible. Basic export stays available where safe.",
     trialBadge: "Limited Pro Trial",
-    expiredBadge: "Expired",
+    expiredBadge: "Suspended",
+    suspendedMode: "Suspended mode",
+    usesRemaining: "{remaining} of {limit} uses remaining",
+    renewalNeeded: "Renew your subscription to restore unlimited access.",
     activeAccessBadge: "Access available",
     trialBannerTitle: "{days} days left in your trial",
     trialBannerDescription:
       "All major workflows are available during the trial, with plan limits applied in the background so you can keep working without surprises.",
-    expiredHeadline: "Your trial has ended",
+    expiredHeadline: "Your subscription has ended",
     daysLeft: "{days} days left",
     billingTitle: "Billing and Subscription",
     billingDescription:
@@ -251,7 +256,7 @@ const baseMessages = {
       "Choose the right plan for your shop. The subscription backend scaffold is ready, and Razorpay API calls can be connected here next.",
     activeStatus: "Subscription active",
     trialStatus: "Trial active",
-    expiredStatus: "Expired and read only",
+    expiredStatus: "Suspended and read only",
     placeholderPayments:
       "Subscription API scaffolding is ready. Add Supabase billing tables and live Razorpay keys or API calls to complete checkout.",
     startDate: "Started",
@@ -281,7 +286,7 @@ const baseMessages = {
     },
     planLabels: {
       trial: "Trial",
-      "free/expired-readonly": "Free / Expired Read Only",
+      "free/expired-readonly": "Suspended / Read Only",
       starter: "Starter",
       pro: "Pro",
       business: "Business",

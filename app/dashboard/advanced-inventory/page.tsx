@@ -8,6 +8,7 @@ import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import PageHeader from "@/app/components/ui/PageHeader"
 import SummaryCard from "@/app/components/ui/SummaryCard"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import useProducts from "@/app/hooks/useProducts"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
 import { useInventoryBatches, useInventoryLocations, useProductLocationStocks, useStockTransfers } from "@/app/hooks/useAdvancedInventory"
@@ -79,6 +80,15 @@ export default function AdvancedInventoryPage() {
   return (
     <main className="space-y-5 p-3 sm:p-4 lg:p-6">
       <PageHeader title={en.advancedInventory.title} description={en.advancedInventory.description} />
+      {godownGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.godowns}
+          usage={godownGate.usage}
+          limit={typeof godownGate.limit === "number" ? godownGate.limit : undefined}
+          onOpenUpgrade={() => router.push("/pricing")}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <SummaryCard label={en.advancedInventory.locations} value={String(Math.max(locations.length, 1))} icon={<Warehouse size={18} />} />

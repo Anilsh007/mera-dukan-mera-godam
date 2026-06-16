@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { ArrowUpRight, FileText, RotateCcw } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import PageHeader from "@/app/components/ui/PageHeader"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
@@ -292,6 +293,15 @@ export default function ReturnsPage() {
   return (
     <main className="space-y-5 p-3 sm:p-4 lg:p-6">
       <PageHeader title={en.returns.title} description={en.returns.description} />
+      {returnsGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.returns}
+          usage={returnsGate.usage}
+          limit={typeof returnsGate.limit === "number" ? returnsGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
         <SummaryCard label={en.returns.documentsSaved} value={String(documents.length)} icon={<FileText size={18} />} />

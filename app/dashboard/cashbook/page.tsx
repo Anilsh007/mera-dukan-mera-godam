@@ -7,6 +7,7 @@ import Input from "@/app/components/ui/Input"
 import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useCashbookEntries from "@/app/hooks/useCashbookEntries"
 import useExpenses from "@/app/hooks/useExpenses"
@@ -186,6 +187,15 @@ export default function CashbookPage() {
         description={en.accounting.cashbookDescription}
         actions={<TransactionActionPanel message={shareMessage} subject={en.accounting.cashbookTitle} filename="cashbook-summary.pdf" showPrint={false} />}
       />
+      {accountingGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.accounting}
+          usage={accountingGate.usage}
+          limit={typeof accountingGate.limit === "number" ? accountingGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <SummaryCard label={en.accounting.openingBalance} value={formatAccountingMoney(summary.openingBalance)} icon={<BookOpen size={18} />} />

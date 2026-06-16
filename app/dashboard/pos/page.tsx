@@ -6,6 +6,7 @@ import PageHeader from "@/app/components/ui/PageHeader"
 import Modal from "@/app/components/ui/Modal"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import useParties from "@/app/hooks/useParties"
 import useProducts from "@/app/hooks/useProducts"
 import useSales from "@/app/hooks/useSales"
@@ -384,6 +385,15 @@ export default function PosPage() {
   return (
     <div className="dashboard-page space-y-6 pb-8">
       <PageHeader eyebrow={en.navigation.pos} title={en.pages.posTitle} description={en.pages.posDescription} />
+      {saleGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.quickSales}
+          usage={saleGate.usage}
+          limit={typeof saleGate.limit === "number" ? saleGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       {/* <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <SummaryCard label={en.pos.cartItems} value={String(cart.length)} />

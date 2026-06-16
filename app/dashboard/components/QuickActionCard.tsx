@@ -8,6 +8,7 @@ type QuickActionCardProps = {
   icon: ReactNode
   accentClass?: string
   onClick: () => void
+  disabled?: boolean
 }
 
 export default function QuickActionCard({
@@ -16,12 +17,19 @@ export default function QuickActionCard({
   icon,
   accentClass = "bg-emerald-500",
   onClick,
+  disabled = false,
 }: QuickActionCardProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="dashboard-action-card group rounded-[24px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-5 text-left shadow-[var(--shadow-card)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-[var(--shadow-lifted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      className={`dashboard-action-card group rounded-[24px] border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-5 text-left shadow-[var(--shadow-card)] backdrop-blur-xl transition-all duration-200 ${
+        disabled
+          ? "cursor-not-allowed opacity-60"
+          : "hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-[var(--shadow-lifted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      }`}
     >
       <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-[1.15rem] ${accentClass} text-white shadow-[0_18px_32px_rgba(15,23,42,0.28),0_0_20px_rgba(99,102,241,0.14)]`}>
         {icon}

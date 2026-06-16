@@ -22,7 +22,7 @@ const LIMIT_FEATURES = ["products", "purchases", "gstInvoices", "suppliers", "ex
 function getBillingLifecycleLabel(subscriptionActive: boolean, trialActive: boolean) {
   if (subscriptionActive) return "Active subscription"
   if (trialActive) return "Trial access"
-  return "Read-only access"
+  return "Suspended access"
 }
 
 export default function SubscriptionSettingsPage() {

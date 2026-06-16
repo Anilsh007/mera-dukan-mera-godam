@@ -7,6 +7,7 @@ import Input from "@/app/components/ui/Input"
 import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import SummaryCard from "@/app/components/ui/SummaryCard"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useExpenses from "@/app/hooks/useExpenses"
@@ -196,6 +197,15 @@ export default function ExpensesPage() {
         description={en.accounting.expensesDescription}
         actions={<TransactionActionPanel message={shareMessage} subject={en.accounting.expensesTitle} filename="expenses-summary.pdf" showPrint={false} />}
       />
+      {accountingGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.accounting}
+          usage={accountingGate.usage}
+          limit={typeof accountingGate.limit === "number" ? accountingGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
         <SummaryCard label={en.accounting.totalExpenses} value={formatAccountingMoney(filteredTotal)} icon={<ReceiptText size={18} />} />

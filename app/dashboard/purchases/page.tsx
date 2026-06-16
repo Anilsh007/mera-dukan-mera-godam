@@ -35,6 +35,8 @@ import Button from "@/app/components/ui/Button"
 import PageActionLinks from "@/app/components/ui/PageActionLinks"
 import PageHeader from "@/app/components/ui/PageHeader"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
 import usePurchases from "@/app/hooks/usePurchases"
 import {
   createTransactionOptions,
@@ -47,6 +49,7 @@ export default function PurchasesPage() {
   const { profile } = useProfile()
   const { parties: supplierParties } = useParties("supplier")
   const { purchases } = usePurchases()
+  const purchasesGate = useFeatureGate("purchases")
   const [rows, setRows] = useState<PurchaseRow[]>([createPurchaseRow()])
   const [billNo, setBillNo] = useState("")
   const [supplierName, setSupplierName] = useState("")
@@ -235,6 +238,15 @@ export default function PurchasesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={en.pages.purchasesTitle} description={en.pages.purchasesDescription} />
+      {purchasesGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.purchases}
+          usage={purchasesGate.usage}
+          limit={typeof purchasesGate.limit === "number" ? purchasesGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <PageActionLinks
         title={en.purchases.nextActionsTitle}

@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import useProducts from "@/app/hooks/useProducts"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
+import useSubscription from "@/app/hooks/useSubscription"
 import { useInventoryLocations } from "@/app/hooks/useAdvancedInventory"
 import Button from "@/app/components/ui/Button"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import { MdOutlineAddchart, MdAdd, MdDeleteOutline } from "react-icons/md"
 import Input from "@/app/components/ui/Input"
@@ -44,6 +47,8 @@ export default function AddProductForm() {
   const { products } = useProducts()
   const { locations } = useInventoryLocations()
   const { profile } = useProfile()
+  const { subscriptionExpired } = useSubscription()
+  const productsGate = useFeatureGate("products")
   const [rows, setRows] = useState<QuickPurchaseRow[]>([createEmptyRow()])
   const [loading, setLoading] = useState(false)
   const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime)
@@ -177,10 +182,21 @@ export default function AddProductForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="min-w-0 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-4">
-      <Suggestions products={products} type="product" />
-      <Suggestions products={products} type="category" />
-      <Suggestions products={products} type="supplier" />
+    <div className="space-y-4">
+      {subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.products}
+          usage={productsGate.usage}
+          limit={typeof productsGate.limit === "number" ? productsGate.limit : undefined}
+          onOpenUpgrade={() => router.push("/pricing")}
+        />
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="min-w-0 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-strong)] p-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-4">
+        <Suggestions products={products} type="product" />
+        <Suggestions products={products} type="category" />
+        <Suggestions products={products} type="supplier" />
 
       <div className="mb-4 rounded-2xl border border-[var(--border-card)] bg-[var(--surface-primary)] p-4">
         <p className="font-bold text-[var(--text-primary)]">{en.quickPurchase.formGuideTitle}</p>
@@ -283,18 +299,19 @@ export default function AddProductForm() {
         className="mt-5"
       />
 
-      <div className="mt-6 flex flex-col gap-3 border-t border-[var(--border-card)] pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button type="button" onClick={addRow} title={en.quickPurchase.addProduct} variant="dotBorder" icon={<MdAdd />} />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] px-4 py-3 text-left sm:text-right">
-            <p className="text-xs font-medium uppercase text-[var(--text-muted)]">{en.quickPurchase.grandTotal}</p>
-            <p className="text-lg font-black text-emerald-600">{formatCurrency(grandTotal)}</p>
-            <p className="text-xs text-amber-600">{en.quickPurchase.detailPending}</p>
+        <div className="mt-6 flex flex-col gap-3 border-t border-[var(--border-card)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button type="button" onClick={addRow} title={en.quickPurchase.addProduct} variant="dotBorder" icon={<MdAdd />} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-input)] px-4 py-3 text-left sm:text-right">
+              <p className="text-xs font-medium uppercase text-[var(--text-muted)]">{en.quickPurchase.grandTotal}</p>
+              <p className="text-lg font-black text-emerald-600">{formatCurrency(grandTotal)}</p>
+              <p className="text-xs text-amber-600">{en.quickPurchase.detailPending}</p>
+            </div>
+            <Button type="submit" title={loading ? en.quickPurchase.savingQuickPurchase : `${en.quickPurchase.saveQuickPurchase} (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
           </div>
-          <Button type="submit" title={loading ? en.quickPurchase.savingQuickPurchase : `${en.quickPurchase.saveQuickPurchase} (${rows.length})`} variant="primary" disabled={loading || !isFormValid} loading={loading} icon={<MdOutlineAddchart />} />
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   )
 }
 

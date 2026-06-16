@@ -16,6 +16,7 @@ import { buildReport } from "./reports/lib/reportBuilder"
 import type { ProductLog } from "@/app/lib/db"
 import Button from "../components/ui/Button"
 import useSubscription from "@/app/hooks/useSubscription"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
 import DashboardTrialBanner from "@/app/components/subscription/DashboardTrialBanner"
 import CurrentPlanCard from "@/app/components/subscription/CurrentPlanCard"
 import SubscriptionRequiredModal from "@/app/components/subscription/SubscriptionRequiredModal"
@@ -47,6 +48,8 @@ export default function DashboardHome() {
   const [userName, setUserName] = useState("")
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const { effectivePlan, trialDaysLeft, subscriptionExpired, subscriptionActive, trialActive } = useSubscription()
+  const purchaseGate = useFeatureGate("purchases")
+  const quickSaleGate = useFeatureGate("quickSales")
 
   useEffect(() => {
     [
@@ -270,6 +273,7 @@ export default function DashboardHome() {
               icon={<PackageOpen size={18} aria-hidden="true" />}
               accentClass="bg-emerald-500"
               onClick={() => router.push("/dashboard/quick-purchase")}
+              disabled={purchaseGate.loading || !purchaseGate.allowed}
             />
             <QuickActionCard
               title={en.dashboard.quickSaleAction}
@@ -277,6 +281,7 @@ export default function DashboardHome() {
               icon={<IndianRupee size={18} aria-hidden="true" />}
               accentClass="bg-cyan-500"
               onClick={() => router.push("/dashboard/quick-sale")}
+              disabled={quickSaleGate.loading || !quickSaleGate.allowed}
             />
             <QuickActionCard
               title={en.dashboard.reviewHistory}

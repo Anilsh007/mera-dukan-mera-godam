@@ -95,9 +95,9 @@ export default function QuickSaleCheckout({
         <SummaryCard label={en.sales.balanceDue} value={formatCurrency(dueAmount)} />
       </div>
 
-      <div className="mt-5 flex justify-end align-center gap-3">
+      <div className="mt-5 flex justify-end align-center items-center gap-3">
         {/* <div className="text-sm text-[var(--text-secondary)]">{en.sales.reportsIncluded}</div> */}
-        <TransactionActionPanel value={transactionOptions} onChange={setTransactionOptions} profileWarnings={profileWarnings} allowGstInvoice disabled={saving} />
+        <TransactionActionPanel value={transactionOptions} onChange={setTransactionOptions} profileWarnings={profileWarnings} allowGstInvoice disabled={saving} className="flex items-center gap-3" />
         <Button type="button" variant="primary" title={saving ? en.sales.savingSale : en.sales.completeSale} onClick={onSave} loading={saving} disabled={saving || !canSaveSale} className="w-full sm:w-auto" />
       </div>
     </GuidedStepCard>

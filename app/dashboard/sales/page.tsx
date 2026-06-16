@@ -7,9 +7,11 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import PageHeader from "@/app/components/ui/PageHeader"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import SalesFilters from "@/app/dashboard/sales/SalesFilters"
 import SalesPaginationBar from "@/app/dashboard/sales/SalesPaginationBar"
 import SalesRecords from "@/app/dashboard/sales/SalesRecords"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
 import useSales from "@/app/hooks/useSales"
 import { usePagination } from "@/app/hooks/usePagination"
 import useProfile from "@/app/dashboard/profile/useProfile"
@@ -29,6 +31,7 @@ export default function SalesPage() {
   const router = useRouter()
   const { sales, loading } = useSales()
   const { profile } = useProfile()
+  const salesGate = useFeatureGate("sales")
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | SalePaymentStatus>("all")
   const [modeFilter, setModeFilter] = useState<"all" | SaleRecord["paymentMode"]>("all")
@@ -152,6 +155,15 @@ export default function SalesPage() {
           />
         }
       />
+      {salesGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.sales}
+          usage={salesGate.usage}
+          limit={typeof salesGate.limit === "number" ? salesGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <SalesFilters
         search={search}

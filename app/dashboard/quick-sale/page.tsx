@@ -3,7 +3,10 @@
 import { useMemo, useState, type SetStateAction } from "react"
 import { useRouter } from "next/navigation"
 import PageHeader from "@/app/components/ui/PageHeader"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
 import useProducts from "@/app/hooks/useProducts"
+import useSubscription from "@/app/hooks/useSubscription"
 import useProfile from "@/app/dashboard/profile/useProfile"
 import { findProductByScannedCode } from "@/app/lib/barcode/barcode.utils"
 import { notify as toast } from "@/app/lib/notifications"
@@ -38,6 +41,8 @@ export default function QuickSalePage() {
   const { products, loading: productsLoading } = useProducts()
   const { profile } = useProfile()
   const { parties: customerParties } = useParties("customer")
+  const { subscriptionExpired } = useSubscription()
+  const saleGate = useFeatureGate("quickSales")
   const [search, setSearch] = useState("")
   const [cart, setCart] = useState<QuickSaleCartItem[]>([])
   const [customer, setCustomer] = useState<SaleCustomer>(EMPTY_SALE_CUSTOMER)
@@ -244,6 +249,15 @@ export default function QuickSalePage() {
   return (
     <div className="dashboard-page space-y-6 pb-8">
       <PageHeader eyebrow={en.navigation.quickSale} title={en.pages.quickSaleTitle} description={en.pages.quickSaleDescription} />
+      {subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.quickSales}
+          usage={saleGate.usage}
+          limit={typeof saleGate.limit === "number" ? saleGate.limit : undefined}
+          onOpenUpgrade={() => router.push("/pricing")}
+        />
+      ) : null}
 
       <section>
         <QuickSaleProductPicker search={search} onSearchChange={setSearch} filteredProducts={filteredProducts} productsLoading={productsLoading} saving={saving} onScannedCode={handleScannedCode} onAddProduct={addProductToCart} />

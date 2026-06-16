@@ -7,6 +7,9 @@ import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import Modal from "@/app/components/ui/Modal"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
+import { incrementUsage } from "@/app/lib/subscription/subscription.service"
+import { auth } from "@/app/lib/firebase"
+import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import { notify as toast } from "@/app/lib/notifications"
 import { normalizeBarcodeValue } from "@/app/lib/barcode/barcode.utils"
 import { en } from "@/app/messages/en"
@@ -141,6 +144,13 @@ export default function BarcodeScannerButton({
     if (!featureGate.allowed) {
       toast.warning(en.scanner.scannerLocked)
       return
+    }
+
+    const userId = getUserIdentityFromAuthUser(auth?.currentUser)
+    if (userId) {
+      void incrementUsage(userId, "barcodeScanner").catch((error) => {
+        console.warn("Barcode usage tracking failed", error)
+      })
     }
 
     const browserWindow = window as WindowWithBarcodeDetector

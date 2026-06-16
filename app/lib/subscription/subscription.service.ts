@@ -41,6 +41,15 @@ export class SubscriptionAccessError extends Error {
   }
 }
 
+const SUSPENDED_TRACKED_FEATURES = new Set<SubscriptionFeatureKey>([
+  "products",
+  "customers",
+  "suppliers",
+  "businesses",
+  "staffUsers",
+  "godowns",
+])
+
 function nowIso() {
   return new Date().toISOString()
 }
@@ -53,6 +62,16 @@ function addDays(date: Date, days: number) {
 
 function periodKey(date = new Date()) {
   return date.toISOString().slice(0, 7)
+}
+
+function getSuspendedUsageKey(subscription: SubscriptionRecord) {
+  return `suspended:${subscription.graceStartedAt || subscription.subscriptionEndsAt || subscription.trialEndsAt || subscription.createdAt}`
+}
+
+function getUsageKey(subscription: SubscriptionRecord | null | undefined, date = new Date()) {
+  if (!subscription) return periodKey(date)
+  if (isSubscriptionExpired(subscription, date.getTime())) return getSuspendedUsageKey(subscription)
+  return periodKey(date)
 }
 
 function usageTrackingId(userId: string, feature: UsageTrackedFeature, key: string) {
@@ -178,38 +197,53 @@ async function getCurrentPartyCount(userId: string, type: "customer" | "supplier
 }
 
 export async function getUsageCount(userId: string, feature: SubscriptionFeatureKey) {
+  const subscription = await ensureSubscriptionRecord(userId)
+  const usageKey = getUsageKey(subscription)
+
   if (feature === "products") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     return db.products.where("userId").equals(userId).count()
   }
   if (feature === "suppliers") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     return getCurrentPartyCount(userId, "supplier")
   }
   if (feature === "customers") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     return getCurrentPartyCount(userId, "customer")
   }
   if (feature === "businesses") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     const count = await db.profiles.where("userId").equals(userId).count()
     return count > 0 ? 1 : 0
   }
   if (feature === "godowns") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     return db.inventoryLocations.where("userId").equals(userId).count()
   }
   if (feature === "staffUsers") {
+    if (isSubscriptionExpired(subscription)) {
+      return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
+    }
     return 0
   }
 
-  const trackedFeature = feature as UsageTrackedFeature
-  const key = periodKey()
-  const usage = await db.usageTracking
-    .where("[userId+feature+periodKey]")
-    .equals([userId, trackedFeature, key])
-    .first()
-
-  return usage?.count || 0
+  return getTrackedUsageCount(userId, feature as UsageTrackedFeature, usageKey)
 }
 
 export async function incrementUsage(userId: string, feature: UsageTrackedFeature, incrementBy = 1) {
-  const key = periodKey()
+  const subscription = await ensureSubscriptionRecord(userId)
+  const key = getUsageKey(subscription)
   const id = usageTrackingId(userId, feature, key)
   const current = await db.usageTracking.get(id)
   const timestamp = nowIso()
@@ -226,13 +260,21 @@ export async function incrementUsage(userId: string, feature: UsageTrackedFeatur
   await requestSupabaseSync("usage tracking")
 }
 
-function buildFeatureMessage(feature: SubscriptionFeatureKey, options: FeatureAccessOptions, effectivePlan: SubscriptionPlanId, limit: SubscriptionFeatureLimit) {
+async function getTrackedUsageCount(userId: string, feature: UsageTrackedFeature, key: string) {
+  const usage = await db.usageTracking
+    .where("[userId+feature+periodKey]")
+    .equals([userId, feature, key])
+    .first()
+
+  return usage?.count || 0
+}
+
+function buildFeatureMessage(feature: SubscriptionFeatureKey, effectivePlan: SubscriptionPlanId, limit: SubscriptionFeatureLimit) {
   const isReadonlyPlan = effectivePlan === "free/expired-readonly"
-  if (options.scope === "premium" && isReadonlyPlan) {
-    return en.subscription.premiumActionRequiresUpgrade
-  }
-  if (typeof limit === "number" && limit <= 0 && isReadonlyPlan) {
-    return en.subscription.readOnlyExpiredMessage
+  if (isReadonlyPlan && typeof limit === "number") {
+    return en.subscription.suspendedUsageLimitReached
+      .replace("{feature}", en.subscription.features[feature])
+      .replace("{limit}", String(limit))
   }
 
   const labels: Record<SubscriptionFeatureKey, string> = {
@@ -274,27 +316,6 @@ export async function canUseFeature(
     return { allowed: true, effectivePlan, limit, usage }
   }
 
-  if (feature === "reports" || feature === "printShareDownload" || feature === "barcodeScanner") {
-    const allowed = limit === true
-    return {
-      allowed,
-      effectivePlan,
-      limit,
-      usage,
-      message: allowed ? undefined : buildFeatureMessage(feature, options, effectivePlan, limit),
-    }
-  }
-
-  if (options.scope === "premium" && effectivePlan === "free/expired-readonly") {
-    return {
-      allowed: false,
-      effectivePlan,
-      limit,
-      usage,
-      message: buildFeatureMessage(feature, options, effectivePlan, limit),
-    }
-  }
-
   if (limit === null) {
     return { allowed: true, effectivePlan, limit, usage }
   }
@@ -305,7 +326,7 @@ export async function canUseFeature(
       effectivePlan,
       limit,
       usage,
-      message: limit ? undefined : buildFeatureMessage(feature, options, effectivePlan, limit),
+      message: limit ? undefined : buildFeatureMessage(feature, effectivePlan, limit),
     }
   }
 
@@ -316,7 +337,7 @@ export async function canUseFeature(
     effectivePlan,
     limit,
     usage,
-    message: allowed ? undefined : buildFeatureMessage(feature, options, effectivePlan, limit),
+    message: allowed ? undefined : buildFeatureMessage(feature, effectivePlan, limit),
   }
 }
 
@@ -326,7 +347,12 @@ export async function assertFeatureAccess(
   options: FeatureAccessOptions = {},
 ) {
   const result = await canUseFeature(userId, feature, options)
-  if (result.allowed) return result
+  if (result.allowed) {
+    if (result.effectivePlan === "free/expired-readonly" && SUSPENDED_TRACKED_FEATURES.has(feature) && options.operation !== "view") {
+      await incrementUsage(userId, feature as UsageTrackedFeature, options.incrementBy || 1)
+    }
+    return result
+  }
 
   throw new SubscriptionAccessError(result.message || en.subscription.subscriptionRequired, {
     feature,
@@ -375,14 +401,33 @@ async function hasPartyTypeByName(userId: string, normalizedName: string, type: 
 
 function normalizeSubscriptionRecord(subscription: SubscriptionRecord): SubscriptionRecord {
   const normalized = { ...subscription }
+  let mutated = false
 
   if (isSubscriptionActive(normalized) && !isPaidPlan(normalized.plan)) {
     normalized.plan = "starter"
+    normalized.graceStartedAt = undefined
+    mutated = true
   }
 
   if (!isTrialActive(normalized) && !isSubscriptionActive(normalized)) {
-    normalized.status = "expired"
-    normalized.plan = "free/expired-readonly"
+    if (normalized.status !== "expired") {
+      normalized.status = "expired"
+      mutated = true
+    }
+    if (normalized.plan !== "free/expired-readonly") {
+      normalized.plan = "free/expired-readonly"
+      mutated = true
+    }
+    if (!normalized.graceStartedAt) {
+      normalized.graceStartedAt = nowIso()
+      mutated = true
+    }
+  } else if (normalized.graceStartedAt) {
+    normalized.graceStartedAt = undefined
+    mutated = true
+  }
+
+  if (mutated) {
     normalized.updatedAt = nowIso()
   }
 

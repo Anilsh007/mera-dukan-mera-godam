@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { ArrowLeftRight, BadgeIndianRupee, RotateCcw } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
 import PageHeader from "@/app/components/ui/PageHeader"
 import SummaryCard from "@/app/components/ui/SummaryCard"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
+import useSubscription from "@/app/hooks/useSubscription"
 import useParties from "@/app/hooks/useParties"
 import useProducts from "@/app/hooks/useProducts"
 import useSales from "@/app/hooks/useSales"
@@ -30,6 +32,7 @@ import type { DraftItem } from "@/app/dashboard/returns/returns.types"
 const PAYMENT_MODES: SalePaymentMode[] = ["Cash", "UPI", "Card", "Bank Transfer", "Credit", "Other"]
 
 export default function ExchangePage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const { products } = useProducts()
   const { sales } = useSales()
@@ -37,6 +40,7 @@ export default function ExchangePage() {
   const { profile } = useProfile()
   const returnsGate = useFeatureGate("returns")
   const salesGate = useFeatureGate("quickSales")
+  const { subscriptionExpired } = useSubscription()
 
   const [linkedSaleId, setLinkedSaleId] = useState("")
   const [selectedPartyId, setSelectedPartyId] = useState("")
@@ -289,6 +293,15 @@ export default function ExchangePage() {
   return (
     <main className="space-y-5 p-3 sm:p-4 lg:p-6">
       <PageHeader title={en.pages.exchangeTitle} description={en.pages.exchangeDescription} />
+      {subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.returns}
+          usage={returnsGate.usage}
+          limit={typeof returnsGate.limit === "number" ? returnsGate.limit : undefined}
+          onOpenUpgrade={() => router.push("/pricing")}
+        />
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
         <SummaryCard label={en.exchange.returnTotalLabel} value={formatCurrency(returnTotals.totalAmount)} icon={<RotateCcw size={18} />} />

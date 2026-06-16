@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import PageHeader from "@/app/components/ui/PageHeader"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import useDebouncedValue from "@/app/hooks/useDebouncedValue"
 import useEstimates from "@/app/hooks/useEstimates"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
@@ -276,8 +277,17 @@ export default function EstimatesPage() {
   return (
     <div className="dashboard-page space-y-6 pb-8">
       <PageHeader title={en.pages.estimatesTitle} description={en.pages.estimatesDescription}/>
+      {estimateGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.estimates}
+          usage={estimateGate.usage}
+          limit={typeof estimateGate.limit === "number" ? estimateGate.limit : undefined}
+          onOpenUpgrade={() => router.push("/pricing")}
+        />
+      ) : null}
 
-      {!canCreateEstimate && !estimateGate.loading ? (
+      {!estimateGate.subscriptionExpired && !canCreateEstimate && !estimateGate.loading ? (
         <section className="rounded-[28px] border border-amber-300/40 bg-amber-50 p-4 text-sm text-amber-800 shadow-[var(--shadow-card)] dark:bg-amber-500/10 dark:text-amber-100">
           {en.subscription.readOnlyExpiredMessage}
         </section>

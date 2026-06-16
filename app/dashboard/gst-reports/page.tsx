@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Download, FileSpreadsheet, FileText, Printer, ReceiptText, ShieldAlert } from "lucide-react"
 import Button from "@/app/components/ui/Button"
 import Input from "@/app/components/ui/Input"
@@ -8,10 +8,13 @@ import SelectField from "@/app/components/ui/SelectField"
 import PageHeader from "@/app/components/ui/PageHeader"
 import TransactionActionPanel from "@/app/components/ui/TransactionActionPanel"
 import SummaryCard from "@/app/components/ui/SummaryCard"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
 import useFeatureGate from "@/app/hooks/useFeatureGate"
 import useGstReportsData from "@/app/hooks/useGstReportsData"
 import { buildRowsShareMessage, type AccountingExportRow } from "@/app/lib/accounting/accounting.export"
 import { runAccountingExport, type AccountingExportKind } from "@/app/lib/accounting/accounting.exportActions"
+import { auth } from "@/app/lib/firebase"
+import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
 import {
   buildCaExportRows,
   buildGstRegisterExportRows,
@@ -28,6 +31,7 @@ import {
   type PartyGstSummaryRow,
 } from "@/app/lib/gstReports/gstReports.utils"
 import { notify as toast } from "@/app/lib/notifications"
+import { incrementUsage } from "@/app/lib/subscription/subscription.service"
 import { en } from "@/app/messages/en"
 
 type PeriodMode = "month" | "quarter" | "custom"
@@ -58,6 +62,15 @@ export default function GstReportsPage() {
   const shareMessage = buildRowsShareMessage(activeRows.slice(0, 40), getReportTitle(activeReport))
   const noData = !summary.salesRegister.length && !summary.purchaseRegister.length && !summary.hsnSummary.length
 
+  useEffect(() => {
+    if (reportGate.loading || !reportGate.allowed) return
+
+    const userId = getUserIdentityFromAuthUser(auth?.currentUser)
+    if (!userId) return
+
+    void incrementUsage(userId, "reports")
+  }, [reportGate.allowed, reportGate.loading])
+
   const runExport = async (kind: ExportKind, reportKind = activeReport) => {
     const rows = buildRowsForReport(reportKind, summary)
     if (!rows.length || rows.length === 1) {
@@ -78,6 +91,15 @@ export default function GstReportsPage() {
     return (
       <main className="space-y-5 p-3 sm:p-4 lg:p-6">
         <PageHeader title={en.gstReports.title} description={en.gstReports.description} />
+        {reportGate.subscriptionExpired ? (
+          <SuspendedAccessBanner
+            description={en.subscription.readOnlyExpiredMessage}
+            featureLabel={en.subscription.features.reports}
+            usage={reportGate.usage}
+            limit={typeof reportGate.limit === "number" ? reportGate.limit : undefined}
+            onOpenUpgrade={() => window.location.assign("/pricing")}
+          />
+        ) : null}
         <section className="premium-surface rounded-3xl p-6 text-center">
           <ShieldAlert className="mx-auto mb-3 text-amber-500" size={36} />
           <h2 className="text-xl font-bold text-[var(--text-primary)]">{en.subscription.subscriptionRequired}</h2>
@@ -94,6 +116,15 @@ export default function GstReportsPage() {
         description={en.gstReports.description}
         actions={<TransactionActionPanel message={shareMessage} subject={getReportTitle(activeReport)} filename="gst-report-summary.pdf" showPrint={false} />}
       />
+      {reportGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.reports}
+          usage={reportGate.usage}
+          limit={typeof reportGate.limit === "number" ? reportGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <section className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
         <div className="flex gap-3">

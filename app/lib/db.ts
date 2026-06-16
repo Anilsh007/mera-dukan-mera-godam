@@ -424,6 +424,12 @@ export type SubscriptionStatus =
   | "manual"
 
 export type UsageTrackedFeature =
+  | "products"
+  | "customers"
+  | "suppliers"
+  | "businesses"
+  | "staffUsers"
+  | "godowns"
   | "sales"
   | "quickSales"
   | "purchases"
@@ -432,6 +438,9 @@ export type UsageTrackedFeature =
   | "returns"
   | "accounting"
   | "exports"
+  | "reports"
+  | "barcodeScanner"
+  | "printShareDownload"
 
 export interface SubscriptionRecord {
   id: string
@@ -442,6 +451,7 @@ export interface SubscriptionRecord {
   trialEndsAt: string
   subscriptionStartedAt?: string
   subscriptionEndsAt?: string
+  graceStartedAt?: string
   provider?: string
   providerCustomerId?: string
   providerSubscriptionId?: string

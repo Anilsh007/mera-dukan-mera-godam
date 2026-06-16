@@ -6,6 +6,9 @@ import { ChevronUp, Copy, Download, Mail, MessageCircle, Printer, Share2 } from 
 import TransactionOptions from "@/app/components/ui/TransactionOptions"
 import { en } from "@/app/messages/en"
 import { notify } from "@/app/lib/notifications"
+import { auth } from "@/app/lib/firebase"
+import { getUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
+import { incrementUsage } from "@/app/lib/subscription/subscription.service"
 import {
   buildShareDocument,
   getPdfFilename,
@@ -75,6 +78,9 @@ export default function TransactionActionPanel(props: TransactionActionPanelProp
 
     return (
       <div className={className}>
+
+        {profileWarnings.length > 0 ? <TransactionProfileWarning warnings={profileWarnings} /> : null}
+        
         <TransactionOptions
           value={value}
           onChange={onChange}
@@ -88,8 +94,6 @@ export default function TransactionActionPanel(props: TransactionActionPanelProp
           disabled={disabled}
           className={optionsClassName}
         />
-
-        {profileWarnings.length > 0 ? <TransactionProfileWarning warnings={profileWarnings} /> : null}
       </div>
     )
   }
@@ -183,11 +187,24 @@ function TransactionDocumentActions({
     return undefined
   }
 
+  const recordPrintShareUsage = async () => {
+    try {
+      const userId = getUserIdentityFromAuthUser(auth?.currentUser)
+      if (!userId) return
+      await incrementUsage(userId, "printShareDownload")
+    } catch (error) {
+      console.warn("Print/share usage tracking failed", error)
+    }
+  }
+
   const handlePrint = () => {
     const nextDocument = getDocument()
     if (!nextDocument) return
     const printed = printTransactionDocument(nextDocument)
-    if (printed) notify.success(en.print.printStarted)
+    if (printed) {
+      notify.success(en.print.printStarted)
+      void recordPrintShareUsage()
+    }
     else notify.error(en.print.printFailed)
   }
 
@@ -195,7 +212,10 @@ function TransactionDocumentActions({
     const nextDocument = getDocument()
     if (!nextDocument) return
     const downloaded = downloadTransactionDocument(nextDocument, getPdfFilename(filename, nextDocument))
-    if (downloaded) notify.success(en.share.downloadStarted)
+    if (downloaded) {
+      notify.success(en.share.downloadStarted)
+      void recordPrintShareUsage()
+    }
     else notify.error(en.share.downloadFailed)
   }
 
@@ -203,8 +223,13 @@ function TransactionDocumentActions({
     const nextDocument = getDocument()
     if (!nextDocument) return
     const result = await shareTransactionDocumentNative(nextDocument, getPdfFilename(filename, nextDocument))
-    if (result === "shared") notify.info(en.share.shareOpened)
-    else if (result === "downloaded") notify.success(en.share.downloadStarted)
+    if (result === "shared") {
+      notify.info(en.share.shareOpened)
+      await recordPrintShareUsage()
+    } else if (result === "downloaded") {
+      notify.success(en.share.downloadStarted)
+      await recordPrintShareUsage()
+    }
     else notify.warning(en.share.nativeShareUnavailable)
   }
 
@@ -213,7 +238,10 @@ function TransactionDocumentActions({
     if (!nextDocument) return
     const result = await shareTransactionDocumentOnWhatsApp(nextDocument, subject || nextDocument.title, getPdfFilename(filename, nextDocument))
     if (result === "failed") notify.error(en.share.shareFailed)
-    else notify.info(en.share.shareOpened)
+    else {
+      notify.info(en.share.shareOpened)
+      await recordPrintShareUsage()
+    }
   }
 
   const handleEmail = async () => {
@@ -221,15 +249,20 @@ function TransactionDocumentActions({
     if (!nextDocument) return
     const result = await shareTransactionDocumentByEmail(nextDocument, subject || nextDocument.title, getPdfFilename(filename, nextDocument))
     if (result === "failed") notify.error(en.share.shareFailed)
-    else notify.info(en.share.shareOpened)
+    else {
+      notify.info(en.share.shareOpened)
+      await recordPrintShareUsage()
+    }
   }
 
   const handleCopy = async () => {
     const nextDocument = getDocument()
     if (!nextDocument) return
     const result = await copyTransactionDocument(nextDocument)
-    if (result === "copied") notify.success(en.share.copiedSuccessfully)
-    else notify.error(en.share.copyFailed)
+    if (result === "copied") {
+      notify.success(en.share.copiedSuccessfully)
+      await recordPrintShareUsage()
+    } else notify.error(en.share.copyFailed)
   }
 
   const actions = [
@@ -318,7 +351,7 @@ export function TransactionProfileWarning({ warnings, className = "" }: { warnin
   if (warnings.length === 0) return null
 
   return (
-    <div className={`mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 ${className}`}>
+    <div className={`mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-500 ${className}`}>
       <p className="font-bold">{en.transaction.profileWarningTitle}</p>
       <p>{en.transaction.profileGuide}</p>
       <ul className="mt-2 list-inside list-disc">

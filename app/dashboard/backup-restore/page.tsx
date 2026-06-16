@@ -9,6 +9,8 @@ import Modal from "@/app/components/ui/Modal"
 import PageHeader from "@/app/components/ui/PageHeader"
 import SurfaceCard from "@/app/components/ui/SurfaceCard"
 import StatusBadge from "@/app/components/ui/StatusBadge"
+import SuspendedAccessBanner from "@/app/components/subscription/SuspendedAccessBanner"
+import useFeatureGate from "@/app/hooks/useFeatureGate"
 import { auth } from "@/app/lib/firebase"
 import { notify } from "@/app/lib/notifications"
 import { requireUserIdentityFromAuthUser } from "@/app/lib/userIdentity"
@@ -19,6 +21,7 @@ const exportModules: ExportModuleKey[] = ["inventory", "sales", "purchases", "cu
 const importKinds: SafeImportKind[] = ["products", "customers", "suppliers"]
 
 export default function BackupRestorePage() {
+  const exportsGate = useFeatureGate("exports")
   const [counts, setCounts] = useState<BackupCollectionCounts | null>(null)
   const [loadingCounts, setLoadingCounts] = useState(Boolean(auth))
   const [refreshTick, setRefreshTick] = useState(0)
@@ -187,6 +190,15 @@ export default function BackupRestorePage() {
   return (
     <main className="space-y-6">
       <PageHeader eyebrow={en.navigation.settings} title={en.backupRestore.title} description={en.backupRestore.description} actions={<Button type="button" title={en.backupRestore.refreshCounts} icon={<RefreshCw size={16} />} variant="secondary" loading={loadingCounts} onClick={() => setRefreshTick((value) => value + 1)} />} />
+      {exportsGate.subscriptionExpired ? (
+        <SuspendedAccessBanner
+          description={en.subscription.readOnlyExpiredMessage}
+          featureLabel={en.subscription.features.exports}
+          usage={exportsGate.usage}
+          limit={typeof exportsGate.limit === "number" ? exportsGate.limit : undefined}
+          onOpenUpgrade={() => window.location.assign("/pricing")}
+        />
+      ) : null}
 
       <SurfaceCard className="border-amber-300/50 bg-amber-50/80 p-4 text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
         <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" /><div className="space-y-1 text-sm leading-6"><p className="font-semibold">{en.backupRestore.safetyTitle}</p><p>{en.backupRestore.safetyDescription}</p></div></div>
