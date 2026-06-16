@@ -1259,6 +1259,76 @@ export function getProgrammaticKeywordsForPath(routePath: string) {
   return Array.from(new Set(routeKeywords))
 }
 
+export type SeoKeywordTier = "tier1" | "tier2" | "tier3"
+
+export const seoKeywordRankingTiers: Record<SeoKeywordTier, readonly string[]> = {
+  tier1: [
+    "vyapar ki jagah kya use karu",
+    "vyapar se sasta billing app",
+    "offline vyapar alternative",
+    "billing software under 100 rupees per month",
+    "vyapar alternative for small shop",
+    "vyapar app koi alternative hai",
+    "kirana store billing software",
+    "wholesale inventory software",
+    "inventory software for MSME",
+    "billing app 99 rupees monthly",
+    "billing software 999 rupees yearly",
+    "try billing software free before buy",
+    "billing software no commitment",
+    "gst billing software for small shops",
+    "vyapar app alternative",
+    "mybillbook alternative",
+    "tallyprime alternative",
+  ],
+  tier2: [
+    "best vyapar alternative India",
+    "cheap vyapar alternative",
+    "vyapar billing software alternative",
+    "vyapar subscription badh gaya alternative",
+    "vyapar yearly renewal cost too high",
+    "vyapar sync issue alternative",
+    "billing software for small business",
+    "inventory software under 999 rupees",
+    "affordable GST billing software",
+    "budget inventory management software",
+    "billing software under 1000 rupees",
+    "gst software for small shops",
+    "retail billing software",
+    "warehouse management software",
+    "shop management software",
+    "quickbooks alternative",
+    "zoho inventory alternative",
+  ],
+  tier3: [
+    "billing software",
+    "inventory software",
+    "GST billing software",
+    "inventory management software",
+    "stock management app",
+    "GST billing app",
+    "POS software india",
+    "invoice software india",
+    "stock management software",
+    "inventory billing software",
+    "shop billing software with GST",
+    "free GST billing software",
+    "inventory management app",
+    "stock inventory tracker",
+    "purchase management software",
+    "sales management software",
+    "warehouse stock management app",
+  ],
+}
+
+export function getSeoKeywordTier(keyword: string): SeoKeywordTier | null {
+  const normalizedKeyword = keyword.trim().toLowerCase()
+  if (seoKeywordRankingTiers.tier1.some((item) => item.toLowerCase() === normalizedKeyword)) return "tier1"
+  if (seoKeywordRankingTiers.tier2.some((item) => item.toLowerCase() === normalizedKeyword)) return "tier2"
+  if (seoKeywordRankingTiers.tier3.some((item) => item.toLowerCase() === normalizedKeyword)) return "tier3"
+  return null
+}
+
 
 export type ProgrammaticLink = {
   label: string
