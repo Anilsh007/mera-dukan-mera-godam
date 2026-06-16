@@ -250,7 +250,7 @@ const competitorComparisonPagesBase = [
 export const competitorComparisonPages: CompetitorComparisonPageConfig[] = competitorComparisonPagesBase.map((item) => ({
   kind: "competitor",
   ...item,
-  h1: `Best ${item.competitorName} Alternative for Indian Shops`,
+  h1: "Best Premium Billing App for Indian Shops",
   intro:
     "Dugam is built for Indian MSMEs that want a simpler, mobile-friendly inventory and GST billing workflow with pricing that stays easy to understand.",
   comparisonHeadline: `How Dugam compares with ${item.competitorName}`,
