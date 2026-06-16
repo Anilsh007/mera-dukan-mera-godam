@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { getLocalizedSeoCopy } from "@/app/messages/locales/seo"
 import { en } from "@/app/messages/en"
-import { dugamSEOData } from "@/src/config/seoConfig"
+import { allSeoKeywords, dugamSEOData, getProgrammaticKeywordsForPath } from "@/src/config/seoConfig"
 
 const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
 const defaultProductionSiteUrl = dugamSEOData.siteUrl
@@ -32,6 +32,7 @@ export const SEO_KEYWORDS = Array.from(
     ...dugamSEOData.businessKeywords,
     ...dugamSEOData.pricingKeywords,
     ...dugamSEOData.competitorKeywords,
+    ...allSeoKeywords,
     "stock inventory management system",
     "inventory management software India",
     "stock management app for small business",
@@ -136,7 +137,7 @@ export function createPageMetadata(page: SeoPage, language = "en"): Metadata {
   const canonical = normalizePath(page.path)
   const title = page.title
   const description = page.description
-  const keywords = Array.from(new Set([...SEO_KEYWORDS, ...(page.keywords ?? [])]))
+  const keywords = Array.from(new Set([...SEO_KEYWORDS, ...getProgrammaticKeywordsForPath(page.path), ...(page.keywords ?? [])]))
   const currentLanguage = SEO_LANGUAGES.find((item) => item.code === language) ?? SEO_LANGUAGES[0]
 
   return {

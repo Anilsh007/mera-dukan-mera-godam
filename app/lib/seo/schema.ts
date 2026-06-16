@@ -1,6 +1,6 @@
 import { en } from "@/app/messages/en"
 import { APP_DESCRIPTION, APP_NAME, APP_SHORT_NAME, SEO_LANGUAGES, SITE_URL, absoluteUrl, getSeoPage, normalizePath, type SeoPage } from "./site"
-import { dugamSEOData, type ProgrammaticFaq } from "@/src/config/seoConfig"
+import { allSeoKeywords, dugamSEOData, type ProgrammaticFaq } from "@/src/config/seoConfig"
 
 export type JsonLdGraph = {
   "@context": "https://schema.org"
@@ -127,11 +127,7 @@ export function createBaseSchema(): JsonLdGraph {
           { "@type": "BusinessAudience", audienceType: seoSchemaText.shopkeeperAudience },
           { "@type": "BusinessAudience", audienceType: seoSchemaText.storekeeperAudience },
         ],
-        keywords: [
-          ...dugamSEOData.primaryKeywords,
-          ...dugamSEOData.businessKeywords,
-          ...dugamSEOData.pricingKeywords,
-        ].join(", "),
+        keywords: Array.from(new Set([...dugamSEOData.primaryKeywords, ...dugamSEOData.businessKeywords, ...dugamSEOData.pricingKeywords, ...allSeoKeywords])).join(", "),
         publisher: { "@id": organizationId },
       },
     ],
