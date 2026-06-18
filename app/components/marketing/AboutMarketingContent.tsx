@@ -74,6 +74,14 @@ export default function AboutMarketingContent() {
             </div>
           </aside>
         </div>
+
+        <p className="mt-6 leading-8 text-[var(--text-secondary)]">
+          {en.seo.platformDescription}
+        </p>
+
+        <p className="mt-4 leading-8 text-[var(--text-secondary)]">
+          {en.seo.startupDescription}
+        </p>
       </section>
     </main>
   )

@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   FileText,
   HelpCircle,
+  MapPin,
 } from "lucide-react";
 import { en } from "@/app/messages/en";
 import { BsWhatsapp } from "react-icons/bs";
@@ -33,24 +34,27 @@ export default function Footer() {
               </div>
             </div>
 
-            <p className="mt-6 max-w-2xl leading-8 text-[var(--text-secondary)]">
-              {en.seo.platformDescription}
-            </p>
-
-            <p className="mt-4 leading-8 text-[var(--text-secondary)]">
-              {en.seo.startupDescription}
-            </p>
-
-            {/* Socials */}
-            <div className="mt-6 flex items-center gap-4">
-              <a href="mailto:mdmg.ind@gmail.com" target="_blank" rel="noopener noreferrer" aria-label={en.seo.emailSupport} className="rounded-xl border border-[var(--border-card)] p-3 text-[#EA4335] transition hover:border-[var(--accent)] hover:bg-[#EA4335] hover:text-[#ffffff]" >
+            <p className="mt-6">
+              <a href="mailto:mdmg.ind@gmail.com" target="_blank" rel="noopener noreferrer" aria-label={en.seo.emailSupport} className="flex items-center gap-2 w-fit p-2 text-[#25D366] transition hover:border-[var(--accent)] hover:text-[#ffffff]" >
                 <Mail size={18} aria-hidden="true" />
+                <span>mdmg.ind@gmail.com</span>
               </a>
+            </p>
 
-              <a href="https://wa.me/9301848229" target="_blank" rel="noopener noreferrer" aria-label={en.seo.whatsappSupport} className="rounded-xl border border-[var(--border-card)]  p-3 text-[#25D366] transition hover:border-[var(--accent)] hover:bg-[#25D366] hover:text-[#ffffff]" >
+            <p>
+              <a href="https://wa.me/9301848229" target="_blank" rel="noopener noreferrer" aria-label={en.seo.whatsappSupport} className="flex items-center gap-2 w-fit p-2 text-[#25D366] transition hover:border-[var(--accent)] hover:text-[#ffffff]" >
                 <BsWhatsapp size={18} aria-hidden="true" />
+                <span>+91-9301848229</span>
               </a>
-            </div>
+            </p>
+
+            <p>
+              <a href="https://wa.me/9301848229" target="_blank" rel="noopener noreferrer" aria-label={en.seo.whatsappSupport} className="flex items-center gap-2 w-fit p-2 text-[#25D366] transition hover:border-[var(--accent)] hover:text-[#ffffff]" >
+                <MapPin size={18} aria-hidden="true" />
+                <span>Amlori Colony, District:- Singrauli, Madhya Pradesh, India 486887</span>
+              </a>
+            </p>
+
           </div>
 
           {/* {en.seo.navigation} */}
