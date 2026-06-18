@@ -1451,57 +1451,178 @@ const industryRelatedLinks: ProgrammaticLink[] = [
   { label: "Get support", href: "/support" },
 ]
 
+// Define categories to dynamically inject based on the page's context or to map over
+const businessCategories = {
+  retail: ["Kirana stores", "Grocery shops", "General stores", "Provision stores", "Mini marts", "Retail counters"],
+  hardware: ["Hardware shops", "Paint shops", "Plumbing shops", "Pipe & fitting shops", "Sanitary shops", "Tiles & cement stores"],
+  electronics: ["Electrical shops", "Electronics shops", "Mobile accessory shops", "Battery & inverter shops", "Automobile spare parts"],
+  wholesale: ["Wholesalers", "Distributors", "Stockists", "Showrooms", "Storekeepers", "Warehouse teams"]
+} as const;
+
 const competitorComparisonPagesBase = [
   {
-    slug: "vyapar",
-    competitorName: "Vyapar",
-    title: "Best Free Vyapar Alternative for PC with Multi-Device Sync | Dugam",
+    slug: "kirana-store-software",
+    competitorName: "Kirana Stores",
+    title: "Kirana Store Billing & Inventory Management Software | Dugam",
     description:
-      "Explore Dugam as a lightweight Vyapar alternative for Indian shops that want simpler inventory management, GST billing, and responsive mobile + desktop workflows.",
+      "Manage kirana store inventory, GST billing, purchases, sales, customer accounts, and stock tracking from mobile and desktop with Dugam.",
   },
   {
-    slug: "tally",
-    competitorName: "TallyPrime",
-    title: "Best TallyPrime Alternative for Small Shops and MSMEs | Dugam",
+    slug: "grocery-shop-software",
+    competitorName: "Grocery Shops",
+    title: "Grocery Shop Billing & Inventory Software | Dugam",
     description:
-      "See how Dugam compares as a modern TallyPrime alternative for inventory management and GST billing without heavyweight desktop complexity.",
+      "Track grocery stock, GST invoices, purchases, sales, and inventory movement with software built for grocery shop owners.",
   },
   {
-    slug: "mybillbook",
-    competitorName: "myBillBook",
-    title: "Best myBillBook Alternative for Stock and GST Billing | Dugam",
+    slug: "general-store-software",
+    competitorName: "General Stores",
+    title: "General Store Inventory & GST Billing Software | Dugam",
     description:
-      "Dugam is a practical myBillBook alternative for shops that need affordable inventory tracking, GST invoices, and simple daily workflows.",
+      "Simplify inventory management, GST billing, stock tracking, and daily store operations with software designed for general stores.",
   },
   {
-    slug: "swipe",
-    competitorName: "Swipe",
-    title: "Best Swipe Alternative for Inventory and Billing Teams | Dugam",
+    slug: "provision-store-software",
+    competitorName: "Provision Stores",
+    title: "Provision Store Billing & Inventory Software | Dugam",
     description:
-      "Compare Dugam with Swipe for inventory management, GST billing, and mobile-friendly shop operations that stay easy to use.",
+      "Manage provision store stock, GST invoices, purchases, suppliers, and sales records in one easy inventory system.",
   },
   {
-    slug: "busy",
-    competitorName: "Busy Accounting",
-    title: "Best Busy Accounting Alternative for Retail and Wholesale | Dugam",
+    slug: "mini-mart-billing-software",
+    competitorName: "Mini Marts",
+    title: "Mini Mart Billing & Inventory Management Software | Dugam",
     description:
-      "Dugam offers a streamlined Busy Accounting alternative for retail and wholesale businesses that want clearer pricing and faster workflows.",
+      "Inventory and billing software for mini marts with stock control, GST billing, sales tracking, and business reports.",
   },
   {
-    slug: "marg",
-    competitorName: "Marg ERP",
-    title: "Best Marg ERP Alternative for Indian Shop Billing | Dugam",
+    slug: "hardware-shop-software",
+    competitorName: "Hardware Shops",
+    title: "Hardware Shop Management Software | Inventory & Billing",
     description:
-      "Compare Dugam against Marg ERP for affordable shop management, GST billing, and inventory workflows built for MSMEs.",
+      "Track hardware inventory, supplier purchases, GST billing, sales records, and stock levels with hardware shop software.",
   },
   {
-    slug: "khatabook",
-    competitorName: "Khatabook",
-    title: "Best Khatabook Alternative for Inventory and GST Billing | Dugam",
+    slug: "paint-shop-software",
+    competitorName: "Paint Shops",
+    title: "Paint Shop Billing & Inventory Management Software | Dugam",
     description:
-      "Dugam is a full inventory and GST billing alternative for shops moving beyond ledger-only tools into proper stock management.",
+      "Manage paint inventory, product variants, GST billing, stock tracking, and supplier purchases efficiently.",
   },
-] as const
+  {
+    slug: "plumbing-shop-software",
+    competitorName: "Plumbing Shops",
+    title: "Plumbing Shop Inventory & Billing Software | Dugam",
+    description:
+      "Track plumbing products, inventory levels, GST invoices, purchases, and sales from a single platform.",
+  },
+  {
+    slug: "pipe-and-fitting-shop-software",
+    competitorName: "Pipe and Fitting Shops",
+    title: "Pipe & Fitting Shop Inventory Software | Dugam",
+    description:
+      "Manage pipes, fittings, stock movement, GST billing, purchases, and sales with inventory software for pipe stores.",
+  },
+  {
+    slug: "sanitary-shop-software",
+    competitorName: "Sanitary Shops",
+    title: "Sanitary Shop Billing & Inventory Software | Dugam",
+    description:
+      "Inventory management software for sanitary shops with GST billing, stock tracking, supplier management, and reporting.",
+  },
+  {
+    slug: "building-material-store-software",
+    competitorName: "Tiles, Cement, Iron and Steel Stores",
+    title: "Building Material Inventory Management Software | Dugam",
+    description:
+      "Manage tiles, cement, iron, steel inventory, GST billing, purchases, and stock movement with one powerful solution.",
+  },
+  {
+    slug: "electrical-shop-software",
+    competitorName: "Electrical Shops",
+    title: "Electrical Shop Billing & Stock Management Software | Dugam",
+    description:
+      "Track electrical inventory, GST invoices, purchases, suppliers, and sales using software built for electrical stores.",
+  },
+  {
+    slug: "electronics-shop-software",
+    competitorName: "Electronics Shops",
+    title: "Electronics Store Inventory & Billing Software | Dugam",
+    description:
+      "Manage electronics inventory, billing, warranty records, stock movement, and customer transactions efficiently.",
+  },
+  {
+    slug: "mobile-accessory-shop-software",
+    competitorName: "Mobile Accessory Shops",
+    title: "Mobile Accessory Shop Billing Software | Dugam",
+    description:
+      "Track mobile accessories inventory, GST billing, stock levels, purchases, and sales with ease.",
+  },
+  {
+    slug: "battery-inverter-shop-software",
+    competitorName: "Battery and Inverter Shops",
+    title: "Battery & Inverter Shop Inventory Software | Dugam",
+    description:
+      "Manage battery inventory, inverter stock, warranty records, GST invoices, and customer sales from one dashboard.",
+  },
+  {
+    slug: "auto-spare-parts-software",
+    competitorName: "Automobile Spare Parts Shops",
+    title: "Auto Spare Parts Inventory Management Software | Dugam",
+    description:
+      "Track spare parts inventory, purchases, suppliers, GST billing, and sales records for automobile businesses.",
+  },
+  {
+    slug: "tyre-tools-store-software",
+    competitorName: "Tyre and Tools Stores",
+    title: "Tyre & Tools Inventory Management Software | Dugam",
+    description:
+      "Manage tyre inventory, tool stock, GST billing, supplier purchases, and sales operations efficiently.",
+  },
+  {
+    slug: "wholesale-inventory-software",
+    competitorName: "Wholesalers",
+    title: "Wholesale Inventory Management Software | GST Billing",
+    description:
+      "Inventory software for wholesalers with bulk stock tracking, GST billing, purchase management, and sales reporting.",
+  },
+  {
+    slug: "distributor-management-software",
+    competitorName: "Distributors",
+    title: "Distributor Management Software | Inventory & Billing",
+    description:
+      "Manage inventory, distributor operations, orders, GST invoices, stock movement, and customer records.",
+  },
+  {
+    slug: "stockist-management-software",
+    competitorName: "Stockists",
+    title: "Stockist Inventory Management Software | Dugam",
+    description:
+      "Track warehouse stock, inventory transfers, purchases, GST billing, and supplier management with ease.",
+  },
+  {
+    slug: "showroom-management-software",
+    competitorName: "Showrooms",
+    title: "Showroom Inventory & Billing Software | Dugam",
+    description:
+      "Inventory management software for showrooms with stock tracking, GST billing, customer management, and reporting.",
+  },
+  {
+    slug: "store-inventory-software",
+    competitorName: "Storekeepers",
+    title: "Store Inventory Management Software | Dugam",
+    description:
+      "Help storekeepers manage inventory, stock records, purchases, sales, GST invoices, and daily operations efficiently.",
+  },
+  {
+    slug: "warehouse-management-software",
+    competitorName: "Warehouse and Godown Teams",
+    title: "Warehouse Management Software | Inventory Tracking",
+    description:
+      "Track warehouse inventory, inward and outward stock movement, inventory reports, and warehouse operations in real time.",
+  },
+] as const;
+
 
 export const competitorComparisonPages: CompetitorComparisonPageConfig[] = competitorComparisonPagesBase.map((item) => ({
   kind: "competitor",

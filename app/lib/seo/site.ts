@@ -10,7 +10,7 @@ export const SITE_URL = configuredSiteUrl && /^https?:\/\//i.test(configuredSite
   : process.env.NODE_ENV === "production"
     ? defaultProductionSiteUrl
     : "http://localhost:3000"
-export const APP_NAME = "Mera Dukan Mera Godam"
+export const APP_NAME = "Dugam"
 export const APP_SHORT_NAME = "MDMG"
 export const APP_DESCRIPTION = dugamSEOData.appDescription || getLocalizedSeoCopy("en").appDescription
 export const SEO_LAST_MODIFIED = new Date().toISOString().split("T")[0]
