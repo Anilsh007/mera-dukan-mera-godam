@@ -63,7 +63,7 @@ export const pricingPlans: PricingPlan[] = [
     price: 999,
     billing: "per year",
     daily: dugamSEOData.pricing.yearlyHook,
-    highlight: "Best Value / Most Popular",
+    //highlight: "Best Value / Most Popular",
     description: `For serious sellers who want the lowest effective cost with the full feature set. ${dugamSEOData.pricing.yearly} plan.`,
     features: [
       "All Half-Yearly features",
