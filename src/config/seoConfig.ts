@@ -43,55 +43,48 @@ export const dugamSEOData = {
     "billing software for small business",
     "inventory software for MSME",
   ],
-  competitorKeywords: [
-    "Vyapar alternative",
-    "TallyPrime alternative",
-    "myBillBook alternative",
-    "Swipe alternative",
-    "Busy alternative",
-    "Zoho Inventory alternative",
-    "QuickBooks alternative",
-    "Khatabook alternative",
-  ],
 } as const
 
 export const seoKeywordDatabase = {
-  // 1. COMPETE & SWITCH KEYWORDS (focused, non-defamatory)
-  competeAndSwitch: {
-    vyaparAlternatives: [
-      "vyapar alternative for small shop",
-      "best vyapar alternative India",
-      "vyapar alternative cheaper",
-      "migrate from vyapar",
-      "switch from vyapar",
-      "vyapar pricing concerns",
-      "vyapar sync issues",
-      "vyapar data migration",
+  // 1. FEATURE & BENEFIT DRIVEN KEYWORDS (focus on what you offer, not competitors)
+  featureAndBenefits: {
+    affordability: [
+      "affordable billing software India",
+      "budget-friendly billing app",
+      "low-cost inventory software",
+      "billing software under 100 rupees",
+      "billing app 99 rupees monthly",
+      "billing software 999 rupees yearly",
+      "transparent billing software pricing",
+      "no hidden charges billing app",
     ],
-    tallyAlternatives: [
-      "tally alternative for small shop",
-      "tally prime alternative affordable",
-      "migrate from tally",
-      "switch from tally",
-      "tally pricing concerns",
+    mobileCloud: [
+      "mobile billing app India",
+      "cloud-based inventory software",
+      "mobile and PC sync billing app",
+      "cloud sync billing app",
+      "mobile-first billing software",
+      "work anywhere billing app",
+      "offline billing app India",
+      "offline billing auto sync",
     ],
-    mybillbookAlternatives: [
-      "mybillbook alternative",
-      "switch from mybillbook",
+    features: [
+      "auto backup billing software",
+      "low stock alert software",
+      "expiry date tracking billing app",
+      "WhatsApp invoice billing software",
+      "printable billing app",
+      "customer ledger billing app",
+      "GST e-invoice billing app",
+      "multi-user billing software",
     ],
-    busyAlternatives: [
-      "busy accounting alternative",
-      "busy alternative for small shop",
-    ],
-    swipeAlternatives: [
-      "swipe billing app alternative",
-      "swipe alternative for small shop",
-    ],
-    generalSwitchKeywords: [
-      "how to switch billing software",
-      "migrate billing data to new app",
-      "keep billing data when switching software",
-      "billing software switching guide India",
+    gstCompliance: [
+      "GST billing app India small shop",
+      "GST invoice app for shop",
+      "GST compliant billing software",
+      "GST e-way bill support",
+      "GST compliance software India",
+      "automated GST calculations",
     ],
   },
 
@@ -136,37 +129,27 @@ export const seoKeywordDatabase = {
     ],
   },
 
-  // 3. INTENT & FEATURE BASED KEYWORDS
-  intentAndFeatureBased: {
-    affordabilityKeywords: [
-      "GST billing app under 100 rupees",
-      "billing app 99 rupees monthly",
-      "billing software yearly 999 rupees",
-      "affordable GST billing app",
-      "billing software no hidden charges",
+  // 3. INTENT & DISCOVERY BASED KEYWORDS
+  intentBased: {
+    comparison: [
+      "best billing software for small shop",
+      "billing software comparison",
+      "simple inventory software",
+      "easy-to-use billing app",
+      "beginner-friendly inventory software",
     ],
-    featureBasedKeywords: [
-      "mobile and PC sync billing app",
-      "cloud sync billing app",
-      "auto backup billing software",
-      "low stock alert software",
-      "expiry date tracking billing app",
-      "WhatsApp invoice billing software",
-      "printable billing app",
-      "customer ledger billing app",
+    switching: [
+      "how to switch billing software",
+      "migrate billing data to new app",
+      "keep billing data when switching software",
+      "billing software switching guide India",
     ],
-    offlineAndSyncKeywords: [
-      "offline billing app India",
-      "billing app without internet",
-      "offline billing auto sync",
-      "offline mode billing app",
-    ],
-    gstAndComplianceKeywords: [
-      "GST billing app India small shop",
-      "GST invoice app for shop",
-      "GST compliant billing software",
-      "GST e-invoice billing app",
-      "GST e-way bill support",
+    discovery: [
+      "free trial billing software India",
+      "14 day free trial billing app",
+      "billing software free trial",
+      "billing software demo download",
+      "billing software no commitment",
     ],
   },
 
@@ -198,45 +181,21 @@ export const seoKeywordDatabase = {
     "dukan bill print kaise kare",
     "billing app ka price kya hai",
   ],
-
-  // 6. COMPETITOR COMPARISON KEYWORDS (neutral, non-defamatory)
-  competitorComparison: [
-    "vyapar vs dugam billing",
-    "tally vs dugam",
-    "mybillbook vs dugam",
-    "busy vs dugam",
-    "swipe vs dugam",
-    "dugam vs vyapar pricing",
-    "dugam vs tally features",
-    "dugam comparison reviews",
-  ],
-
-  // 7. CONVERSION & TRAFFIC DRIVERS
-  conversionTraffic: [
-    "free trial billing software India",
-    "14 day free trial billing app",
-    "billing software free trial",
-    "billing software demo download",
-    "billing software no commitment",
-    "billing app 99 rupees monthly",
-    "billing software 999 rupees yearly",
-    "billing software discount India",
-  ],
 } as const
 
 export const seoKeywordSources = {
-  competitorReviews: [
-    "LinkedIn: Billing & Invoicing Software India",
-    "Reddit: user discussions on billing apps",
-    "Industry blogs and product comparisons",
+  marketResearch: [
+    "Small business owner discussions",
+    "Shop management community forums",
+    "Industry-specific user groups",
   ],
   searchTrends: [
     "Google Play Store: GST billing app India",
     "App Store & Play Store keyword trends",
   ],
   industryInsights: [
-    "Unicommerce: Best inventory management India",
-    "Busy.in: Accounting & GST billing references",
+    "MSME industry reports",
+    "Small business billing best practices",
   ],
 } as const
 
@@ -285,40 +244,29 @@ export const allSeoKeywords = Array.from(
     ...dugamSEOData.primaryKeywords,
     ...dugamSEOData.businessKeywords,
     ...dugamSEOData.pricingKeywords,
-    ...dugamSEOData.competitorKeywords,
   ]),
 )
 
 export const programmaticKeywordRouteRules: SeoKeywordRouteRule[] = [
   {
-    label: "Vyapar alternative searches",
-    paths: ["/alternatives", "/alternatives/vyapar"],
-    keywords: seoKeywordDatabase.competeAndSwitch.vyaparAlternatives,
+    label: "Affordability and pricing",
+    paths: ["/pricing"],
+    keywords: seoKeywordDatabase.featureAndBenefits.affordability,
   },
   {
-    label: "Tally alternative searches",
-    paths: ["/alternatives", "/alternatives/tally"],
-    keywords: seoKeywordDatabase.competeAndSwitch.tallyAlternatives,
+    label: "Mobile and cloud features",
+    paths: ["/pricing", "/features"],
+    keywords: seoKeywordDatabase.featureAndBenefits.mobileCloud,
   },
   {
-    label: "myBillBook alternative searches",
-    paths: ["/alternatives", "/alternatives/mybillbook"],
-    keywords: seoKeywordDatabase.competeAndSwitch.mybillbookAlternatives,
+    label: "Core features",
+    paths: ["/features", "/pricing"],
+    keywords: seoKeywordDatabase.featureAndBenefits.features,
   },
   {
-    label: "Busy alternative searches",
-    paths: ["/alternatives", "/alternatives/busy"],
-    keywords: seoKeywordDatabase.competeAndSwitch.busyAlternatives,
-  },
-  {
-    label: "Swipe alternative searches",
-    paths: ["/alternatives", "/alternatives/swipe"],
-    keywords: seoKeywordDatabase.competeAndSwitch.swipeAlternatives,
-  },
-  {
-    label: "General switch intent",
-    paths: ["/alternatives"],
-    keywords: seoKeywordDatabase.competeAndSwitch.generalSwitchKeywords,
+    label: "GST compliance features",
+    paths: ["/pricing", "/faq"],
+    keywords: seoKeywordDatabase.featureAndBenefits.gstCompliance,
   },
   {
     label: "Kirana and grocery workflows",
@@ -346,24 +294,19 @@ export const programmaticKeywordRouteRules: SeoKeywordRouteRule[] = [
     keywords: seoKeywordDatabase.retailAndShopSpecific.clothingGarments,
   },
   {
-    label: "Affordability queries",
-    paths: ["/pricing"],
-    keywords: seoKeywordDatabase.intentAndFeatureBased.affordabilityKeywords,
+    label: "Comparison and discovery",
+    paths: ["/", "/pricing"],
+    keywords: seoKeywordDatabase.intentBased.comparison,
   },
   {
-    label: "Feature-led queries",
-    paths: ["/pricing", "/alternatives"],
-    keywords: seoKeywordDatabase.intentAndFeatureBased.featureBasedKeywords,
+    label: "Software switching guide",
+    paths: ["/faq", "/support"],
+    keywords: seoKeywordDatabase.intentBased.switching,
   },
   {
-    label: "Offline and sync queries",
-    paths: ["/alternatives", "/support"],
-    keywords: seoKeywordDatabase.intentAndFeatureBased.offlineAndSyncKeywords,
-  },
-  {
-    label: "GST and compliance queries",
-    paths: ["/pricing", "/faq"],
-    keywords: seoKeywordDatabase.intentAndFeatureBased.gstAndComplianceKeywords,
+    label: "Trial and conversion",
+    paths: ["/pricing", "/login"],
+    keywords: seoKeywordDatabase.intentBased.discovery,
   },
   {
     label: "FAQ questions",
@@ -372,18 +315,8 @@ export const programmaticKeywordRouteRules: SeoKeywordRouteRule[] = [
   },
   {
     label: "Regional and Hinglish discovery",
-    paths: ["/", "/pricing", "/alternatives", "/industries"],
+    paths: ["/", "/pricing", "/industries"],
     keywords: seoKeywordDatabase.hinglishAndRegional,
-  },
-  {
-    label: "Competitor comparison intent",
-    paths: ["/alternatives"],
-    keywords: seoKeywordDatabase.competitorComparison,
-  },
-  {
-    label: "Conversion traffic intent",
-    paths: ["/pricing", "/login"],
-    keywords: seoKeywordDatabase.conversionTraffic,
   },
 ]
 
@@ -411,13 +344,13 @@ export const seoKeywordRankingTiers: Record<SeoKeywordTier, readonly string[]> =
     "GST billing app India small shop",
   ],
   tier2: [
-    "best vyapar alternative India",
-    "tally alternative for small shop",
+    "affordable billing software India",
     "billing software for small business",
     "affordable GST billing software",
     "cloud sync billing app",
     "offline billing app India",
     "low stock alert software",
+    "simple inventory software",
   ],
   tier3: [
     "billing software",
@@ -452,23 +385,7 @@ export type ProgrammaticFaq = {
 export type ComparisonRow = {
   feature: string
   dugam: string
-  competitor: string
-}
-
-export type CompetitorComparisonPageConfig = {
-  kind: "competitor"
-  slug: string
-  competitorName: string
-  title: string
-  description: string
-  h1: string
-  intro: string
-  comparisonHeadline: string
-  comparisonNote: string
-  comparisonRows: ComparisonRow[]
-  highlights: string[]
-  faqs: ProgrammaticFaq[]
-  relatedLinks: ProgrammaticLink[]
+  typical_alternative: string
 }
 
 export type IndustryPageConfig = {
@@ -485,49 +402,6 @@ export type IndustryPageConfig = {
   relatedLinks: ProgrammaticLink[]
 }
 
-const competitorComparisonRows: ComparisonRow[] = [
-  {
-    feature: "Multi-device sync",
-    dugam: "Built for mobile + desktop workflows with a single inventory source of truth",
-    competitor: "Often requires additional setup or higher-tier plans",
-  },
-  {
-    feature: "GST billing",
-    dugam: "Included for Indian shop billing and invoice workflows",
-    competitor: "May require configuration or premium modules",
-  },
-  {
-    feature: "Pricing clarity",
-    dugam: "₹99/month and ₹999/year with a clear daily-cost hook",
-    competitor: "Pricing can vary based on devices, users, or modules",
-  },
-  {
-    feature: "Mobile-first experience",
-    dugam: "Fast, responsive, and built for shop floor usage",
-    competitor: "Some tools are desktop-first and need extra mobile steps",
-  },
-  {
-    feature: "Shop and godown workflows",
-    dugam: "Inventory, sales, purchases, and godown tracking in one app",
-    competitor: "May split workflows across modules",
-  },
-]
-
-const competitorFaqs: ProgrammaticFaq[] = [
-  {
-    question: "Can Dugam replace my current billing or inventory app?",
-    answer: "Dugam is designed as a practical alternative for shops that want a simpler, affordable billing and stock workflow.",
-  },
-  {
-    question: "Does Dugam support mobile and desktop use?",
-    answer: "Yes. The app is responsive on desktop browsers and mobile devices so shop teams can work anywhere.",
-  },
-  {
-    question: "Is there a cheaper way to manage inventory and GST billing?",
-    answer: "Dugam focuses on a low-entry pricing model with monthly and yearly options that fit small and medium Indian businesses.",
-  },
-]
-
 const industryFaqs: ProgrammaticFaq[] = [
   {
     question: "Can this app work for my shop type?",
@@ -543,19 +417,10 @@ const industryFaqs: ProgrammaticFaq[] = [
   },
 ]
 
-const competitorRelatedLinks: ProgrammaticLink[] = [
-  { label: "View pricing", href: "/pricing" },
-  { label: "Read FAQ", href: "/faq" },
-  { label: "Kirana store billing software", href: "/industries/kirana-store" },
-  { label: "Wholesale inventory software", href: "/industries/wholesalers-and-godown" },
-  { label: "Get support", href: "/support" },
-]
-
 const industryRelatedLinks: ProgrammaticLink[] = [
   { label: "View pricing", href: "/pricing" },
   { label: "Read FAQ", href: "/faq" },
-  { label: "Vyapar alternative", href: "/alternatives/vyapar" },
-  { label: "Hardware shop software", href: "/industries/hardware-shop" },
+  { label: "Features & benefits", href: "/features" },
   { label: "Get support", href: "/support" },
 ]
 
@@ -566,193 +431,8 @@ const businessCategories = {
   wholesale: ["Wholesalers", "Distributors", "Stockists", "Showrooms", "Storekeepers", "Warehouse teams"],
 } as const
 
-const competitorComparisonPagesBase = [
+const industryPagesBase = [
   {
-    slug: "kirana-store-software",
-    competitorName: "Kirana Stores",
-    title: "Kirana Store Billing & Inventory Management Software | Dugam",
-    description:
-      "Manage kirana store inventory, GST billing, purchases, sales, customer accounts, and stock tracking from mobile and desktop with Dugam.",
-  },
-  {
-    slug: "grocery-shop-software",
-    competitorName: "Grocery Shops",
-    title: "Grocery Shop Billing & Inventory Software | Dugam",
-    description:
-      "Track grocery stock, GST invoices, purchases, sales, and inventory movement with software built for grocery shop owners.",
-  },
-  {
-    slug: "general-store-software",
-    competitorName: "General Stores",
-    title: "General Store Inventory & GST Billing Software | Dugam",
-    description:
-      "Simplify inventory management, GST billing, stock tracking, and daily store operations with software designed for general stores.",
-  },
-  {
-    slug: "provision-store-software",
-    competitorName: "Provision Stores",
-    title: "Provision Store Billing & Inventory Software | Dugam",
-    description:
-      "Manage provision store stock, GST invoices, purchases, suppliers, and sales records in one easy inventory system.",
-  },
-  {
-    slug: "mini-mart-billing-software",
-    competitorName: "Mini Marts",
-    title: "Mini Mart Billing & Inventory Management Software | Dugam",
-    description:
-      "Inventory and billing software for mini marts with stock control, GST billing, sales tracking, and business reports.",
-  },
-  {
-    slug: "hardware-shop-software",
-    competitorName: "Hardware Shops",
-    title: "Hardware Shop Management Software | Inventory & Billing",
-    description:
-      "Track hardware inventory, supplier purchases, GST billing, sales records, and stock levels with hardware shop software.",
-  },
-  {
-    slug: "paint-shop-software",
-    competitorName: "Paint Shops",
-    title: "Paint Shop Billing & Inventory Management Software | Dugam",
-    description:
-      "Manage paint inventory, product variants, GST billing, stock tracking, and supplier purchases efficiently.",
-  },
-  {
-    slug: "plumbing-shop-software",
-    competitorName: "Plumbing Shops",
-    title: "Plumbing Shop Inventory & Billing Software | Dugam",
-    description:
-      "Track plumbing products, inventory levels, GST invoices, purchases, and sales from a single platform.",
-  },
-  {
-    slug: "pipe-and-fitting-shop-software",
-    competitorName: "Pipe and Fitting Shops",
-    title: "Pipe & Fitting Shop Inventory Software | Dugam",
-    description:
-      "Manage pipes, fittings, stock movement, GST billing, purchases, and sales with inventory software for pipe stores.",
-  },
-  {
-    slug: "sanitary-shop-software",
-    competitorName: "Sanitary Shops",
-    title: "Sanitary Shop Billing & Inventory Software | Dugam",
-    description:
-      "Inventory management software for sanitary shops with GST billing, stock tracking, supplier management, and reporting.",
-  },
-  {
-    slug: "building-material-store-software",
-    competitorName: "Tiles, Cement, Iron and Steel Stores",
-    title: "Building Material Inventory Management Software | Dugam",
-    description:
-      "Manage tiles, cement, iron, steel inventory, GST billing, purchases, and stock movement with one powerful solution.",
-  },
-  {
-    slug: "electrical-shop-software",
-    competitorName: "Electrical Shops",
-    title: "Electrical Shop Billing & Stock Management Software | Dugam",
-    description:
-      "Track electrical inventory, GST invoices, purchases, suppliers, and sales using software built for electrical stores.",
-  },
-  {
-    slug: "electronics-shop-software",
-    competitorName: "Electronics Shops",
-    title: "Electronics Store Inventory & Billing Software | Dugam",
-    description:
-      "Manage electronics inventory, billing, warranty records, stock movement, and customer transactions efficiently.",
-  },
-  {
-    slug: "mobile-accessory-shop-software",
-    competitorName: "Mobile Accessory Shops",
-    title: "Mobile Accessory Shop Billing Software | Dugam",
-    description:
-      "Track mobile accessories inventory, GST billing, stock levels, purchases, and sales with ease.",
-  },
-  {
-    slug: "battery-inverter-shop-software",
-    competitorName: "Battery and Inverter Shops",
-    title: "Battery & Inverter Shop Inventory Software | Dugam",
-    description:
-      "Manage battery inventory, inverter stock, warranty records, GST invoices, and customer sales from one dashboard.",
-  },
-  {
-    slug: "auto-spare-parts-software",
-    competitorName: "Automobile Spare Parts Shops",
-    title: "Auto Spare Parts Inventory Management Software | Dugam",
-    description:
-      "Track spare parts inventory, purchases, suppliers, GST billing, and sales records for automobile businesses.",
-  },
-  {
-    slug: "tyre-tools-store-software",
-    competitorName: "Tyre and Tools Stores",
-    title: "Tyre & Tools Inventory Management Software | Dugam",
-    description:
-      "Manage tyre inventory, tool stock, GST billing, supplier purchases, and sales operations efficiently.",
-  },
-  {
-    slug: "wholesale-inventory-software",
-    competitorName: "Wholesalers",
-    title: "Wholesale Inventory Management Software | GST Billing",
-    description:
-      "Inventory software for wholesalers with bulk stock tracking, GST billing, purchase management, and sales reporting.",
-  },
-  {
-    slug: "distributor-management-software",
-    competitorName: "Distributors",
-    title: "Distributor Management Software | Inventory & Billing",
-    description:
-      "Manage inventory, distributor operations, orders, GST invoices, stock movement, and customer records.",
-  },
-  {
-    slug: "stockist-management-software",
-    competitorName: "Stockists",
-    title: "Stockist Inventory Management Software | Dugam",
-    description:
-      "Track warehouse stock, inventory transfers, purchases, GST billing, and supplier management with ease.",
-  },
-  {
-    slug: "showroom-management-software",
-    competitorName: "Showrooms",
-    title: "Showroom Inventory & Billing Software | Dugam",
-    description:
-      "Inventory management software for showrooms with stock tracking, GST billing, customer management, and reporting.",
-  },
-  {
-    slug: "store-inventory-software",
-    competitorName: "Storekeepers",
-    title: "Store Inventory Management Software | Dugam",
-    description:
-      "Help storekeepers manage inventory, stock records, purchases, sales, GST invoices, and daily operations efficiently.",
-  },
-  {
-    slug: "warehouse-management-software",
-    competitorName: "Warehouse and Godown Teams",
-    title: "Warehouse Management Software | Inventory Tracking",
-    description:
-      "Track warehouse inventory, inward and outward stock movement, inventory reports, and warehouse operations in real time.",
-  },
-] as const
-
-export const competitorComparisonPages: CompetitorComparisonPageConfig[] = competitorComparisonPagesBase.map((item) => ({
-  kind: "competitor",
-  ...item,
-  h1: "Best Premium Billing App for Indian Shops",
-  intro:
-    "Dugam is built for Indian MSMEs that want a simpler, mobile-friendly inventory and GST billing workflow with pricing that stays easy to understand.",
-  comparisonHeadline: `How Dugam compares with ${item.competitorName}`,
-  comparisonNote:
-    "The comparison below focuses on publicly visible product positioning and typical market expectations for shop software. Exact vendor features and tiers can change over time.",
-  comparisonRows: competitorComparisonRows,
-  highlights: [
-    "Fast stock and billing workflow",
-    "Mobile + desktop friendly",
-    "Affordable monthly and yearly plans",
-    "Built for kirana, wholesale, and godown teams",
-  ],
-  faqs: competitorFaqs,
-  relatedLinks: competitorRelatedLinks,
-}))
-
-export const industryPages: IndustryPageConfig[] = [
-  {
-    kind: "industry",
     slug: "kirana-store",
     industryName: "Kirana Store",
     title: "Kirana Store Billing Software for Fast Billing and Stock Tracking | Dugam",
@@ -772,16 +452,8 @@ export const industryPages: IndustryPageConfig[] = [
       "Quick stock checks for fast-moving grocery items",
       "Receipt sharing and GST invoice workflows",
     ],
-    faqs: industryFaqs,
-    relatedLinks: [
-      { label: "View pricing", href: "/pricing" },
-      { label: "Vyapar alternative", href: "/alternatives/vyapar" },
-      { label: "Hardware shop billing software", href: "/industries/hardware-shop" },
-      { label: "Support", href: "/support" },
-    ],
   },
   {
-    kind: "industry",
     slug: "hardware-shop",
     industryName: "Hardware Shop",
     title: "Hardware Store Billing Software and Inventory Management | Dugam",
@@ -801,16 +473,8 @@ export const industryPages: IndustryPageConfig[] = [
       "Manage supplier purchases and bill details",
       "Create customer invoices quickly",
     ],
-    faqs: industryFaqs,
-    relatedLinks: [
-      { label: "View pricing", href: "/pricing" },
-      { label: "Busy alternative", href: "/alternatives/busy" },
-      { label: "Kirana store billing software", href: "/industries/kirana-store" },
-      { label: "Support", href: "/support" },
-    ],
   },
   {
-    kind: "industry",
     slug: "electronics-and-mobile",
     industryName: "Electronics and Mobile Shop",
     title: "Electronics and Mobile Shop Inventory Software | Dugam",
@@ -830,16 +494,8 @@ export const industryPages: IndustryPageConfig[] = [
       "Manage accessories and add-on items",
       "Keep invoices ready for customer support and warranty use",
     ],
-    faqs: industryFaqs,
-    relatedLinks: [
-      { label: "View pricing", href: "/pricing" },
-      { label: "Swipe alternative", href: "/alternatives/swipe" },
-      { label: "Kirana store billing software", href: "/industries/kirana-store" },
-      { label: "Support", href: "/support" },
-    ],
   },
   {
-    kind: "industry",
     slug: "wholesalers-and-godown",
     industryName: "Wholesalers and Godown",
     title: "Wholesale Inventory Management Software for Godown Teams | Dugam",
@@ -859,16 +515,8 @@ export const industryPages: IndustryPageConfig[] = [
       "Track inventory across godown workflows",
       "Review sales and movement patterns",
     ],
-    faqs: industryFaqs,
-    relatedLinks: [
-      { label: "View pricing", href: "/pricing" },
-      { label: "Vyapar alternative", href: "/alternatives/vyapar" },
-      { label: "Electronics and mobile shop software", href: "/industries/electronics-and-mobile" },
-      { label: "Support", href: "/support" },
-    ],
   },
   {
-    kind: "industry",
     slug: "clothing-garments",
     industryName: "Clothing and Garments",
     title: "Clothing and Garments Billing Software for Fashion Shops | Dugam",
@@ -888,24 +536,19 @@ export const industryPages: IndustryPageConfig[] = [
       "Create fast invoices for fashion retail counters",
       "Track seasonal sales and inventory movement",
     ],
-    faqs: industryFaqs,
-    relatedLinks: [
-      { label: "View pricing", href: "/pricing" },
-      { label: "Vyapar alternative", href: "/alternatives/vyapar" },
-      { label: "Wholesale inventory software", href: "/industries/wholesalers-and-godown" },
-      { label: "Support", href: "/support" },
-    ],
   },
-]
-
-export const programmaticPagePaths = [
-  ...competitorComparisonPages.map((page) => `/alternatives/${page.slug}`),
-  ...industryPages.map((page) => `/industries/${page.slug}`),
 ] as const
 
-export function getCompetitorComparisonPage(slug: string) {
-  return competitorComparisonPages.find((page) => page.slug === slug)
-}
+export const industryPages: IndustryPageConfig[] = industryPagesBase.map((item) => ({
+  kind: "industry",
+  ...item,
+  faqs: industryFaqs,
+  relatedLinks: industryRelatedLinks,
+}))
+
+export const programmaticPagePaths = [
+  ...industryPages.map((page) => `/industries/${page.slug}`),
+] as const
 
 export function getIndustryPage(slug: string) {
   return industryPages.find((page) => page.slug === slug)
