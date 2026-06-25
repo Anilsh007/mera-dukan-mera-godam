@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import type { Metadata, Viewport } from "next"
+import Script from "next/script" // <-- 1. Ye import add kiya hai
 import "./globals.css"
 import { ThemeProvider } from "@/app/components/theme/ThemeProvider"
 import LanguageTextRewriter from "@/app/components/layout/LanguageTextRewriter"
@@ -89,10 +90,45 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  // 2. Live production check aur IDs variables nikaale
+  const isProduction = process.env.NODE_ENV === 'production';
+  const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID;
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <head>
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        
+        {/* 3. Sirf production par chale validation */}
+        {isProduction && (
+          <>
+            {/* Google Analytics 4 */}
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}');
+              `}
+            </Script>
+
+            {/* Microsoft Clarity */}
+            <Script id="microsoft-clarity" strategy="afterInteractive">
+              {`
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", "${clarityId}");
+              `}
+            </Script>
+          </>
+        )}
       </head>
       <body>
         <a className="skip-link" href="#main-content" data-i18n-skip>{en.navigation.skipToMainContent}</a>
